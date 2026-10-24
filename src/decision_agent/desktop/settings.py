@@ -38,8 +38,12 @@ class AppSettings(BaseModel):
     allowed_folders: list[str] = Field(default_factory=list)
     exclude_patterns: list[str] = Field(default_factory=lambda: list(DEFAULT_EXCLUDES))
     max_file_mb: int = Field(default=25, ge=1, le=500)
-    debounce_seconds: float = Field(default=30.0, ge=0.0, le=3600.0)
-    rescan_minutes: int = Field(default=60, ge=0, le=1440)
+    # Wait for saving to stop before reading a file, but never longer than debounce_max_seconds.
+    debounce_seconds: float = Field(default=10.0, ge=0.0, le=3600.0)
+    debounce_max_seconds: float = Field(default=120.0, ge=1.0, le=7200.0)
+    # Heartbeat: look at every folder this often even without change events (no LLM call
+    # unless something changed).
+    rescan_minutes: int = Field(default=10, ge=0, le=1440)
     analysis_mode: Literal["agent", "pipeline"] = "agent"
     allow_external_send: bool = False
     provider: Literal["auto", "mock", "anthropic", "ollama"] = "auto"
@@ -54,9 +58,9 @@ class AppSettings(BaseModel):
     max_llm_calls_per_cycle: int = Field(default=400, ge=1, le=100000)
     connectors: dict[str, ConnectorSettings] = Field(default_factory=dict)
     connector_target: str | None = None
-    connector_interval_minutes: int = Field(default=15, ge=1, le=1440)
+    connector_interval_minutes: int = Field(default=5, ge=1, le=60)
     hotkey_enabled: bool = True
-    hotkey: str = "ctrl+alt+d"
+    hotkey: str = "ctrl+shift+space"
     digest_enabled: bool = False
     digest_time: str = "09:00"
     # Subfolders the user unticked in the folder tree, per watch root, as relative POSIX paths.
@@ -66,6 +70,21 @@ class AppSettings(BaseModel):
     theme: Literal["system", "light", "dark"] = "system"
     language: Literal["ko"] = "ko"
     onboarding_done: bool = False
+    # Desktop helper button (always on top, bottom right) and notification behaviour.
+    helper_enabled: bool = True
+    quiet_hours_enabled: bool = False
+    quiet_start: str = "22:00"
+    quiet_end: str = "08:00"
+    meeting_reminder_enabled: bool = False
+    meeting_reminder_minutes: int = Field(default=10, ge=1, le=120)
+
+    @field_validator("connector_interval_minutes", mode="before")
+    @classmethod
+    def _clamp_interval(cls, value: Any) -> Any:
+        """Older settings allowed up to 1440 minutes; keep them loadable by clamping to 1-60."""
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return int(min(max(value, 1), 60))
+        return value
 
     @field_validator("profile_color")
     @classmethod
@@ -95,7 +114,7 @@ class AppSettings(BaseModel):
                 cleaned[root] = kept
         return cleaned
 
-    @field_validator("digest_time")
+    @field_validator("digest_time", "quiet_start", "quiet_end")
     @classmethod
     def _check_time(cls, value: str) -> str:
         if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", value):
@@ -105,9 +124,9 @@ class AppSettings(BaseModel):
     @field_validator("hotkey")
     @classmethod
     def _check_hotkey(cls, value: str) -> str:
-        if not re.fullmatch(r"(?:(?:ctrl|alt|shift|win)\+){1,3}[a-z0-9]|(?:(?:ctrl|alt|shift|win)\+){1,3}f(?:[1-9]|1[0-2])", value.lower()):
-            raise ValueError("예: ctrl+alt+d")
-        return value.lower()
+        from decision_agent.desktop.hotkey import normalize_hotkey
+
+        return normalize_hotkey(value)
 
     @field_validator("ollama_url")
     @classmethod

@@ -20,7 +20,7 @@ from decision_agent.desktop import secrets as secret_store
 from decision_agent.desktop.app import DecisionAgentApp
 from decision_agent.desktop.autostart import Autostart
 from decision_agent.desktop.engine import ProjectEngine
-from decision_agent.desktop.hotkey import HotkeyListener
+from decision_agent.desktop.hotkey import HotkeyListener, hotkey_status
 from decision_agent.desktop.notify import CallbackNotifier, ChainNotifier, make_notifier
 from decision_agent.desktop.paths import activity_path, app_home, log_path, state_db_path
 from decision_agent.desktop.providers import build_provider
@@ -227,15 +227,12 @@ def _run_desktop(args: argparse.Namespace, settings: AppSettings, port: int) -> 
         if old is not None:
             old.stop()
             hotkey_holder["listener"] = None
-        controller.hotkey_state = {
-            "enabled": current.hotkey_enabled, "active": False, "spec": current.hotkey, "reason": ""
-        }
+        controller.hotkey_state = hotkey_status(current.hotkey, current.hotkey_enabled, False, "")
         if not current.hotkey_enabled:
             return
         listener = HotkeyListener(current.hotkey, open_quick)
         ok = listener.start()
-        controller.hotkey_state["active"] = ok
-        controller.hotkey_state["reason"] = listener.reason
+        controller.hotkey_state = hotkey_status(current.hotkey, True, ok, listener.reason)
         if ok:
             hotkey_holder["listener"] = listener
         else:

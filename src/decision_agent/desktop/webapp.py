@@ -41,9 +41,10 @@ EDITABLE_FIELDS = {
     "max_file_mb", "max_llm_calls_per_cycle", "kind_overrides", "ollama_url", "embedding_model",
     "connector_target", "connector_interval_minutes", "hotkey_enabled", "hotkey",
     "digest_enabled", "digest_time", "display_name", "profile_color", "theme", "language",
-    "onboarding_done",
+    "onboarding_done", "debounce_max_seconds", "helper_enabled", "quiet_hours_enabled", "quiet_start",
+    "quiet_end", "meeting_reminder_enabled", "meeting_reminder_minutes",
 }
-PURGE_CONFIRM = "모두 삭제"
+PURGE_CONFIRM = "삭제"
 PAGE_HASH = re.compile(r"^#/[a-z-]{0,30}$")
 DATE_PARAM = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 CSP = (

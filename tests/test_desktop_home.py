@@ -200,3 +200,17 @@ def test_folder_tree_api_includes_kinds_for_the_demo(home):
     assert data["tree"]["kinds"].get("MEETING", 0) >= 1
     meetings = next(c for c in data["tree"]["children"] if c["name"] == "meetings")
     assert meetings["kinds"] == {"MEETING": 1}
+
+
+def test_new_settings_fields_are_editable_and_validated(home):
+    client, controller, _ = home
+    body = {"quiet_hours_enabled": True, "quiet_start": "21:30", "quiet_end": "07:00", "helper_enabled": False,
+            "meeting_reminder_enabled": True, "meeting_reminder_minutes": 15, "connector_interval_minutes": 30,
+            "hotkey": "Ctrl+Alt+Space"}
+    assert client.post("/api/settings", headers=HEADERS, json=body).status_code == 200
+    s = controller.settings
+    assert s.quiet_start == "21:30" and s.helper_enabled is False and s.meeting_reminder_minutes == 15
+    assert s.hotkey == "ctrl+alt+space"
+    assert client.post("/api/settings", headers=HEADERS, json={"hotkey": "ctrl+nope"}).status_code == 400
+    assert client.post("/api/settings", headers=HEADERS, json={"quiet_end": "7시"}).status_code == 400
+    assert client.post("/api/settings", headers=HEADERS, json={"ui_port": 9999}).status_code == 400

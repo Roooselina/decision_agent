@@ -44,10 +44,44 @@ def test_parse_hotkey_accepts_letters_digits_and_function_keys():
     assert parse_hotkey("ctrl+f12") == (hotkey_module.MOD_CONTROL, 0x7B)
 
 
-@pytest.mark.parametrize("spec", ["d", "ctrl+", "super+d", "ctrl+f13", "ctrl+enter", ""])
+@pytest.mark.parametrize("spec", ["d", "ctrl+", "super+d", "ctrl+f25", "ctrl+foo", "ctrl+ctrl+a", "ctrl+한", ""])
 def test_parse_hotkey_rejects_bad_specs(spec):
     with pytest.raises(ValueError):
         parse_hotkey(spec)
+
+
+def test_parse_hotkey_named_keys_and_normal_form():
+    mods = hotkey_module.MOD_CONTROL | hotkey_module.MOD_SHIFT
+    assert parse_hotkey("ctrl+shift+space") == (mods, 0x20)
+    assert parse_hotkey("ctrl+enter")[1] == 0x0D and parse_hotkey("alt+tab")[1] == 0x09
+    assert parse_hotkey("ctrl+alt+left")[1] == 0x25 and parse_hotkey("ctrl+down")[1] == 0x28
+    assert parse_hotkey("ctrl+f13")[1] == 0x7C and parse_hotkey("ctrl+f24")[1] == 0x87
+    assert hotkey_module.normalize_hotkey("Shift + Control + Spacebar") == "ctrl+shift+space"
+    assert hotkey_module.display_hotkey("ctrl+shift+space") == "Ctrl + Shift + Space"
+
+
+def test_hotkey_failure_explains_input_method_clash_and_offers_alternatives():
+    state = hotkey_module.hotkey_status("ctrl+shift+space", True, False, "다른 프로그램이 이미 이 단축키를 사용하고 있습니다.")
+    assert "한/영" in state["reason"] and state["suggestions"]
+    assert "ctrl+shift+space" not in state["suggestions"]
+    ok = hotkey_module.hotkey_status("ctrl+alt+d", True, True, "")
+    assert ok["suggestions"] == [] and ok["display"] == "Ctrl + Alt + D"
+
+
+def test_settings_defaults_and_old_files_stay_loadable(tmp_path):
+    from decision_agent.desktop.settings import AppSettings, load_settings
+
+    s = AppSettings()
+    assert s.hotkey == "ctrl+shift+space" and s.rescan_minutes == 10 and s.debounce_seconds == 10
+    assert s.connector_interval_minutes == 5 and s.meeting_reminder_enabled is False
+    old = tmp_path / "settings.json"
+    old.write_text('{"allowed_folders": ["X:/p"], "connector_interval_minutes": 240, "hotkey": "Ctrl+Alt+D"}',
+                   encoding="utf-8")
+    loaded = load_settings(old)
+    assert loaded.allowed_folders == ["X:/p"] and loaded.connector_interval_minutes == 60
+    assert loaded.hotkey == "ctrl+alt+d"
+    with pytest.raises(ValueError):
+        AppSettings(quiet_start="25:00")
 
 
 class FakeBackend:

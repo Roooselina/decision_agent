@@ -14,22 +14,105 @@ WM_HOTKEY = 0x0312
 _MODS = {"alt": MOD_ALT, "ctrl": MOD_CONTROL, "shift": MOD_SHIFT, "win": MOD_WIN}
 
 
-def parse_hotkey(spec: str) -> tuple[int, int]:
-    """Turn 'ctrl+alt+d' into Windows modifier flags and a virtual-key code."""
-    parts = [p.strip().lower() for p in spec.split("+") if p.strip()]
+_ALIASES = {"control": "ctrl", "windows": "win", "return": "enter", "esc": "escape", "spacebar": "space",
+            "pgup": "pageup", "pgdn": "pagedown", "del": "delete", "ins": "insert"}
+# Virtual-key codes of the named keys (winuser.h).
+_NAMED = {
+    "space": 0x20, "enter": 0x0D, "tab": 0x09, "escape": 0x1B, "backspace": 0x08,
+    "left": 0x25, "up": 0x26, "right": 0x27, "down": 0x28,
+    "home": 0x24, "end": 0x23, "pageup": 0x21, "pagedown": 0x22, "insert": 0x2D, "delete": 0x2E,
+}
+_MOD_ORDER = ["ctrl", "alt", "shift", "win"]
+DEFAULT_HOTKEY = "ctrl+shift+space"
+FALLBACK_HOTKEYS = ["ctrl+shift+space", "ctrl+alt+space", "ctrl+alt+d", "ctrl+shift+k", "ctrl+alt+f9"]
+
+
+def _split(spec: str) -> tuple[list[str], str]:
+    parts = [_ALIASES.get(p.strip().lower(), p.strip().lower()) for p in str(spec).split("+") if p.strip()]
     if len(parts) < 2:
-        raise ValueError("조합키가 하나 이상 필요합니다. 예: ctrl+alt+d")
+        raise ValueError("조합키가 하나 이상 필요합니다. 예: ctrl+shift+space")
     *mods, key = parts
-    flags = 0
     for mod in mods:
         if mod not in _MODS:
             raise ValueError(f"알 수 없는 조합키: {mod}")
-        flags |= _MODS[mod]
-    if len(key) == 1 and key.isalnum():
-        return flags, ord(key.upper())
-    if key.startswith("f") and key[1:].isdigit() and 1 <= int(key[1:]) <= 12:
-        return flags, 0x70 + int(key[1:]) - 1
+    if len(set(mods)) != len(mods) or len(mods) > 3:
+        raise ValueError("조합키는 서로 다른 것으로 최대 3개까지입니다.")
+    return mods, key
+
+
+def _key_code(key: str) -> int:
+    if len(key) == 1 and key.isascii() and key.isalnum():
+        return ord(key.upper())
+    if key in _NAMED:
+        return _NAMED[key]
+    if key.startswith("f") and key[1:].isdigit() and 1 <= int(key[1:]) <= 24:
+        return 0x70 + int(key[1:]) - 1
     raise ValueError(f"지원하지 않는 키: {key}")
+
+
+def parse_hotkey(spec: str) -> tuple[int, int]:
+    """Turn 'ctrl+shift+space' into Windows modifier flags and a virtual-key code.
+
+    Keys: letters, digits, f1-f24, space, enter, tab, escape, backspace, arrows, home, end,
+    pageup, pagedown, insert, delete. Modifiers: ctrl, alt, shift, win.
+    """
+    mods, key = _split(spec)
+    flags = 0
+    for mod in mods:
+        flags |= _MODS[mod]
+    return flags, _key_code(key)
+
+
+def normalize_hotkey(spec: str) -> str:
+    """Canonical lower-case form ("Shift+Ctrl+Space" -> "ctrl+shift+space"); raises ValueError."""
+    mods, key = _split(spec)
+    _key_code(key)
+    return "+".join(sorted(mods, key=_MOD_ORDER.index) + [key])
+
+
+def display_hotkey(spec: str) -> str:
+    """How a shortcut is written on screen: "Ctrl + Shift + Space"."""
+    try:
+        mods, key = _split(spec)
+    except ValueError:
+        return spec
+    names = {"ctrl": "Ctrl", "alt": "Alt", "shift": "Shift", "win": "Win"}
+    shown = key.upper() if len(key) <= 3 else key.capitalize()
+    return " + ".join([names[m] for m in sorted(mods, key=_MOD_ORDER.index)] + [shown])
+
+
+def failure_reason(spec: str, reason: str) -> str:
+    """Explain a failed registration. Space combinations often clash with Korean input switching."""
+    try:
+        _, key = _split(spec)
+    except ValueError:
+        return reason
+    if key == "space":
+        return (f"{reason} Space 조합은 한/영 전환 등 입력기 단축키와 겹칠 수 있습니다. "
+                "다른 조합을 고르세요.").strip()
+    return reason
+
+
+def suggest_hotkeys(current: str, count: int = 3) -> list[str]:
+    """Alternatives to offer when the current shortcut could not be registered."""
+    try:
+        current = normalize_hotkey(current)
+    except ValueError:
+        pass
+    return [h for h in FALLBACK_HOTKEYS if h != current][:count]
+
+
+def hotkey_status(spec: str, enabled: bool, active: bool, reason: str) -> dict:
+    """What the settings screen shows about the shortcut, including alternatives on failure."""
+    failed = enabled and not active and bool(reason)
+    return {
+        "enabled": enabled,
+        "active": active,
+        "spec": spec,
+        "display": display_hotkey(spec),
+        "reason": failure_reason(spec, reason) if failed else reason,
+        "suggestions": suggest_hotkeys(spec) if failed else [],
+    }
 
 
 class HotkeyBackend(Protocol):

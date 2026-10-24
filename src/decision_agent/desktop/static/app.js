@@ -9,7 +9,7 @@
 
   const S = {status: null, settings: null, offline: false};
   const REFRESH_MS = 4000;
-  const PURGE_CONFIRM = "모두 삭제";
+  const PURGE_CONFIRM = "삭제";
 
   // ---------------------------------------------------------------- routing
 
@@ -1056,71 +1056,6 @@
     return ["neutral", "minus", "연결 안 됨"];
   }
 
-  ROUTES.accounts = {
-    title: "연결 계정", icon: "link", auto: false,
-    lead: "메일, 캘린더, 협업 도구의 지정한 범위만 읽어 폴더 문서와 함께 점검합니다.",
-    async load() {
-      const [rows, settings] = await Promise.all([api("/api/connectors"), api("/api/settings")]);
-      return {rows, settings};
-    },
-    render({rows, settings}) {
-      const target = select(settings.allowed_folders.map(f => [f, f]), settings.connector_target || settings.allowed_folders[0] || "", {"aria-label": "분석 대상 폴더"});
-      const saveTarget = button("저장", {});
-      saveTarget.addEventListener("click", () => busy(saveTarget, async () => {
-        await api("/api/settings", "POST", {connector_target: target.value});
-        toast("분석 대상 폴더를 저장했습니다.", "success");
-      }));
-      const intro = h("section", {class: "card stack"},
-        callout("success", "shield-check", "모든 연결은 읽기 전용입니다",
-          "보내기, 삭제, 읽음 표시, 만들기 기능은 없습니다. 토큰과 비밀번호는 Windows 자격 증명 관리자에만 저장되고, 화면에서는 저장 여부만 보입니다. 이 앱에는 서버나 회원 가입이 없어 모든 정보는 이 컴퓨터에만 남습니다."),
-        settings.allowed_folders.length === 0
-          ? callout("warning", "folder", "먼저 폴더를 추가하세요", "가져온 메일과 일정은 감시 폴더의 문서와 함께 분석됩니다.", [button("폴더 추가", {size: "sm", onClick: () => startAddFolder()})])
-          : h("div", {class: "row"}, h("span", {class: "strong"}, "가져온 내용을 함께 분석할 폴더"), h("div", {style: {flex: "1 1 280px"}}, target), saveTarget));
-      return page(this.title, this.lead, null, intro, h("div", {class: "svc-grid"}, ...rows.map(serviceCard)));
-    },
-  };
-
-  function serviceLogo(id) {
-    const [iconName, color] = SERVICE_LOOK[id] || ["link", "#475467"];
-    return h("div", {class: "svc-logo", style: {background: color}, "aria-hidden": "true"}, icon(iconName, "lg"));
-  }
-
-  function serviceCard(c) {
-    const [kind, iconName, text] = connState(c);
-    const st = c.status;
-    const configured = c.problems.length === 0;
-    const run = button("지금 가져오기", {icon: "refresh", disabled: !configured});
-    run.addEventListener("click", () => busy(run, async () => {
-      await api("/api/connectors/run", "POST", {id: c.id});
-      toast(c.label + "에서 가져오기를 시작했습니다.", "info");
-    }));
-    const disconnect = button("연결 해제", {variant: "danger-outline", icon: "x"});
-    disconnect.addEventListener("click", async () => {
-      const ok = await confirmDialog({title: c.label + " 연결을 해제할까요?", danger: true, confirmLabel: "연결 해제",
-        message: "저장된 토큰과 비밀번호, 가져온 사본, 상태가 모두 지워집니다. 서비스 쪽 데이터는 바뀌지 않습니다."});
-      if (!ok) return;
-      await busy(disconnect, async () => {
-        await api("/api/connectors/disconnect", "POST", {id: c.id});
-        toast("연결을 해제했습니다.", "success");
-        renderRoute(true);
-      });
-    });
-    return h("section", {class: "card svc-card"},
-      h("div", {class: "svc-top"}, serviceLogo(c.id),
-        h("div", {class: "svc-meta"}, h("div", {class: "row-between"}, h("h3", {}, c.label), badge(kind, iconName, text)),
-          h("span", {class: "small muted"}, c.reads))),
-      h("div", {class: "small " + (st && !st.ok ? "" : "muted"), style: st && !st.ok ? {color: "var(--danger)"} : null},
-        st ? (st.ok ? "마지막 가져오기 " + relTime(st.at) + " · " + st.summary : "마지막 시도 " + relTime(st.at) + " · " + st.message)
-          : "아직 가져온 적이 없습니다."),
-      h("div", {class: "btn-group"},
-        button(configured ? "설정" : "연결", {variant: configured ? "" : "primary", icon: configured ? "settings" : "link", onClick: () => connectWizard(c)}),
-        configured ? run : null, configured || c.enabled ? disconnect : null),
-      h("details", {}, h("summary", {}, icon("chevron-right", "sm"), "이 앱이 읽는 것 / 절대 하지 않는 것"),
-        h("div", {class: "does"},
-          h("div", {}, h("h4", {}, "읽는 것"), h("ul", {}, h("li", {}, c.reads))),
-          h("div", {}, h("h4", {}, "절대 하지 않는 것"), h("ul", {}, ...NEVER.map(n => h("li", {}, n)))))));
-  }
-
   function optionControl(spec, value) {
     if (spec.kind === "list") {
       const t = textarea({rows: "3"});
@@ -1135,7 +1070,7 @@
     return [i, () => i.value.trim()];
   }
 
-  function connectWizard(c) {
+  function connectWizard(c, startAt) {
     const steps = ["준비", "인증 정보"].concat(c.uses_oauth ? ["로그인"] : [], ["범위 선택", "테스트"]);
     let step = 0;
     const readers = {};
@@ -1158,7 +1093,8 @@
     let connected = Boolean(c.connected);
     const body = h("div", {class: "stack"});
     const stepper = h("div", {class: "stepper", "aria-label": "진행 단계"});
-    const close = modal({title: c.label + " 연결", wide: true, body: [stepper, body], actions: []});
+    const close = modal({title: c.label + " 연결", wide: true, plain: true, body: [stepper, body], actions: [], onClose: () => renderRoute(false)});
+    if (startAt && steps.includes(startAt)) step = steps.indexOf(startAt);
 
     async function current() {
       return (await api("/api/connectors")).find(r => r.id === c.id);
@@ -1348,291 +1284,397 @@
 
   // ---------------------------------------------------------------- settings
 
+  // Figma 15:340 / 16:1185: two tabs, "연결 및 AI" and "알림 및 데이터".
+  const SET = {tab: "connect", test: null};
+  const CALENDAR_IDS = ["google_calendar", "outlook_calendar"];
+
   ROUTES.settings = {
-    title: "설정", icon: "settings", auto: false,
-    lead: "점검 동작, 제외 규칙, 시작 방법, 접근 범위를 정합니다.",
-    async load() {
-      const [s, access, auto] = await Promise.all([api("/api/settings"), api("/api/access"), api("/api/autostart")]);
-      return {s, access, auto};
+    title: "설정", auto: false,
+    async load(params) {
+      if (params.has("tab")) SET.tab = params.get("tab") === "data" ? "data" : "connect";
+      const [s, rows, auto, access] = await Promise.all([api("/api/settings"), api("/api/connectors"), api("/api/autostart"), api("/api/access")]);
+      S.settings = s;
+      return {s, rows, auto, access, st: S.status || await api("/api/status")};
     },
-    render({s, access, auto}, params) {
-      const save = (payload, message) => api("/api/settings", "POST", payload).then(() => toast(message || "설정을 저장했습니다.", "success"));
-      const saveBtn = (fn) => { const b = button("저장", {variant: "primary"}); b.addEventListener("click", () => busy(b, fn)); return b; };
-
-      const mode = select([["agent", "Agent: 상황을 보고 다음 단계를 고름"], ["pipeline", "Pipeline: 고정 순서"]], s.analysis_mode);
-      const debounce = input({type: "number", min: "0", value: String(s.debounce_seconds)});
-      const rescan = input({type: "number", min: "0", value: String(s.rescan_minutes)});
-      const release = input({value: s.current_release || "", placeholder: "예: MVP"});
-      const maxMb = input({type: "number", min: "1", value: String(s.max_file_mb)});
-      const maxCalls = input({type: "number", min: "1", value: String(s.max_llm_calls_per_cycle)});
-      const behaviour = card("점검 동작", null, null, h("div", {class: "stack"},
-        h("div", {class: "field-row"},
-          field("점검 방식", mode), field("현재 릴리스", release, "결정의 적용 범위를 판단할 때 씁니다."),
-          field("변경 후 대기(초)", debounce, "저장이 이어질 때 모아서 한 번에 점검합니다."),
-          field("전체 다시 점검 간격(분)", rescan, "0이면 변경이 있을 때만 점검합니다."),
-          field("파일 최대 크기(MB)", maxMb), field("점검 1회 LLM 호출 한도", maxCalls)),
-        h("div", {}, saveBtn(() => save({analysis_mode: mode.value, debounce_seconds: Number(debounce.value || 0),
-          rescan_minutes: Number(rescan.value || 0), current_release: release.value.trim() || null,
-          max_file_mb: Number(maxMb.value || 25), max_llm_calls_per_cycle: Number(maxCalls.value || 400)})))));
-
-      const excludes = textarea({rows: "8", class: "textarea mono"});
-      excludes.value = s.exclude_patterns.join("\n");
-      const rules = card("제외 규칙", "모든 감시 폴더에 적용되는 이름 패턴입니다. 특정 하위 폴더만 빼려면 폴더 화면의 '하위 폴더 선택'을 쓰세요.", null,
-        h("div", {class: "stack"}, field("제외 패턴 (한 줄에 하나)", excludes, "예: node_modules, *.tmp, 보관함/*"),
-          h("div", {}, saveBtn(() => save({exclude_patterns: excludes.value.split("\n").map(x => x.trim()).filter(Boolean)})))));
-
-      const target = select(s.allowed_folders.map(f => [f, f]), s.connector_target || s.allowed_folders[0] || "");
-      const interval = input({type: "number", min: "1", value: String(s.connector_interval_minutes)});
-      const imports = card("연결 가져오기", null, null, h("div", {class: "stack"},
-        h("div", {class: "field-row"}, field("가져온 내용을 분석할 폴더", target), field("가져오기 간격(분)", interval)),
-        h("div", {}, saveBtn(() => save(Object.assign({connector_interval_minutes: Number(interval.value || 15)},
-          s.allowed_folders.length ? {connector_target: target.value} : {}))))));
-
-      const autoToggle = toggle("Windows 시작 시 자동 실행", auto.enabled, auto.supported ? "로그인하면 조용히 시작해 트레이에서 감시합니다." : "Windows에서만 지원합니다.");
-      autoToggle.input.disabled = !auto.supported;
-      autoToggle.input.addEventListener("change", async () => {
-        try {
-          await api("/api/autostart", "POST", {enabled: autoToggle.input.checked});
-          toast(autoToggle.input.checked ? "자동 실행을 켰습니다." : "자동 실행을 껐습니다.", "success");
-        } catch (e) { autoToggle.input.checked = !autoToggle.input.checked; toast(e.message, "danger"); }
-      });
-      const startup = card("시작", null, null, autoToggle);
-
-      const ollama = input({value: s.ollama_url, class: "input mono"});
-      const embed = input({value: s.embedding_model, placeholder: "예: nomic-embed-text"});
-      const advanced = card("고급 판정", "Ollama 같은 로컬 모델을 쓸 때만 바꾸세요.", null, h("div", {class: "stack"},
-        h("div", {class: "field-row"}, field("Ollama 주소", ollama, "이 컴퓨터 주소가 아니면 외부 전송 스위치가 켜져 있어야 합니다."),
-          field("임베딩 모델 (선택)", embed, "글자 유사도가 놓친 후보를 보충합니다.")),
-        h("div", {}, saveBtn(() => save({ollama_url: ollama.value.trim(), embedding_model: embed.value.trim()})))));
-
-      const list = (items) => h("ul", {}, ...items.map(i => h("li", {}, i)));
-      const scope = card("접근 범위", "이 프로그램이 읽는 곳과 절대 하지 않는 일입니다.", null, h("div", {class: "stack"},
-        h("div", {class: "stack-sm"}, h("h4", {}, "읽는 폴더"), access.folders.length === 0 ? h("p", {class: "muted"}, "등록된 폴더가 없습니다.")
-          : list(access.folders.map(f => f.root + " (읽은 파일 " + (f.files.ok || 0) + "개, 가져온 외부 문서 " + f.external_documents + "개)"))),
-        h("div", {class: "stack-sm"}, h("h4", {}, "켜 둔 연결"), access.connectors.length === 0 ? h("p", {class: "muted"}, "켜 둔 연결이 없습니다.")
-          : list(access.connectors.map(c => c.label + ": " + c.reads))),
-        h("div", {class: "stack-sm"}, h("h4", {}, "문서 내용이 나가는 곳"),
-          access.provider.sends_externally ? callout("danger", "cloud", "외부 서비스로 전송됩니다: " + access.provider.id, access.provider.reason)
-            : callout("success", "shield-check", "이 컴퓨터 밖으로 나가지 않습니다", access.provider.reason)),
-        h("div", {class: "stack-sm"}, h("h4", {}, "절대 하지 않는 일"), list(access.never)),
-        h("div", {class: "stack-sm"}, h("h4", {}, "컴퓨터에 남는 것"), list(access.stored_locally),
-          h("p", {class: "small muted mono"}, "데이터 폴더: " + access.storage.app_home))));
-      scope.id = "section-access";
-
-      const sections = [["behaviour", "점검 동작", behaviour], ["rules", "제외 규칙", rules], ["imports", "연결 가져오기", imports],
-        ["startup", "시작", startup], ["advanced", "고급 판정", advanced], ["access", "접근 범위", scope]];
-      sections.forEach(([id, , node]) => { node.id = "section-" + id; });
-      const jump = (id) => { const el = document.getElementById("section-" + id); if (el) el.scrollIntoView({behavior: "smooth", block: "start"}); };
-      const navBox = h("nav", {class: "settings-nav", "aria-label": "설정 항목"}, ...sections.map(([id, label]) =>
-        h("button", {type: "button", class: "nav-item", onclick: () => jump(id)}, h("span", {class: "nav-label"}, label))));
-      const node = page(this.title, this.lead, null, h("div", {class: "settings-layout"}, navBox, h("div", {class: "stack"}, ...sections.map(x => x[2]))));
-      if (params.get("section")) setTimeout(() => jump(params.get("section")), 60);
+    render(data, params) {
+      const tabs = h("div", {class: "set-tabs", role: "tablist"}, ...[["connect", "연결 및 AI"], ["data", "알림 및 데이터"]].map(([id, label]) =>
+        h("button", {type: "button", class: "set-tab", role: "tab", "aria-selected": String(SET.tab === id),
+          onclick: () => { SET.tab = id; lastSig = ""; renderRoute(false); }}, label)));
+      const body = SET.tab === "data" ? dataTab(data) : connectTab(data);
+      const node = h("div", {class: "page settings-page"}, h("div", {class: "page-head"}, h("h1", {}, "설정")), tabs, ...body);
+      const focus = params.get("focus") || params.get("section");
+      if (focus) setTimeout(() => {
+        history.replaceState(null, "", "#/settings");
+        const el = document.getElementById("set-" + focus);
+        if (el) { el.scrollIntoView({block: "center"}); el.classList.add("flash"); }
+      }, 60);
       return node;
     },
   };
 
-  // ---------------------------------------------------------------- profile
+  async function saveSettings(payload, message) {
+    await api("/api/settings", "POST", payload);
+    S.settings = Object.assign({}, S.settings || {}, payload);
+    if (message) toast(message, "success");
+  }
 
-  const COLORS = ["#4f46e5", "#0891b2", "#059669", "#d97706", "#dc2626", "#db2777", "#7c3aed", "#475569"];
-  const PROVIDERS = [
-    ["auto", "자동", "API 키, 모델 이름, 외부 전송 스위치가 모두 있으면 Anthropic, 아니면 데모 판정기", "cpu"],
-    ["mock", "데모 판정기", "내장 규칙. 예시 문서만 알며 실제 검사가 아닙니다. 외부 전송 없음", "alert"],
-    ["anthropic", "Anthropic", "문서 내용이 Anthropic API로 전송됩니다. 키, 모델, 전송 스위치가 필요합니다", "cloud"],
-    ["ollama", "Ollama (로컬)", "이 컴퓨터에서 도는 모델. 문서가 밖으로 나가지 않습니다", "monitor"],
-  ];
-
-  function providerChoices(value, onChange) {
-    let current = value;
-    const name = "provider-" + Math.random().toString(36).slice(2, 6);
-    const grid = h("div", {class: "choice-grid", role: "radiogroup", "aria-label": "판정 방식"});
-    const cards = PROVIDERS.map(([v, label, help, iconName]) => {
-      const radio = h("input", {type: "radio", name, value: v, checked: v === value});
-      const node = h("label", {class: "choice" + (v === value ? " selected" : "")}, radio,
-        h("span", {class: "choice-title"}, icon(iconName, "sm"), label), h("span", {class: "small muted"}, help));
-      radio.addEventListener("change", () => {
-        current = v;
-        cards.forEach(c => c.classList.toggle("selected", c === node));
-        if (onChange) onChange(v);
-      });
-      return node;
+  // Figma "토글": 36x20 track, 16px knob, "켜짐" / "꺼짐" next to it.
+  function switchCtl(checked, onChange, label) {
+    const box = h("input", {type: "checkbox", role: "switch", checked, "aria-label": label || "켜기"});
+    const text = h("span", {class: "sw-text"}, checked ? "켜짐" : "꺼짐");
+    const node = h("label", {class: "sw"}, box, h("span", {class: "sw-track", "aria-hidden": "true"}), text);
+    box.addEventListener("change", async () => {
+      const want = box.checked;
+      text.textContent = want ? "켜짐" : "꺼짐";
+      try {
+        const ok = await onChange(want);
+        if (ok === false) { box.checked = !want; text.textContent = box.checked ? "켜짐" : "꺼짐"; }
+      } catch (e) {
+        box.checked = !want; text.textContent = box.checked ? "켜짐" : "꺼짐";
+        toast(e.message, "danger");
+      }
     });
-    DA.append(grid, cards);
-    grid.value = () => current;
-    return grid;
+    node.input = box;
+    return node;
   }
 
-  function apiKeyBlock(hasKey, onChange) {
-    const keyInput = input({type: "password", autocomplete: "off", placeholder: hasKey ? "저장됨 - 바꾸려면 새 키 입력" : "sk-ant-..."});
-    const state = h("span");
-    const drawState = (saved) => set(state, saved ? badge("success", "lock", "저장됨") : badge("neutral", "minus", "저장 안 됨"));
-    drawState(hasKey);
-    const saveKey = button("키 저장", {icon: "key"});
-    saveKey.addEventListener("click", () => busy(saveKey, async () => {
-      if (keyInput.value.trim().length < 8) throw new Error("API 키를 입력하세요.");
-      await api("/api/secret/api-key", "POST", {value: keyInput.value.trim()});
-      keyInput.value = "";
-      keyInput.placeholder = "저장됨 - 바꾸려면 새 키 입력";
-      drawState(true);
-      toast("API 키를 자격 증명 관리자에 저장했습니다.", "success");
-      if (onChange) onChange(true);
-    }));
-    const delKey = button("키 삭제", {variant: "danger-outline", icon: "trash"});
-    delKey.addEventListener("click", () => busy(delKey, async () => {
-      await api("/api/secret/api-key", "DELETE");
-      drawState(false);
-      toast("API 키를 삭제했습니다.", "success");
-      if (onChange) onChange(false);
-    }));
-    return h("div", {class: "stack-sm"},
-      h("div", {class: "row"}, h("span", {class: "field-label"}, "Anthropic API 키"), state),
-      h("div", {class: "row", style: {flexWrap: "nowrap"}}, keyInput, saveKey, delKey),
-      h("span", {class: "field-help"}, "키는 Windows 자격 증명 관리자에만 저장되고 화면, 설정 파일, 로그에 나타나지 않습니다."));
+  function setRow(label, ...controls) {
+    return h("div", {class: "set-row"}, h("span", {class: "set-label"}, label), h("div", {class: "set-value"}, ...controls));
   }
 
-  ROUTES.profile = {
-    title: "내 정보", icon: "user", auto: false,
-    lead: "이 컴퓨터에만 저장되는 로컬 프로필과 판정 방식, 알림, 데이터 관리입니다. 서버나 회원 가입은 없습니다.",
-    async load() {
-      const [s, access] = await Promise.all([api("/api/settings"), api("/api/access")]);
-      return {s, access, st: S.status};
-    },
-    render({s, access, st}, params) {
-      // profile
-      const name = input({value: s.display_name, maxlength: "40", placeholder: "표시 이름"});
-      let color = s.profile_color;
-      const preview = h("span", {class: "avatar lg", style: {background: color}}, (s.display_name || "").trim() ? Array.from(s.display_name.trim())[0] : icon("user", "lg"));
-      const swatches = h("div", {class: "swatches", role: "radiogroup", "aria-label": "프로필 색상"}, ...COLORS.map(cv => {
-        const sw = h("button", {type: "button", class: "swatch", role: "radio", "aria-checked": String(cv === color), "aria-label": "색상 " + cv,
-          style: {background: cv}, onclick: () => {
-            color = cv;
-            swatches.querySelectorAll(".swatch").forEach(x => x.setAttribute("aria-checked", String(x === sw)));
-            preview.style.background = cv;
-          }});
-        return sw;
-      }));
-      name.addEventListener("input", () => { const t = name.value.trim(); set(preview, t ? Array.from(t)[0] : icon("user", "lg")); });
-      const saveProfile = button("저장", {variant: "primary"});
-      saveProfile.addEventListener("click", () => busy(saveProfile, async () => {
-        await api("/api/settings", "POST", {display_name: name.value, profile_color: color});
-        S.settings = await api("/api/settings");
-        toast("프로필을 저장했습니다.", "success");
-      }));
-      const profile = card("프로필", null, null, h("div", {class: "row", style: {gap: "24px", alignItems: "flex-start"}}, preview,
-        h("div", {class: "stack", style: {flex: "1 1 320px"}}, field("표시 이름", name), h("div", {class: "field"}, h("span", {class: "field-label"}, "프로필 색상"), swatches),
-          callout("neutral", "lock", null, "이 정보는 이 컴퓨터의 설정 파일에만 저장됩니다. 계정이나 서버로 보내지 않습니다."), h("div", {}, saveProfile))));
+  // ---------------------------------------------------------------- tab: connections and AI
 
-      // judge
-      let provider = s.provider;
-      const extFields = h("div", {class: "stack"});
-      const model = input({value: s.model_name, placeholder: "사용할 모델 이름"});
-      const ext = toggle("외부 LLM으로 문서 내용 전송 허용", s.allow_external_send, "켜면 점검할 때 문서 내용이 Anthropic API로 전송됩니다. 기본은 꺼짐입니다.");
-      const ollamaUrl = input({value: s.ollama_url, class: "input mono"});
-      const keyBlock = apiKeyBlock(s.has_api_key);
-      const drawExt = () => {
-        set(extFields, 
-          provider === "anthropic" || provider === "auto" ? keyBlock : null,
-          provider !== "mock" ? field("모델 이름", model, provider === "ollama" ? "예: qwen2.5:7b" : "Anthropic 모델 이름. 코드에 들어 있지 않으며 직접 입력합니다.") : null,
-          provider === "ollama" ? field("Ollama 주소", ollamaUrl) : null,
-          provider === "anthropic" || provider === "auto" ? ext : null,
-          provider === "anthropic" || provider === "auto" ? callout(ext.input.checked ? "danger" : "neutral", ext.input.checked ? "cloud" : "shield-check", null,
-            ext.input.checked ? "외부 전송이 켜져 있습니다. 키와 모델 이름이 있으면 문서 내용이 외부로 나갑니다. 민감한 문서는 로컬 모델을 쓰세요."
-              : "외부 전송이 꺼져 있어 문서가 외부로 나가지 않습니다. 키와 모델이 있어도 전송 스위치를 켜기 전까지는 데모 판정기로 동작합니다.") : null);
-      };
-      ext.input.addEventListener("change", drawExt);
-      const choices = providerChoices(provider, (v) => { provider = v; drawExt(); });
-      drawExt();
-      const testResult = h("div");
-      const saveJudge = button("판정 방식 저장", {variant: "primary"});
-      saveJudge.addEventListener("click", () => busy(saveJudge, async () => {
-        await api("/api/settings", "POST", {provider, model_name: model.value.trim(), allow_external_send: ext.input.checked,
-          ollama_url: ollamaUrl.value.trim()});
-        toast("판정 방식을 저장했습니다. 새 방식으로 다시 점검합니다.", "success");
+  function connectTab({s, rows, st}) {
+    const cal = rows.filter(r => CALENDAR_IDS.includes(r.id));
+    const others = rows.filter(r => !CALENDAR_IDS.includes(r.id));
+    const targetName = s.connector_target || s.allowed_folders[0] || "";
+    const intro = h("div", {class: "set-note"}, icon("shield-check", "sm"),
+      h("span", {}, "모든 연결은 읽기 전용입니다. 보내기, 삭제, 읽음 표시, 만들기 기능이 없고, 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
+      targetName ? h("span", {class: "set-target", title: targetName}, "함께 분석할 폴더: " + folderName(targetName)) : null);
+    return [intro, ...cal.map(serviceCard), aiCard(s, st), privacyCard(s, st),
+      h("h2", {class: "set-section"}, "다른 연결"), ...others.map(serviceCard)];
+  }
+
+  const SERVICE_ICON = {google_calendar: "calendar", outlook_calendar: "calendar", gmail: "mail", outlook_mail: "mail",
+    imap_mail: "inbox", notion: "book", jira: "kanban", slack: "hash"};
+
+  // Figma 15:386 (연결됨), 16:1104 (미연동), 18:1045 (서비스 연결 오류).
+  function serviceCard(c) {
+    const st = c.status;
+    const configured = c.problems.length === 0;
+    const isCal = CALENDAR_IDS.includes(c.id);
+    const last = st && st.at ? stamp(st.at) : null;
+    if (c.enabled && st && !st.ok) {
+      return h("section", {class: "card svc-card error", id: "set-" + c.id},
+        icon("alert-circle", "svc-icon error"),
+        h("div", {class: "svc-main"}, h("h2", {}, c.label + " 연결이 끊어졌습니다."),
+          h("p", {class: "svc-line"}, (last ? "마지막 시도 " + last + " · " : "") + "이후 변경 사항을 가져오지 못했습니다."),
+          h("p", {class: "svc-line small", title: st.message}, st.message)),
+        h("div", {class: "svc-actions"}, button("다시 연결", {variant: "primary", onClick: () => connectWizard(c, c.uses_oauth ? "로그인" : "인증 정보")}),
+          h("button", {type: "button", class: "link", onclick: () => manageConnector(c)}, "연결 관리")));
+    }
+    const state = c.enabled && configured ? ["ok", "연결됨"] : (configured ? ["off", "자동 가져오기 꺼짐"] : ["none", "연결 안 됨"]);
+    const line = c.enabled && configured
+      ? "읽기 범위: " + c.reads + (last ? " · 마지막 가져오기 " + last : "") + (st && st.ok && st.summary ? " (" + st.summary + ")" : "")
+      : (configured ? "읽기 범위: " + c.reads : (isCal ? "관련 일정을 확인하려면 캘린더를 연결하십시오." : c.reads));
+    return h("section", {class: "card svc-card", id: "set-" + c.id},
+      icon(SERVICE_ICON[c.id] || "link", "svc-icon"),
+      h("div", {class: "svc-main"}, h("h2", {}, c.label), h("p", {class: "svc-state " + state[0]}, state[1]), h("p", {class: "svc-line"}, line)),
+      h("div", {class: "svc-actions"}, configured
+        ? button("연결 관리", {onClick: () => manageConnector(c)})
+        : button(c.label + " 연결", {variant: "primary", onClick: () => connectWizard(c)})));
+  }
+
+  // Figma 16:1538: state, what is read, last fetch, change scope, fetch now, disconnect.
+  function manageConnector(c) {
+    const st = c.status;
+    const ok = c.enabled && (!st || st.ok);
+    const result = h("p", {class: "small muted"});
+    const run = button("지금 가져오기", {});
+    run.addEventListener("click", () => busy(run, async () => {
+      const before = st ? st.at : null;
+      await api("/api/connectors/run", "POST", {id: c.id});
+      result.textContent = "가져오는 중입니다.";
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const row = (await api("/api/connectors")).find(r => r.id === c.id);
+        if (row && row.status && row.status.at !== before) {
+          result.textContent = row.status.ok ? "가져오기 완료: " + row.status.summary + " · 읽은 범위: " + row.reads : "가져오지 못했습니다: " + row.status.message;
+          return;
+        }
+      }
+      result.textContent = "응답이 늦습니다. 백그라운드에서 계속 시도합니다.";
+    }));
+    const close = modal({title: c.label + " 연결 관리", plain: true, onClose: () => renderRoute(false),
+      body: h("div", {class: "stack"},
+        h("div", {}, ok ? h("span", {class: "badge state ok"}, icon("check"), "정상")
+          : (c.enabled ? h("span", {class: "badge state error"}, icon("alert-circle"), "오류") : h("span", {class: "badge state paused"}, icon("pause-bars"), "자동 가져오기 꺼짐"))),
+        h("div", {class: "manage-lines"}, h("p", {}, "읽기 범위: " + c.reads),
+          h("p", {}, "마지막 가져오기: " + (st && st.at ? stamp(st.at) + (st.ok && st.summary ? " (" + st.summary + ")" : "") : "아직 없음")),
+          st && !st.ok ? h("p", {class: "danger-text"}, st.message) : null),
+        h("div", {class: "row"}, button("읽기 범위 변경", {onClick: () => { close(); connectWizard(c, "범위 선택"); }}), run),
+        result),
+      actions: [{label: "연결 해제", variant: "danger-outline", onClick: async () => {
+        await api("/api/connectors/disconnect", "POST", {id: c.id});
+        toast("연결을 해제했습니다. 저장된 비밀 값과 가져온 사본을 지웠습니다.", "success");
+      }}, {label: "닫기"}]});
+  }
+
+  // Figma "AI 판정 방식": 시연용 / 외부 AI / 로컬 AI, key "저장됨", connection test.
+  function aiCard(s, st) {
+    const now = st ? providerKind(st.provider.id) : "demo";
+    const chosen = {mock: "demo", anthropic: "external", ollama: "local"}[s.provider] || now;
+    const choice = (kind, title, sub) => h("button", {type: "button", class: "ai-choice" + (chosen === kind ? " selected" : ""),
+      "aria-pressed": String(chosen === kind), onclick: async (e) => busy(e.currentTarget, async () => {
+        const provider = {demo: "mock", external: "anthropic", local: "ollama"}[kind];
+        await saveSettings({provider}, kind === "demo" ? "시연용 판정기로 바꿨습니다. 실제 검사가 아닙니다." : "판정 방식을 바꿨습니다. 새 방식으로 다시 점검합니다.");
+        SET.test = null;
         await refreshAll();
+      })},
+    h("span", {class: "ai-title"}, title), h("span", {class: "ai-sub"}, sub));
+    const rows = [];
+    if (chosen === "external") {
+      rows.push(h("div", {class: "ai-row"}, h("span", {}, "외부 AI API 키: " + (s.has_api_key ? "저장됨" : "저장 안 됨")),
+        h("button", {type: "button", class: "link", onclick: () => keyDialog()}, s.has_api_key ? "키 변경" : "키 입력"),
+        s.has_api_key ? h("button", {type: "button", class: "link", onclick: async () => {
+          if (!await confirmDialog({title: "API 키를 삭제할까요?", message: "자격 증명 관리자에서 키를 지웁니다.", confirmLabel: "삭제", danger: true})) return;
+          await api("/api/secret/api-key", "DELETE"); toast("API 키를 삭제했습니다.", "success"); renderRoute(true);
+        }}, "삭제") : null));
+      rows.push(h("div", {class: "ai-row"}, h("span", {}, "모델 이름: " + (s.model_name || "입력 안 됨")),
+        h("button", {type: "button", class: "link", onclick: () => textDialog("모델 이름", s.model_name, "예: claude-sonnet-5-5", (v) => saveSettings({model_name: v}, "모델 이름을 저장했습니다."))}, "변경")));
+    } else if (chosen === "local") {
+      rows.push(h("div", {class: "ai-row"}, h("span", {}, "로컬 AI 모델: " + (s.model_name || "입력 안 됨")),
+        h("button", {type: "button", class: "link", onclick: () => textDialog("로컬 AI 모델", s.model_name, "예: qwen2.5:7b", (v) => saveSettings({model_name: v}, "모델 이름을 저장했습니다."))}, "변경")));
+      rows.push(h("div", {class: "ai-row"}, h("span", {class: "muted"}, "주소: " + s.ollama_url),
+        h("button", {type: "button", class: "link", onclick: () => textDialog("Ollama 주소", s.ollama_url, "http://127.0.0.1:11434", (v) => saveSettings({ollama_url: v}, "주소를 저장했습니다."))}, "변경")));
+    } else {
+      rows.push(h("div", {class: "ai-row"}, h("span", {class: "warn-text"}, "시연용 판정기는 예시 문서의 어휘만 압니다. 실제 검사가 아닙니다.")));
+    }
+    const test = button("연결 테스트", {});
+    const result = h("div", {class: "ai-result"});
+    const drawResult = () => {
+      const r = SET.test;
+      let line = null;
+      if (r) line = h("p", {class: r.ok ? "ok-text" : "danger-text"}, icon(r.ok ? "check" : "alert-circle", "sm"), r.message);
+      else if (chosen === "external" && !s.allow_external_send) line = h("p", {class: "warn-text"}, icon("alert-circle", "sm"), "외부 전송 동의 필요");
+      else if (st && st.provider && !st.provider.local_only) line = h("p", {class: "ok-text"}, icon("check", "sm"), (chosen === "local" ? "로컬 AI" : "외부 AI") + " 연결 설정됨 · 연결 테스트로 확인하세요");
+      else if (chosen !== "demo" && st) line = h("p", {class: "warn-text", title: st.provider.reason}, icon("alert-circle", "sm"), "아직 시연용 판정기로 동작합니다: " + st.provider.reason);
+      set(result, line);
+    };
+    test.addEventListener("click", () => busy(test, async () => { SET.test = await api("/api/provider/test", "POST"); drawResult(); }));
+    drawResult();
+    return h("section", {class: "card ai-card", id: "set-judge"}, h("h2", {}, "AI 판정 방식"),
+      h("div", {class: "ai-choices"},
+        choice("demo", "시연용", "실제 문서 검사 안 함"),
+        choice("external", "외부 AI", "관련 내용을 외부로 전송"),
+        choice("local", "로컬 AI", (chosen === "local" ? "현재 선택 · " : "") + "내 컴퓨터에서 처리")),
+      h("div", {class: "ai-bottom"}, h("div", {class: "ai-rows"}, ...rows), test), result);
+  }
+
+  function serviceLogo(id) {
+    return icon(SERVICE_ICON[id] || "link", "svc-icon");
+  }
+
+  function keyDialog() {
+    const key = input({type: "password", autocomplete: "off", placeholder: "sk-ant-...", "aria-label": "API 키", autofocus: true});
+    modal({title: "외부 AI API 키", plain: true,
+      body: h("div", {class: "stack"}, key, h("p", {class: "small muted"}, "키는 Windows 자격 증명 관리자에만 저장되고 화면, 설정 파일, 로그에 나타나지 않습니다. 저장한 뒤에는 '저장됨'만 보입니다.")),
+      actions: [{label: "저장", variant: "primary", onClick: async () => {
+        if (key.value.trim().length < 8) throw new Error("API 키를 입력하세요.");
+        await api("/api/secret/api-key", "POST", {value: key.value.trim()});
+        key.value = "";
+        toast("API 키를 저장했습니다.", "success");
         renderRoute(true);
-      }));
-      const test = button("연결 테스트", {icon: "zap"});
-      test.addEventListener("click", () => busy(test, async () => {
-        const r = await api("/api/provider/test", "POST");
-        set(testResult, callout(r.ok ? "success" : "danger", r.ok ? "check-circle" : "x-circle", r.ok ? "연결에 성공했습니다" : "연결하지 못했습니다", r.message));
-      }));
-      const now = st ? st.provider : null;
-      const judge = card("판정 방식", "실제 모델이 끝까지 점검했을 때만 '검사 완료'로 표시합니다.", null, h("div", {class: "stack"},
-        now ? callout(now.sends_externally ? "danger" : (now.local_only ? "warning" : "success"), now.sends_externally ? "cloud" : (now.local_only ? "alert" : "shield-check"),
-          "현재: " + providerName(now.id), now.reason) : null,
-        choices, extFields, h("div", {class: "row"}, saveJudge, test, h("span", {class: "small muted"}, "저장한 뒤 연결 테스트를 눌러 보세요.")), testResult));
-      judge.id = "section-judge";
+      }}, {label: "취소"}]});
+  }
 
-      // notifications and shortcut
-      const notify = toggle("알림 사용", s.notify, "새 불일치, 확인 질문, 점검 완료를 Windows 알림으로 알립니다.");
-      const digestOn = toggle("일일 요약", s.digest_enabled, "정한 시각 이후 하루 한 번 요약을 알립니다.");
-      const digestTime = input({type: "time", value: s.digest_time, "aria-label": "요약 시각"});
-      const hotOn = toggle("전역 단축키로 빠른 점검 열기", s.hotkey_enabled, "회의 중에 작은 창을 바로 엽니다.");
-      const hotkey = input({value: s.hotkey, class: "input mono", "aria-label": "단축키"});
-      const hk = st && st.hotkey;
-      const saveNotify = button("저장", {variant: "primary"});
-      saveNotify.addEventListener("click", () => busy(saveNotify, async () => {
-        await api("/api/settings", "POST", {notify: notify.input.checked, digest_enabled: digestOn.input.checked,
-          digest_time: digestTime.value, hotkey_enabled: hotOn.input.checked, hotkey: hotkey.value.trim()});
-        toast("알림과 단축키를 저장했습니다.", "success");
-        await refreshAll();
-      }));
-      const alerts = card("알림과 단축키", null, null, h("div", {class: "stack"}, notify,
-        h("div", {class: "row-between"}, digestOn, h("div", {style: {width: "160px"}}, field("요약 시각", digestTime))),
-        h("div", {class: "row-between"}, hotOn, h("div", {class: "row"}, h("div", {style: {width: "180px"}}, field("단축키", hotkey, "예: ctrl+alt+d")),
-          hk && hk.enabled ? (hk.active ? badge("success", "keyboard", "등록됨") : badge("warning", "alert", hk.reason || "등록 안 됨")) : null)),
-        h("div", {}, saveNotify)));
+  function textDialog(title, value, placeholder, save) {
+    const field_ = input({value: value || "", placeholder, autofocus: true, "aria-label": title});
+    modal({title, plain: true, body: field_, actions: [{label: "저장", variant: "primary", onClick: async () => {
+      await save(field_.value.trim()); SET.test = null; await refreshAll(); renderRoute(true);
+    }}, {label: "취소"}]});
+  }
 
-      // appearance
-      const theme = segmented([["system", "시스템", "monitor"], ["light", "라이트", "sun"], ["dark", "다크", "moon"]], s.theme, (v) => saveTheme(v), "테마");
-      const lang = select([["ko", "한국어"]], s.language, {"aria-label": "언어"});
-      const look = card("화면", null, null, h("div", {class: "field-row"},
-        h("div", {class: "field"}, h("span", {class: "field-label"}, "테마"), theme), field("언어", lang, "현재는 한국어만 지원합니다.")));
+  // Figma "개인정보" with 19:1068 (동의 필요) and 19:1149 (허용): off by default, on only after consent.
+  function privacyCard(s, st) {
+    const external = s.provider === "anthropic" || (s.provider === "auto" && st && providerKind(st.provider.id) === "external");
+    const sw = switchCtl(s.allow_external_send, async (want) => {
+      if (want) {
+        const ok = await consentDialog(s);
+        if (!ok) return false;
+        await saveSettings({allow_external_send: true}, "외부 AI 전송을 켰습니다.");
+      } else {
+        await saveSettings({allow_external_send: false}, "외부 AI 전송을 껐습니다. 문서가 컴퓨터 밖으로 나가지 않습니다.");
+      }
+      SET.test = null;
+      await refreshAll();
+      renderRoute(false);
+      return true;
+    }, "문서를 외부 AI로 보내기");
+    const notes = s.allow_external_send
+      ? [h("p", {class: "set-help"}, "현재 전송 범위: 선택한 문서의 관련 내용"), h("p", {class: "set-help"}, "전체 문서와 관련 없는 파일은 전송하지 않습니다.")]
+      : [h("p", {class: "set-help"}, external ? "외부 AI를 사용하려면 전송 범위를 확인하고 동의해야 합니다." : "기본값: 꺼짐 · 외부 AI를 선택한 경우에도 별도 동의가 필요합니다.")];
+    return h("section", {class: "card privacy-card", id: "set-privacy"}, h("h2", {}, "개인정보"),
+      h("div", {class: "privacy-row"}, h("span", {class: "set-label"}, "문서를 외부 AI로 보내기"), sw), ...notes);
+  }
 
-      // data
-      const diag = button("진단 정보 복사", {icon: "copy"});
-      diag.addEventListener("click", () => busy(diag, async () => copyText((await api("/api/diagnostics")).text)));
-      const purge = button("모든 앱 데이터 삭제", {variant: "danger", icon: "trash", onClick: purgeFlow});
-      const data = card("데이터", "모든 데이터는 이 컴퓨터에만 있습니다.", null, h("div", {class: "stack"},
-        h("dl", {class: "kv"}, h("dt", {}, "데이터 폴더"), h("dd", {class: "mono"}, access.storage.app_home),
-          h("dt", {}, "로그 파일"), h("dd", {class: "mono"}, access.storage.log)),
-        h("div", {class: "btn-group"}, button("데이터 폴더 열기", {icon: "external", onClick: () => openLocation("data")}),
-          button("로그 폴더 열기", {icon: "terminal", onClick: () => openLocation("logs")}), diag),
-        h("p", {class: "small muted"}, "진단 정보에는 버전, 판정 방식, 폴더 수와 상태가 들어가며 API 키, 토큰, 문서 내용은 들어가지 않습니다."),
-        h("div", {class: "card-section"}, h("div", {class: "callout danger"}, icon("alert"),
-          h("div", {class: "callout-body"}, h("strong", {}, "모든 앱 데이터 삭제"),
-            h("p", {}, "API 키와 연결 비밀 값, 점검 결과, 읽은 내용의 사본, 설정과 메모를 지웁니다. 감시 폴더의 원본 파일은 건드리지 않습니다."),
-            h("div", {style: {marginTop: "8px"}}, purge))))));
+  function consentDialog(s) {
+    return new Promise((resolve) => {
+      let answered = false;
+      modal({title: "외부 AI 전송 동의", plain: true, onClose: () => { if (!answered) resolve(false); },
+        body: h("div", {class: "stack-sm consent"},
+          h("p", {}, "켜면 점검할 때 아래 내용이 외부 AI 서비스로 전송됩니다."),
+          h("ul", {},
+            h("li", {}, "받는 곳: Anthropic API" + (s.model_name ? " (" + s.model_name + ")" : "")),
+            h("li", {}, "보내는 내용: 점검할 결정 문장과 관련 문서 항목의 문장, 연결에서 가져온 관련 내용"),
+            h("li", {}, "보내지 않는 것: 관련 없는 파일 전체, 비밀번호와 토큰 같은 비밀 값")),
+          h("p", {class: "small muted"}, "API 키와 모델 이름까지 있어야 실제로 전송됩니다. 언제든지 다시 끌 수 있습니다.")),
+        actions: [{label: "동의하고 켜기", variant: "primary", onClick: () => { answered = true; resolve(true); }},
+          {label: "취소", onClick: () => { answered = true; resolve(false); }}]});
+    });
+  }
 
-      const node = page(this.title, this.lead, null, profile, judge, alerts, look, data);
-      if (params.get("section")) setTimeout(() => { const el = document.getElementById("section-" + params.get("section")); if (el) el.scrollIntoView({block: "start"}); }, 60);
-      return node;
-    },
-  };
+  // ---------------------------------------------------------------- tab: notifications and data
 
+  function dataTab({s, auto, access, st}) {
+    const nameValue = h("span", {class: "set-text"}, s.display_name || "이름 없음");
+    const profile = h("section", {class: "card set-card"}, h("h2", {}, "프로필"),
+      setRow("표시 이름", nameValue, h("button", {type: "button", class: "link", onclick: () => textDialog("표시 이름", s.display_name, "표시 이름",
+        (v) => saveSettings({display_name: v}, "표시 이름을 저장했습니다."))}, "변경")),
+      h("p", {class: "set-help"}, "이 정보는 이 컴퓨터에만 저장됩니다."));
+
+    const hk = (st && st.hotkey) || {};
+    const digestTime = input({type: "time", value: s.digest_time, class: "input set-time", "aria-label": "하루 요약 시각", disabled: !s.digest_enabled});
+    digestTime.addEventListener("change", () => saveSettings({digest_time: digestTime.value}, "하루 요약 시각을 저장했습니다.").catch(e => toast(e.message, "danger")));
+    const quietStart = input({type: "time", value: s.quiet_start, class: "input set-time", "aria-label": "방해 금지 시작", disabled: !s.quiet_hours_enabled});
+    const quietEnd = input({type: "time", value: s.quiet_end, class: "input set-time", "aria-label": "방해 금지 끝", disabled: !s.quiet_hours_enabled});
+    const saveQuiet = () => saveSettings({quiet_start: quietStart.value, quiet_end: quietEnd.value}, "방해 금지 시간을 저장했습니다.").catch(e => toast(e.message, "danger"));
+    quietStart.addEventListener("change", saveQuiet);
+    quietEnd.addEventListener("change", saveQuiet);
+    const reminder = select([["5", "5분 전"], ["10", "10분 전"], ["15", "15분 전"], ["30", "30분 전"]], String(s.meeting_reminder_minutes), {class: "select set-select", "aria-label": "회의 전 알림 시점", disabled: !s.meeting_reminder_enabled});
+    reminder.addEventListener("change", () => saveSettings({meeting_reminder_minutes: Number(reminder.value)}, "회의 전 알림 시점을 저장했습니다."));
+    const hotkeyLine = h("div", {class: "set-value"},
+      h("span", {class: "set-text"}, hk.display || s.hotkey),
+      s.hotkey_enabled ? (hk.active ? h("span", {class: "ok-text small"}, "등록됨") : (hk.reason ? h("span", {class: "warn-text small", title: hk.reason}, "등록 안 됨") : null)) : h("span", {class: "small muted"}, "꺼짐"),
+      h("button", {type: "button", class: "link", onclick: () => hotkeyDialog(s, hk)}, "변경"));
+    const alerts = h("section", {class: "card set-card"}, h("h2", {}, "알림"),
+      setRow("알림 받기", switchCtl(s.notify, (v) => saveSettings({notify: v}, v ? "알림을 켰습니다." : "알림을 껐습니다."), "알림 받기")),
+      setRow("하루 요약", switchCtl(s.digest_enabled, async (v) => { await saveSettings({digest_enabled: v}); digestTime.disabled = !v; }, "하루 요약"), digestTime),
+      h("div", {class: "set-row", id: "set-hotkey"}, h("span", {class: "set-label"}, "빠른 점검 단축키"), hotkeyLine),
+      hk.enabled && !hk.active && hk.reason ? h("div", {class: "hotkey-help"}, h("p", {class: "warn-text small"}, hk.reason),
+        hk.suggestions && hk.suggestions.length ? h("div", {class: "row"}, h("span", {class: "small muted"}, "다른 조합:"),
+          ...hk.suggestions.map(x => h("button", {type: "button", class: "chip-btn", onclick: async () => {
+            await saveSettings({hotkey: x, hotkey_enabled: true}, "단축키를 바꿨습니다."); await refreshAll(); renderRoute(true);
+          }}, x.split("+").map(k => k.length <= 3 ? k.toUpperCase() : k[0].toUpperCase() + k.slice(1)).join(" + ")))) : null) : null,
+      setRow("방해 금지 시간", switchCtl(s.quiet_hours_enabled, async (v) => { await saveSettings({quiet_hours_enabled: v}); quietStart.disabled = quietEnd.disabled = !v; }, "방해 금지 시간"),
+        quietStart, h("span", {class: "muted"}, "–"), quietEnd),
+      h("p", {class: "set-help"}, "방해 금지 시간에 생긴 알림은 모아 두었다가 끝난 뒤 한 번에 보냅니다. 같은 오류는 반복해서 알리지 않습니다."),
+      setRow("회의 전 알림", switchCtl(s.meeting_reminder_enabled, async (v) => { await saveSettings({meeting_reminder_enabled: v}); reminder.disabled = !v; }, "회의 전 알림"), reminder),
+      h("p", {class: "set-help"}, "곧 시작할 회의와 연결된 반영 안 됨 항목이 있으면 알려 줍니다. 캘린더 연결이 필요합니다."));
+
+    const interval = select(["1", "5", "10", "15", "30", "60"].map(v => [v, v + "분마다"]), String(s.connector_interval_minutes), {class: "select set-select", "aria-label": "메일과 일정 가져오기 간격"});
+    interval.addEventListener("change", () => saveSettings({connector_interval_minutes: Number(interval.value)}, "가져오기 간격을 저장했습니다."));
+    const autoSw = switchCtl(auto.enabled, async (v) => {
+      await api("/api/autostart", "POST", {enabled: v});
+      toast(v ? "Windows 시작 시 자동으로 실행합니다." : "자동 실행을 껐습니다.", "success");
+    }, "Windows 시작 시 자동 실행");
+    autoSw.input.disabled = !auto.supported;
+    const running = h("section", {class: "card set-card"}, h("h2", {}, "실행"),
+      setRow("Windows 시작 시 자동 실행", autoSw, auto.supported ? null : h("span", {class: "small muted"}, "Windows에서만 지원합니다.")),
+      setRow("바탕화면 도우미 버튼", switchCtl(s.helper_enabled, (v) => saveSettings({helper_enabled: v}, v ? "도우미 버튼을 표시합니다." : "도우미 버튼을 숨겼습니다. 트레이에서 계속 확인합니다."), "도우미 버튼")),
+      setRow("메일과 일정 가져오기", interval),
+      h("p", {class: "set-help"}, "창을 닫아도 도우미 버튼과 트레이에서 계속 확인합니다. 완전히 끄려면 트레이 메뉴의 '종료'를 누르세요."));
+
+    const data = h("section", {class: "card set-card"}, h("h2", {}, "데이터"),
+      h("div", {class: "set-links"},
+        h("button", {type: "button", class: "link big", onclick: () => openLocation("data")}, "데이터 폴더 열기"),
+        h("button", {type: "button", class: "link big", onclick: async () => {
+          try { await copyText((await api("/api/diagnostics")).text, "진단 정보를 복사했습니다. 비밀 값과 문서 내용은 들어 있지 않습니다."); } catch (e) { toast(e.message, "danger"); }
+        }}, "진단 정보 복사")),
+      h("button", {type: "button", class: "link big danger-text strong", onclick: purgeFlow}, "모든 데이터 삭제"));
+
+    const advanced = h("details", {class: "card set-advanced"}, h("summary", {}, "고급 설정", icon("chevron-right", "sm")), advancedBody(s, access));
+    return [profile, alerts, running, data, advanced];
+  }
+
+  function hotkeyDialog(s, hk) {
+    const on = toggle("단축키 사용", s.hotkey_enabled);
+    const spec = input({value: s.hotkey, class: "input mono", "aria-label": "단축키", placeholder: "ctrl+shift+space"});
+    modal({title: "빠른 점검 단축키", plain: true,
+      body: h("div", {class: "stack"}, on, spec,
+        h("p", {class: "small muted"}, "ctrl, alt, shift, win 중 하나 이상과 글자, 숫자, F1-F24, space, enter, tab, 방향키를 + 로 이어 적습니다. 예: ctrl+shift+space"),
+        hk && hk.reason ? h("p", {class: "warn-text small"}, hk.reason) : null),
+      actions: [{label: "저장", variant: "primary", onClick: async () => {
+        await saveSettings({hotkey: spec.value.trim(), hotkey_enabled: on.input.checked}, "단축키를 저장했습니다.");
+        await refreshAll(); renderRoute(true);
+      }}, {label: "취소"}]});
+  }
+
+  function advancedBody(s, access) {
+    const save = (payload, message) => saveSettings(payload, message || "설정을 저장했습니다.");
+    const saveBtn = (fn) => { const b = button("저장", {variant: "primary", size: "sm"}); b.addEventListener("click", () => busy(b, fn)); return b; };
+    const mode = select([["agent", "Agent: 상황을 보고 다음 단계를 고름"], ["pipeline", "Pipeline: 고정 순서"]], s.analysis_mode);
+    const debounce = input({type: "number", min: "0", value: String(s.debounce_seconds)});
+    const debounceMax = input({type: "number", min: "1", value: String(s.debounce_max_seconds)});
+    const rescan = input({type: "number", min: "0", value: String(s.rescan_minutes)});
+    const release = input({value: s.current_release || "", placeholder: "예: MVP"});
+    const maxMb = input({type: "number", min: "1", value: String(s.max_file_mb)});
+    const maxCalls = input({type: "number", min: "1", value: String(s.max_llm_calls_per_cycle)});
+    const excludes = textarea({rows: "6", class: "textarea mono"});
+    excludes.value = s.exclude_patterns.join("\n");
+    const embed = input({value: s.embedding_model, placeholder: "예: nomic-embed-text"});
+    const theme = segmented([["system", "시스템"], ["light", "라이트"], ["dark", "다크"]], s.theme, (v) => saveTheme(v), "테마");
+    const list = (items) => h("ul", {}, ...items.map(i => h("li", {}, i)));
+    return h("div", {class: "stack set-advanced-body"},
+      h("h3", {}, "점검 동작"),
+      h("div", {class: "field-row"}, field("점검 방식", mode), field("현재 릴리스", release, "결정의 적용 범위를 판단할 때 씁니다."),
+        field("저장이 멈춘 뒤 기다릴 시간(초)", debounce, "쓰는 동안은 기다렸다가 저장이 멈추면 반영합니다."),
+        field("최대 대기 시간(초)", debounceMax, "계속 저장되어도 이 시간이 지나면 반영합니다."),
+        field("주기 확인 간격(분)", rescan, "변경 알림이 없어도 이 간격으로 폴더를 확인합니다. 바뀐 것이 없으면 AI를 호출하지 않습니다. 0이면 끕니다."),
+        field("파일 최대 크기(MB)", maxMb), field("점검 1회 AI 호출 한도", maxCalls)),
+      h("div", {}, saveBtn(() => save({analysis_mode: mode.value, debounce_seconds: Number(debounce.value || 0), debounce_max_seconds: Number(debounceMax.value || 120),
+        rescan_minutes: Number(rescan.value || 0), current_release: release.value.trim() || null, max_file_mb: Number(maxMb.value || 25),
+        max_llm_calls_per_cycle: Number(maxCalls.value || 400)}))),
+      h("h3", {}, "제외 규칙"),
+      field("제외 패턴 (한 줄에 하나)", excludes, "모든 폴더에 적용됩니다. 특정 하위 폴더만 빼려면 폴더 관리에서 체크를 해제하세요."),
+      h("div", {}, saveBtn(() => save({exclude_patterns: excludes.value.split("\n").map(x => x.trim()).filter(Boolean)}))),
+      h("h3", {}, "의미 검색 보강 (선택)"),
+      field("임베딩 모델", embed, "로컬 AI(Ollama)로 글자 유사도가 놓친 후보를 보충합니다."),
+      h("div", {}, saveBtn(() => save({embedding_model: embed.value.trim()}))),
+      h("h3", {}, "화면"), h("div", {}, theme),
+      h("h3", {}, "접근 범위"),
+      h("div", {class: "stack-sm small"},
+        h("p", {class: "strong"}, "읽는 폴더"), access.folders.length ? list(access.folders.map(f => folderName(f.root) + " (읽은 파일 " + (f.files.ok || 0) + "개)")) : h("p", {class: "muted"}, "없음"),
+        h("p", {class: "strong"}, "켜 둔 연결"), access.connectors.length ? list(access.connectors.map(c => c.label + ": " + c.reads)) : h("p", {class: "muted"}, "없음"),
+        h("p", {class: "strong"}, "절대 하지 않는 일"), list(access.never),
+        h("p", {class: "strong"}, "컴퓨터에 남는 것"), list(access.stored_locally)),
+      h("div", {class: "row"}, button("로그 폴더 열기", {size: "sm", onClick: () => openLocation("logs")})));
+  }
+
+  // Figma 16:1691 then 16:1745: two steps, the second needs the word "삭제".
   function purgeFlow() {
-    modal({title: "모든 앱 데이터를 삭제할까요?", icon: "alert",
-      body: h("div", {class: "stack-sm"}, h("p", {}, "다음 항목이 이 컴퓨터에서 영구히 삭제됩니다."),
-        h("ul", {}, h("li", {}, "API 키와 모든 연결의 토큰, 비밀번호 (자격 증명 관리자)"), h("li", {}, "점검 결과와 읽은 내용의 사본 (상태 DB)"),
-          h("li", {}, "설정, 메모, 일일 요약, 창 위치")),
-        callout("success", "shield-check", null, "감시 폴더의 원본 파일은 읽기만 했으므로 삭제하거나 바꾸지 않습니다.")),
-      actions: [{label: "취소"}, {label: "계속", variant: "danger", onClick: () => { setTimeout(purgeConfirm, 0); }}]});
+    modal({title: "모든 데이터를 삭제하시겠습니까?", plain: true,
+      body: h("div", {class: "stack-sm"}, h("p", {class: "muted"}, "다음 항목이 이 컴퓨터에서 영구히 삭제됩니다."),
+        h("ul", {class: "muted"}, h("li", {}, "API 키와 모든 연결의 토큰, 비밀번호"), h("li", {}, "점검 결과와 읽은 내용의 사본"),
+          h("li", {}, "설정, 메모, 하루 요약, 점검 기록")),
+        h("p", {class: "muted"}, "확인 폴더의 원본 파일은 삭제하거나 바꾸지 않습니다.")),
+      actions: [{label: "계속", variant: "danger-outline", onClick: () => { setTimeout(purgeConfirm, 0); }}, {label: "취소"}]});
   }
 
   function purgeConfirm() {
     const confirmInput = input({placeholder: PURGE_CONFIRM, autofocus: true, "aria-label": "확인 문구"});
-    const close = modal({title: "마지막 확인", icon: "trash",
-      body: [h("p", {}, "되돌릴 수 없습니다. 계속하려면 '" + PURGE_CONFIRM + "'를 입력하세요."), confirmInput],
-      actions: [{label: "취소"}, {label: "영구 삭제", variant: "danger", onClick: async () => {
+    return modal({title: "데이터 삭제 최종 확인", plain: true,
+      body: h("div", {class: "stack"}, h("p", {class: "muted"}, "삭제를 진행하려면 '" + PURGE_CONFIRM + "'를 입력하십시오."), confirmInput),
+      actions: [{label: "모든 데이터 삭제", variant: "danger-outline", onClick: async () => {
         if (confirmInput.value.trim() !== PURGE_CONFIRM) throw new Error("'" + PURGE_CONFIRM + "'를 정확히 입력하세요.");
         await api("/api/data/purge", "POST", {confirm: confirmInput.value.trim()});
-        toast("모든 앱 데이터를 삭제했습니다.", "success");
+        toast("모든 데이터를 삭제했습니다.", "success");
         try { localStorage.clear(); } catch (e) { /* ignore */ }
         S.settings = await api("/api/settings");
         applyTheme(S.settings.theme);
         await tick();
         go("home");
-      }}]});
-    return close;
+      }}, {label: "취소"}]});
   }
 
   // ---------------------------------------------------------------- onboarding

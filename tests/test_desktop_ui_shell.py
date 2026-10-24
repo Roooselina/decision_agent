@@ -357,9 +357,9 @@ def test_purge_needs_the_exact_phrase_and_keeps_watched_files(web, keys):
     (app_home() / "digests").mkdir(exist_ok=True)
     (app_home() / "digests" / "d.md").write_text("x", encoding="utf-8")
     before = snapshot(root)
-    assert client.post("/api/data/purge", headers=HEADERS, json={"confirm": "삭제"}).status_code == 400
+    assert client.post("/api/data/purge", headers=HEADERS, json={"confirm": "삭 제"}).status_code == 400
     assert keys.get("k")
-    done = client.post("/api/data/purge", headers=HEADERS, json={"confirm": "모두 삭제"})
+    done = client.post("/api/data/purge", headers=HEADERS, json={"confirm": "삭제"})
     assert done.status_code == 200 and controller.wait_idle(60)
     assert "k" not in keys and extra["secrets"].values == {}
     assert controller.settings.allowed_folders == [] and not (app_home() / "digests").exists()

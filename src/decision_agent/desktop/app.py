@@ -30,6 +30,7 @@ from decision_agent.desktop.connector_manager import ConnectorManager
 from decision_agent.desktop.drafts import latest_decision, make_draft
 from decision_agent.desktop.engine import EXTERNAL_PREFIX, CycleReport, ProjectEngine
 from decision_agent.desktop.errors import UserError
+from decision_agent.desktop.hotkey import hotkey_status
 from decision_agent.desktop.notify import LogNotifier, Notifier
 from decision_agent.desktop.paths import app_home, log_path, state_db_path
 from decision_agent.desktop.policy import FolderPolicy
@@ -113,7 +114,7 @@ class DecisionAgentApp:
         activity_file: Path | None = None,
     ) -> None:
         self.clock = clock
-        self.hotkey_state: dict = {"enabled": False, "active": False, "spec": "", "reason": ""}
+        self.hotkey_state: dict = hotkey_status(settings.hotkey, False, False, "")
         self.settings_hooks: list[Callable[[AppSettings], None]] = []
         self._digest_timer: PeriodicTimer | None = None
         self.settings = settings
