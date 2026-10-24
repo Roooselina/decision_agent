@@ -1,0 +1,9 @@
+{
+  "release": {
+    "mvp": ["MVP", "이번 버전", "1차", "시연 버전", "데모 버전"],
+    "production": ["Production", "정식 출시", "정식 버전", "본 출시", "프로덕션"]
+  },
+  "module": {"login": ["로그인"]},
+  "user_group": {"admin": ["관리자"]},
+  "environment": {}
+}

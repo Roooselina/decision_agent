@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+from decision_agent.config import DEFAULT_SETTINGS, Settings
+from decision_agent.llm.base import LLMProvider
+from decision_agent.models import Question
+
+QUESTION_SYSTEM = """TASK:QUESTION_GENERATE
+너는 불확실한 판단을 해결하기 위해 사용자에게 던질 확인 질문 후보를 만든다.
+입력은 현재 결정과 판단이 불확실한 산출물 목록이다.
+
+규칙:
+1. 질문 후보를 최대 3개 만든다. 각 질문은 판단을 막고 있는 부족한 정보 하나만 묻는다.
+2. 예/아니오 또는 짧은 선택지로 답할 수 있게 쓴다. 한국어로 쓴다.
+3. "더 설명해 주세요" 같은 열린 질문은 만들지 않는다.
+4. 서로 다른 정보를 묻는 후보로 만든다(범위, 대상 항목, 적용 시점 등).
+
+출력: {"questions": ["질문1", "질문2", "질문3"]}
+"""
+
+GAIN_SYSTEM = """TASK:QUESTION_GAIN
+주어진 질문에 사용자가 ASSUMED_ANSWER로 답했다고 가정하자.
+그 답변이 CONTEXT의 불확실한 판단들을 얼마나 해소하는지 0에서 1 사이 gain으로 추정한다.
+답변이 판단에 거의 도움이 되지 않으면 0에 가깝게, 대부분 해소하면 1에 가깝게 쓴다.
+출력: {"gain": 0.0}
+"""
+
+ASSUMED_ANSWERS = ("예", "아니오", "일부만")
+
+
+class QuestionPayload(BaseModel):
+    questions: list[str]
+
+
+class GainPayload(BaseModel):
+    gain: float
+
+
+def _simulate_gain(provider: LLMProvider, context: str, question: str) -> float:
+    """Average the simulated gain over equally likely assumed answers."""
+    gains: list[float] = []
+    for answer in ASSUMED_ANSWERS:
+        payload = provider.complete_json(
+            GAIN_SYSTEM,
+            f"CONTEXT={context}\nQUESTION={question}\nASSUMED_ANSWER={answer}",
+            GainPayload,
+            0.0,
+        )
+        gains.append(max(0.0, min(1.0, payload.gain)))
+    return sum(gains) / len(gains) if gains else 0.0
+
+
+def generate_questions(
+    provider: LLMProvider,
+    context: str,
+    target_ids: list[str],
+    settings: Settings = DEFAULT_SETTINGS,
+) -> list[Question]:
+    """Generate up to three candidate questions and score each by expected gain."""
+    payload = provider.complete_json(QUESTION_SYSTEM, context, QuestionPayload, 0.0)
+    questions: list[Question] = []
+    for i, text in enumerate(payload.questions[:3], start=1):
+        gain = _simulate_gain(provider, context, text)
+        questions.append(
+            Question(id=f"Q{i}", text=text, target_artifact_ids=target_ids, expected_gain=gain)
+        )
+    return questions
+
+
+def select_question(
+    questions: list[Question],
+    settings: Settings = DEFAULT_SETTINGS,
+) -> Question | None:
+    """Pick the highest expected-gain question, or None when the gain is below min_gain."""
+    if not questions:
+        return None
+    best = max(questions, key=lambda q: q.expected_gain)
+    return best if best.expected_gain >= settings.min_gain else None

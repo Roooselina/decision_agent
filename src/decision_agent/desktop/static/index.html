@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Agent</title>
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+<script nonce="__NONCE__">window.DA_BOOT = {token: __TOKEN__};</script>
+</head>
+<body>
+<a class="sr-only" href="#view">본문으로 건너뛰기</a>
+<div class="app" id="app">
+  <aside class="sidebar" aria-label="주 메뉴">
+    <div class="brand">
+      <img class="brand-logo" src="/static/icon.svg" alt="">
+      <div class="brand-text"><span class="brand-name">Decision Agent</span><span class="brand-sub">결정 변경 점검</span></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="화면"></nav>
+    <div class="sidebar-foot" id="sidebar-foot"></div>
+  </aside>
+  <div class="main-col">
+    <header class="topbar" id="topbar"></header>
+    <main class="content" id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div class="drop-veil" aria-hidden="true"><div class="drop-card" id="drop-card"></div></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<script nonce="__NONCE__" src="/static/common.js"></script>
+<script nonce="__NONCE__" src="/static/app.js"></script>
+</body>
+</html>

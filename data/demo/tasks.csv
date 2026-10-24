@@ -1,0 +1,5 @@
+id,title,status,assignee,release,module,user_group,environment
+TASK_01,MVP 이메일 인증 개발 진행 중,IN_PROGRESS,A,mvp,login,,
+TASK_02,Production 이메일 인증 구현,TODO,B,production,login,,
+TASK_03,React 로그인 화면 개발,IN_PROGRESS,A,,,,
+TASK_04,Vue 대시보드 화면 개발,TODO,B,,,,

@@ -1,0 +1,2569 @@
+[
+  {
+    "case_id": "aw_01_payment_provider",
+    "level": 1,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "One decision picks the payment provider; one task builds a different one.",
+    "topic": "payment_provider",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-02",
+        "text": "결제는 토스페이먼츠를 사용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "결제 모듈은 토스페이먼츠 API로 승인과 취소를 처리한다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "카카오페이 결제 연동 개발",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "토스페이먼츠 결제 승인 테스트 케이스 작성",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "토스페이먼츠 웹훅 서명 검증 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "관리자 대시보드 차트 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "결제는 토스페이먼츠를 사용한다.",
+        "date": "2026-09-02",
+        "source_doc": "meeting.md",
+        "topic": "payment_provider",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "uses a payment provider the team did not choose"
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": []
+  },
+  {
+    "case_id": "aw_02_db_supersede",
+    "level": 2,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "Database changed from MySQL to PostgreSQL; MySQL work remains.",
+    "topic": "db_choice",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-03",
+        "text": "데이터베이스는 MySQL을 사용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-12",
+        "text": "데이터베이스를 PostgreSQL로 변경한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "시스템은 PostgreSQL 14 이상을 지원한다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "MySQL 스키마 마이그레이션 스크립트 작성",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "PostgreSQL 인덱스 튜닝",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "MySQL 연결 풀 부하 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "로그인 화면 문구 수정",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "데이터베이스는 MySQL을 사용한다.",
+        "date": "2026-09-03",
+        "source_doc": "meeting.md",
+        "topic": "db_choice",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "데이터베이스를 PostgreSQL로 변경한다.",
+        "date": "2026-09-12",
+        "source_doc": "meeting.md",
+        "topic": "db_choice",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SUPERSEDE",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": []
+  },
+  {
+    "case_id": "aw_03_push_cancel",
+    "level": 2,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "Push notification feature cancelled; task, test, and requirement remain.",
+    "topic": "push_notification",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-05",
+        "text": "푸시 알림 기능을 개발한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-18",
+        "text": "푸시 알림 기능 개발은 취소한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "푸시 알림 서버 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "푸시 알림 서버 구현 (삭제됨)",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "삭제"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "푸시 알림 수신 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "사용자는 설정 화면에서 푸시 알림 수신 여부를 선택할 수 있다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "이메일 알림 템플릿 정리",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "푸시 알림 기능을 개발한다.",
+        "date": "2026-09-05",
+        "source_doc": "meeting.md",
+        "topic": "push_notification",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "푸시 알림 기능 개발은 취소한다.",
+        "date": "2026-09-18",
+        "source_doc": "meeting.md",
+        "topic": "push_notification",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "CANCEL",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "already removed"
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "REQ_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "a different notification channel"
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": []
+  },
+  {
+    "case_id": "aw_04_i18n_mvp_only",
+    "level": 3,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "Multi-language support restricted to Korean for the MVP only.",
+    "topic": "i18n",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-04",
+        "text": "다국어 지원을 적용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-14",
+        "text": "이번 MVP에서는 다국어 지원을 한국어만 제공한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "시스템은 다국어 지원을 제공한다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "MVP 영어 번역 파일 작성",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "정식 출시용 영어, 일본어 번역 파일 작성",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "production",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "MVP 한국어 화면 표시 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TEST_02",
+        "kind": "TEST",
+        "text": "정식 출시 다국어 언어 전환 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_02",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "production",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "서버 로그 정리",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "다국어 지원을 적용한다.",
+        "date": "2026-09-04",
+        "source_doc": "meeting.md",
+        "topic": "i18n",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "이번 MVP에서는 다국어 지원을 한국어만 제공한다.",
+        "date": "2026-09-14",
+        "source_doc": "meeting.md",
+        "topic": "i18n",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SCOPE_RESTRICT",
+        "affected_scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": true,
+        "note": "global requirement still holds for Production"
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "MVP ships Korean only"
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": true,
+        "note": ""
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TEST_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": true,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": [
+      "scope_trap"
+    ]
+  },
+  {
+    "case_id": "aw_05_beta_exemption",
+    "level": 3,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "Paid-feature limits apply to everyone except the beta tester group.",
+    "topic": "paid_feature_limit",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-05",
+        "text": "유료 기능 제한을 전체 사용자에게 적용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-17",
+        "text": "베타 테스터 그룹에는 유료 기능 제한을 적용하지 않는다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "베타 테스터 유료 기능 차단 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": null,
+          "module": null,
+          "user_group": "beta",
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TEST_02",
+        "kind": "TEST",
+        "text": "일반 사용자 유료 기능 차단 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "유료 기능 제한 모듈 개발",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "베타 테스터 계정에 유료 기능 제한 플래그 적용",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": null,
+          "module": null,
+          "user_group": "beta",
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "이용약관 문구 수정",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "유료 기능 제한을 전체 사용자에게 적용한다.",
+        "date": "2026-09-05",
+        "source_doc": "meeting.md",
+        "topic": "paid_feature_limit",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "베타 테스터 그룹에는 유료 기능 제한을 적용하지 않는다.",
+        "date": "2026-09-17",
+        "source_doc": "meeting.md",
+        "topic": "paid_feature_limit",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": null,
+          "module": null,
+          "user_group": "beta",
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SCOPE_RESTRICT",
+        "affected_scope": {
+          "scope_kind": "SCOPED",
+          "release": null,
+          "module": null,
+          "user_group": "beta",
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "TEST_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "expects blocking for a group that is exempt"
+      },
+      {
+        "artifact_id": "TEST_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": true,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": true,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": [
+      "scope_trap"
+    ]
+  },
+  {
+    "case_id": "aw_06_release_postpone",
+    "level": 4,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "Release date postponed; a dependent notice date may or may not move.",
+    "topic": "release_date",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-08",
+        "text": "정식 출시일은 10월 20일로 한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-22",
+        "text": "정식 출시를 11월 10일로 연기한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "SCHED_01",
+        "kind": "SCHEDULE",
+        "text": "정식 출시",
+        "source_doc": "schedule.csv",
+        "location": "SCHED_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "date": "2026-10-20"
+        }
+      },
+      {
+        "id": "SCHED_02",
+        "kind": "SCHEDULE",
+        "text": "출시 공지 메일 발송",
+        "source_doc": "schedule.csv",
+        "location": "SCHED_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "date": "2026-10-18"
+        }
+      },
+      {
+        "id": "SCHED_03",
+        "kind": "SCHEDULE",
+        "text": "정식 출시용 사용자 매뉴얼 배포",
+        "source_doc": "schedule.csv",
+        "location": "SCHED_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "date": "2026-11-12"
+        }
+      },
+      {
+        "id": "SCHED_04",
+        "kind": "SCHEDULE",
+        "text": "정식 출시 후 만족도 설문",
+        "source_doc": "schedule.csv",
+        "location": "SCHED_04",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "date": "2026-11-24"
+        }
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "서버 인프라 비용 정산",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "정식 출시일은 10월 20일로 한다.",
+        "date": "2026-09-08",
+        "source_doc": "meeting.md",
+        "topic": "release_date",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": "2026-10-20"
+      },
+      {
+        "id": "D02",
+        "text": "정식 출시를 11월 10일로 연기한다.",
+        "date": "2026-09-22",
+        "source_doc": "meeting.md",
+        "topic": "release_date",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": "2026-11-10"
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "POSTPONE",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "SCHED_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "still on the old release date"
+      },
+      {
+        "artifact_id": "SCHED_02",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": "semantic ambiguity: does the notice move with the release? (not a scope issue)"
+      },
+      {
+        "artifact_id": "SCHED_03",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "already after the new date"
+      },
+      {
+        "artifact_id": "SCHED_04",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [
+      {
+        "keywords": [
+          "공지",
+          "함께",
+          "같이",
+          "다른",
+          "관련",
+          "연동"
+        ],
+        "answer": "출시 공지 메일도 출시일에 맞춰 11월로 옮깁니다."
+      }
+    ],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": []
+  },
+  {
+    "case_id": "aw_07_ci_revert",
+    "level": 5,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "CI tool switched, then reverted with a vague sentence that means Jenkins.",
+    "topic": "ci_tool",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-02",
+        "text": "CI는 Jenkins를 사용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-13",
+        "text": "CI를 GitHub Actions로 변경한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      },
+      {
+        "date": "2026-09-25",
+        "text": "CI는 원래대로 되돌린다.",
+        "source_doc": "meeting.md",
+        "location": "item 3"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "GitHub Actions 워크플로 작성",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "GitHub Actions 빌드 검증 시나리오",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "Jenkins 파이프라인 유지보수",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "모든 커밋은 CI 빌드를 통과해야 병합할 수 있다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "DB 백업 스크립트 점검",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "CI는 Jenkins를 사용한다.",
+        "date": "2026-09-02",
+        "source_doc": "meeting.md",
+        "topic": "ci_tool",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "CI를 GitHub Actions로 변경한다.",
+        "date": "2026-09-13",
+        "source_doc": "meeting.md",
+        "topic": "ci_tool",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D03",
+        "text": "CI는 원래대로 되돌린다.",
+        "date": "2026-09-25",
+        "source_doc": "meeting.md",
+        "topic": "ci_tool",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SUPERSEDE",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      },
+      {
+        "old_id": "D02",
+        "new_id": "D03",
+        "relation_type": "SUPERSEDE",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "built for the tool that was reverted away"
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "tool independent"
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [
+      {
+        "keywords": [
+          "원래",
+          "되돌",
+          "가리키",
+          "무엇"
+        ],
+        "answer": "원래는 처음에 정한 Jenkins를 뜻합니다."
+      }
+    ],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": [
+      "vague_reference"
+    ]
+  },
+  {
+    "case_id": "aw_08_log_retention_unknown",
+    "level": 6,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "A decision applies to 'some customer environments', which no alias maps.",
+    "topic": "data_retention",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-07",
+        "text": "로그 보관 기간은 90일로 한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-19",
+        "text": "일부 고객사 환경에서는 로그 보관 기간을 30일로 줄인다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "로그는 90일간 보관한 뒤 삭제한다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "90일 경과 로그 자동 삭제 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "A사 온프레미스 로그 보관 기간 30일 설정 적용",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "UNKNOWN",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": [
+            "일부 고객사 환경"
+          ]
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "로그 수집 에이전트 설치 가이드 작성",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "로그 보관 기간은 90일로 한다.",
+        "date": "2026-09-07",
+        "source_doc": "meeting.md",
+        "topic": "data_retention",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "일부 고객사 환경에서는 로그 보관 기간을 30일로 줄인다.",
+        "date": "2026-09-19",
+        "source_doc": "meeting.md",
+        "topic": "data_retention",
+        "scope": {
+          "scope_kind": "UNKNOWN",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": [
+            "일부 고객사 환경"
+          ]
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SCOPE_RESTRICT",
+        "affected_scope": {
+          "scope_kind": "UNKNOWN",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": [
+            "일부 고객사 환경"
+          ]
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": "general environment keeps 90 days"
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": "matches the answer: only A on-premise uses 30"
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [
+      {
+        "keywords": [
+          "일부 고객사",
+          "어떤",
+          "범위",
+          "환경",
+          "고객"
+        ],
+        "answer": "30일은 A사 온프레미스 환경에만 적용합니다. 일반 환경은 계속 90일입니다."
+      }
+    ],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": [
+      "unknown_scope"
+    ]
+  },
+  {
+    "case_id": "aw_09_auth_chain",
+    "level": 7,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "SMS auth excluded from MVP, then replaced by OTP globally; whether the OTP change reaches the MVP must be asked.",
+    "topic": "auth_method",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-01",
+        "text": "로그인은 SMS 인증을 사용한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      },
+      {
+        "date": "2026-09-11",
+        "text": "이번 MVP에서는 SMS 인증을 제외한다.",
+        "source_doc": "meeting.md",
+        "location": "item 2"
+      },
+      {
+        "date": "2026-09-21",
+        "text": "인증 방식을 OTP 앱 인증으로 변경한다.",
+        "source_doc": "meeting.md",
+        "location": "item 3"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "로그인은 SMS 인증을 사용한다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "MVP SMS 발송 연동 개발",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "MVP OTP 앱 인증 개발",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "정식 출시 SMS 인증 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "production",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_04",
+        "kind": "TASK",
+        "text": "정식 출시 OTP 앱 인증 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_04",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "production",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      },
+      {
+        "id": "TASK_05",
+        "kind": "TASK",
+        "text": "회원 탈퇴 정책 문서화",
+        "source_doc": "tasks.csv",
+        "location": "TASK_05",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "로그인은 SMS 인증을 사용한다.",
+        "date": "2026-09-01",
+        "source_doc": "meeting.md",
+        "topic": "auth_method",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D02",
+        "text": "이번 MVP에서는 SMS 인증을 제외한다.",
+        "date": "2026-09-11",
+        "source_doc": "meeting.md",
+        "topic": "auth_method",
+        "scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      },
+      {
+        "id": "D03",
+        "text": "인증 방식을 OTP 앱 인증으로 변경한다.",
+        "date": "2026-09-21",
+        "source_doc": "meeting.md",
+        "topic": "auth_method",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [
+      {
+        "old_id": "D01",
+        "new_id": "D02",
+        "relation_type": "SCOPE_RESTRICT",
+        "affected_scope": {
+          "scope_kind": "SCOPED",
+          "release": "mvp",
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      },
+      {
+        "old_id": "D01",
+        "new_id": "D03",
+        "relation_type": "SUPERSEDE",
+        "affected_scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "evidence": "gold"
+      }
+    ],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "stale: SMS was replaced by OTP globally"
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": true,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_04",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_05",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [
+      {
+        "keywords": [
+          "MVP",
+          "OTP",
+          "적용",
+          "포함"
+        ],
+        "answer": "OTP 앱 인증 전환은 MVP에도 적용합니다. MVP에서도 OTP로 만들어야 합니다."
+      }
+    ],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": [
+      "scope_trap"
+    ]
+  },
+  {
+    "case_id": "aw_10_upload_limit",
+    "level": 1,
+    "source": "assistant_written",
+    "author": "assistant (Claude), not independent",
+    "description": "False-positive control: almost everything is consistent; one test is not.",
+    "topic": "file_upload_limit",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {
+      "release": {
+        "mvp": [
+          "MVP",
+          "이번 버전",
+          "1차",
+          "시연 버전",
+          "데모 버전"
+        ],
+        "production": [
+          "Production",
+          "정식 출시",
+          "정식 버전",
+          "본 출시",
+          "프로덕션"
+        ]
+      },
+      "module": {
+        "login": [
+          "로그인"
+        ]
+      },
+      "user_group": {
+        "admin": [
+          "관리자"
+        ],
+        "beta": [
+          "베타 테스터"
+        ]
+      },
+      "environment": {}
+    },
+    "meetings": [
+      {
+        "date": "2026-09-06",
+        "text": "파일 업로드 용량은 10MB로 제한한다.",
+        "source_doc": "meeting.md",
+        "location": "item 1"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "REQ_01",
+        "kind": "REQUIREMENT",
+        "text": "첨부 파일은 최대 10MB까지 업로드할 수 있다.",
+        "source_doc": "requirements.md",
+        "location": "REQ_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_01",
+        "kind": "TASK",
+        "text": "10MB 초과 시 오류 메시지 표시 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TEST_01",
+        "kind": "TEST",
+        "text": "20MB 파일 업로드 성공 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_01",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TEST_02",
+        "kind": "TEST",
+        "text": "10MB 경계값 업로드 테스트",
+        "source_doc": "test_plan.md",
+        "location": "TEST_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {}
+      },
+      {
+        "id": "TASK_02",
+        "kind": "TASK",
+        "text": "업로드 진행률 표시줄 구현",
+        "source_doc": "tasks.csv",
+        "location": "TASK_02",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_03",
+        "kind": "TASK",
+        "text": "파일 다운로드 속도 개선",
+        "source_doc": "tasks.csv",
+        "location": "TASK_03",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "진행 중"
+        }
+      },
+      {
+        "id": "TASK_04",
+        "kind": "TASK",
+        "text": "프로필 이미지 크롭 UI 개선",
+        "source_doc": "tasks.csv",
+        "location": "TASK_04",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "metadata": {
+          "status": "예정"
+        }
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01",
+        "text": "파일 업로드 용량은 10MB로 제한한다.",
+        "date": "2026-09-06",
+        "source_doc": "meeting.md",
+        "topic": "file_upload_limit",
+        "scope": {
+          "scope_kind": "GLOBAL",
+          "release": null,
+          "module": null,
+          "user_group": null,
+          "environment": null,
+          "unmapped_terms": []
+        },
+        "status": "ACTIVE",
+        "reason": null,
+        "due_date": null
+      }
+    ],
+    "gold_relations": [],
+    "gold": [
+      {
+        "artifact_id": "REQ_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_01",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TEST_01",
+        "label": "INCONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "expects success above the limit"
+      },
+      {
+        "artifact_id": "TEST_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      },
+      {
+        "artifact_id": "TASK_02",
+        "label": "CONSISTENT",
+        "affected": true,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "same feature, size independent"
+      },
+      {
+        "artifact_id": "TASK_03",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": "shares the word file only"
+      },
+      {
+        "artifact_id": "TASK_04",
+        "label": "CONSISTENT",
+        "affected": false,
+        "needs_clarification": false,
+        "scope_trap": false,
+        "note": ""
+      }
+    ],
+    "user_facts": [],
+    "default_answer": "잘 모르겠습니다.",
+    "tags": []
+  }
+]

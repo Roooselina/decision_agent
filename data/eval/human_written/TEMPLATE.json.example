@@ -1,0 +1,34 @@
+[
+  {
+    "case_id": "hw_01_example",
+    "level": 3,
+    "source": "human_written",
+    "author": "your name",
+    "description": "One sentence describing what the case tests.",
+    "topic": "example_topic",
+    "as_of_date": "9999-12-31",
+    "current_release": "mvp",
+    "aliases": {"release": {"mvp": ["MVP"], "production": ["Production"]}},
+    "meetings": [
+      {"date": "2026-09-01", "text": "Decision sentence one.", "source_doc": "meeting.md", "location": "item 1"}
+    ],
+    "artifacts": [
+      {
+        "id": "TASK_01", "kind": "TASK", "text": "Task text", "source_doc": "tasks.csv",
+        "location": "TASK_01", "scope": {"scope_kind": "GLOBAL"}, "metadata": {"status": "in progress"}
+      }
+    ],
+    "gold_decisions": [
+      {
+        "id": "D01", "text": "Decision sentence one.", "date": "2026-09-01", "source_doc": "meeting.md",
+        "topic": "example_topic", "scope": {"scope_kind": "GLOBAL"}
+      }
+    ],
+    "gold_relations": [],
+    "gold": [
+      {"artifact_id": "TASK_01", "label": "CONSISTENT", "affected": true, "needs_clarification": false, "scope_trap": false}
+    ],
+    "user_facts": [],
+    "tags": []
+  }
+]

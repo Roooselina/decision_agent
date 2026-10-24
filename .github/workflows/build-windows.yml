@@ -1,0 +1,63 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: python -m pip install -e ".[desktop,dev,build]"
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: python -m pytest -q
+      - name: Build exe
+        run: pyinstaller packaging/decision_agent.spec --noconfirm --clean
+      - name: Smoke test the exe (--version, scan, server and /api/ping)
+        shell: pwsh
+        run: |
+          ./packaging/smoke_test.ps1 -Exe dist/DecisionAgent/DecisionAgent.exe
+          if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path dist/DecisionAgent -DestinationPath dist/DecisionAgent-windows-py${{ matrix.python-version }}.zip
+      - name: Installer
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc.exe -ErrorAction SilentlyContinue) -and -not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+          $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          $version = python -c "import decision_agent; print(decision_agent.__version__)"
+          & $iscc "/DAppVersion=$version" packaging/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "installer build failed" }
+      - name: Installer round trip (silent install, smoke test, uninstall)
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "DecisionAgentInstall"
+          $p = Start-Process dist/DecisionAgent-Setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/TASKS=`"`"","/DIR=`"$dir`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "install failed" }
+          ./packaging/smoke_test.ps1 -Exe "$dir/DecisionAgent.exe" -Port 8798
+          if ($LASTEXITCODE -ne 0) { throw "installed exe smoke test failed" }
+          $u = Start-Process "$dir/unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait -PassThru
+          if ($u.ExitCode -ne 0) { throw "uninstall failed" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DecisionAgent-windows-py${{ matrix.python-version }}
+          path: |
+            dist/DecisionAgent-windows-py${{ matrix.python-version }}.zip
+            dist/DecisionAgent-Setup.exe
