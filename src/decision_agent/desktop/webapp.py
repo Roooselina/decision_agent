@@ -61,6 +61,7 @@ class FindingStatusBody(BaseModel):
     artifact_id: str
     status: str
     snooze_hours: int = 0
+    reason: str = Field(default="", max_length=500)
 
 
 class AnswerBody(BaseModel):
@@ -280,7 +281,8 @@ def create_web_app(
     async def finding_status(body: FindingStatusBody):
         try:
             ok = controller.set_finding_status(
-                body.root, body.topic, body.artifact_id, body.status, body.snooze_hours
+                body.root, body.topic, body.artifact_id, body.status, body.snooze_hours,
+                body.reason,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="알 수 없는 상태입니다.") from exc

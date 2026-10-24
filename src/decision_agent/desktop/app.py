@@ -923,13 +923,34 @@ class DecisionAgentApp:
         except OSError:
             return []
 
+    def _topic_summary(self, runtime: _RootRuntime, topic: str) -> dict:
+        row = runtime.db.topic_get(topic)
+        try:
+            return json.loads(row["summary"]) if row is not None and row["summary"] else {}
+        except (ValueError, TypeError):
+            return {}
+
     def findings(self, include_hidden: bool = False) -> list[dict]:
+        """Findings with what the detail panel shows: decision text, its source and date, and
+        the date of the item itself when it is a dated schedule entry."""
         rows: list[dict] = []
         for key, runtime in self._each():
+            build = runtime.engine.last_build
+            dates = {
+                a.id: str(a.metadata.get("date") or "")[:10] for a in (build.artifacts if build else [])
+            }
+            summaries: dict[str, dict] = {}
             for row in runtime.db.list_findings(include_hidden):
                 item = dict(row)
                 item["root"] = key
                 item["topic_label"] = self._topic_label(runtime, row["topic"])
+                if row["topic"] not in summaries:
+                    summaries[row["topic"]] = self._topic_summary(runtime, row["topic"])
+                summary = summaries[row["topic"]]
+                item["decision_text"] = summary.get("latest") or item["topic_label"]
+                item["decision_date"] = summary.get("date", "")
+                item["decision_source"] = summary.get("source", "")
+                item["date"] = dates.get(row["artifact_id"], "")
                 rows.append(item)
         return rows
 
@@ -971,7 +992,13 @@ class DecisionAgentApp:
         return rows
 
     def set_finding_status(
-        self, root: str, topic: str, artifact_id: str, status: str, snooze_hours: int = 0
+        self,
+        root: str,
+        topic: str,
+        artifact_id: str,
+        status: str,
+        snooze_hours: int = 0,
+        reason: str = "",
     ) -> bool:
         if status not in {"open", "dismissed", "false_positive", "snoozed"}:
             raise ValueError(status)
@@ -984,6 +1011,15 @@ class DecisionAgentApp:
                 datetime.datetime.now() + datetime.timedelta(hours=max(1, snooze_hours or 24))
             ).replace(microsecond=0).isoformat()
         ok = runtime.db.set_finding_status(topic, artifact_id, status, until)
+        if ok and status != "open":
+            text = next(
+                (r["text"] for r in runtime.db.list_findings(True)
+                 if r["topic"] == topic and r["artifact_id"] == artifact_id),
+                artifact_id,
+            )
+            what = {"dismissed": "확인 완료로", "false_positive": "잘못된 탐지로", "snoozed": "내일 다시 알림으로"}
+            note = f" 사유: {' '.join(reason.split())[:200]}" if reason.strip() else ""
+            self.activity.add(f"'{text[:40]}' 항목을 {what[status]} 표시했습니다.{note}")
         self._changed()
         return ok
 

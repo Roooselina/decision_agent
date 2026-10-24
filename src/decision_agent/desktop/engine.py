@@ -559,7 +559,11 @@ class ProjectEngine:
                     continue
                 latest = decisions[-1] if decisions else None
                 summary = json.dumps(
-                    {"latest": latest.text if latest else "", "date": latest.date if latest else ""},
+                    {
+                        "latest": latest.text if latest else "",
+                        "date": latest.date if latest else "",
+                        "source": latest.source_doc if latest else "",
+                    },
                     ensure_ascii=False,
                 )
                 judge = self.bundle.provider_id

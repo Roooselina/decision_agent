@@ -522,8 +522,10 @@
 
   // ---------------------------------------------------------------- results
 
-  const RS = {q: "", label: "all", folder: "all", owner: "all", status: "open", sort: "severity"};
-  const HIDDEN = {dismissed: "확인함", false_positive: "잘못된 탐지", snoozed: "미룸"};
+  // Figma 15:137: filter tabs, decisions on the left, the selected item on the right.
+  const RS = {q: "", label: "INCONSISTENT", folder: "all", owner: "all", status: "open", sort: "severity", selected: null, draft: {}};
+  const HIDDEN = {dismissed: "확인 완료", false_positive: "잘못된 탐지", snoozed: "내일 다시 알림"};
+  const TAB_LABELS = [["INCONSISTENT", "반영 안 됨"], ["UNCERTAIN", "확인 필요"], ["CONSISTENT", "문제없음"]];
 
   function nowIso() {
     const d = new Date();
@@ -537,166 +539,193 @@
     return "open";
   }
 
+  const keyOf = (f) => [f.root, f.topic, f.artifact_id].join("|");
+  function shortDate(iso) { if (!iso) return ""; const d = toDate(iso); return isNaN(d) ? iso : (d.getMonth() + 1) + "월 " + d.getDate() + "일"; }
+  function resultTitle(f) {
+    const text = f.text.length > 30 ? f.text.slice(0, 29) + "…" : f.text;
+    return text + ({INCONSISTENT: " 변경 미반영", UNCERTAIN: " 확인 필요", CONSISTENT: " 문제없음"}[f.label] || "");
+  }
+
   ROUTES.results = {
-    title: "점검 결과", icon: "results", auto: true,
-    lead: "결정별로 묶은 점검 결과입니다. 항목을 누르면 근거와 수정 초안을 볼 수 있습니다.",
+    title: "점검 결과", auto: true,
     async load(params) {
-      if (params.has("label")) { RS.label = params.get("label"); }
-      if (params.has("q")) { RS.q = params.get("q"); }
-      return {rows: await api("/api/findings?all=1"), overall: S.status ? S.status.overall.state : ""};
+      if (params.has("label")) RS.label = params.get("label") === "all" ? "INCONSISTENT" : params.get("label");
+      if (params.has("q")) RS.q = params.get("q");
+      if (params.has("open")) {
+        RS.selected = params.get("open");
+        history.replaceState(null, "", "#/results");
+      }
+      return {rows: await api("/api/findings?all=1"), state: S.status ? agentState(S.status) : ""};
     },
-    render({rows, overall}, params) {
-      const listBox = h("div", {class: "stack"});
+    render({rows, state}) {
+      if (RS.selected) {
+        const row = rows.find(r => keyOf(r) === RS.selected);
+        if (row && row.label !== RS.label) RS.label = row.label;
+      }
+      const search = h("input", {class: "input", type: "search", placeholder: "결정 또는 파일 검색", value: RS.q, "aria-label": "결정 또는 파일 검색"});
+      const tabs = h("div", {class: "result-tabs", role: "tablist", "aria-label": "결과 필터"});
+      const listCard = h("section", {class: "card result-list", "aria-label": "결정별 목록"});
+      const detail = h("section", {class: "card result-detail", "aria-label": "점검 결과 상세"});
       const folders = [...new Set(rows.map(r => r.root))];
       const owners = [...new Set(rows.map(r => r.owner).filter(Boolean))].sort();
-      const counts = {all: 0, INCONSISTENT: 0, UNCERTAIN: 0, CONSISTENT: 0};
-      rows.filter(r => RS.status === "all" || effectiveStatus(r) === RS.status).forEach(r => { counts.all++; counts[r.label] = (counts[r.label] || 0) + 1; });
-      const q = h("input", {class: "input", type: "search", placeholder: "내용, 파일, 담당자, 결정 검색", value: RS.q, "aria-label": "결과 검색"});
-      q.addEventListener("input", () => { RS.q = q.value; draw(); });
-      const labelSeg = segmented([["all", "전체 " + counts.all], ["INCONSISTENT", "불일치 " + counts.INCONSISTENT],
-        ["UNCERTAIN", "불확실 " + counts.UNCERTAIN], ["CONSISTENT", "일치 " + counts.CONSISTENT]], RS.label, (v) => { RS.label = v; draw(); }, "판정 필터");
-      const folderSel = select([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, {"aria-label": "폴더 필터"});
-      folderSel.addEventListener("change", () => { RS.folder = folderSel.value; draw(); });
-      const ownerSel = select([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, {"aria-label": "담당자 필터"});
-      ownerSel.addEventListener("change", () => { RS.owner = ownerSel.value; draw(); });
-      const statusSel = select([["open", "열린 항목"], ["dismissed", "확인함"], ["false_positive", "잘못된 탐지"], ["snoozed", "미룸"], ["all", "모든 상태"]], RS.status, {"aria-label": "상태 필터"});
-      statusSel.addEventListener("change", () => { RS.status = statusSel.value; lastSig = ""; renderRoute(false); });
-      const sortSel = select([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, {"aria-label": "정렬"});
-      sortSel.addEventListener("change", () => { RS.sort = sortSel.value; draw(); });
+      const more = h("details", {class: "result-more"}, h("summary", {}, icon("filter", "sm"), "추가 필터"),
+        h("div", {class: "result-more-body"},
+          selectControl([["open", "열린 항목"], ["dismissed", "확인 완료"], ["false_positive", "잘못된 탐지"], ["snoozed", "내일 다시 알림"], ["all", "모든 상태"]], RS.status, "상태", (v) => { RS.status = v; draw(); }),
+          folders.length > 1 ? selectControl([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, "폴더", (v) => { RS.folder = v; draw(); }) : null,
+          owners.length ? selectControl([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, "담당자", (v) => { RS.owner = v; draw(); }) : null,
+          selectControl([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, "정렬", (v) => { RS.sort = v; draw(); })));
+      search.addEventListener("input", () => { RS.q = search.value; draw(); });
 
-      function draw() {
+      function visible() {
         const terms = RS.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-        const shown = rows.filter(r =>
+        return rows.filter(r =>
           (RS.status === "all" || effectiveStatus(r) === RS.status) &&
-          (RS.label === "all" || r.label === RS.label) &&
           (RS.folder === "all" || r.root === RS.folder) &&
           (RS.owner === "all" || r.owner === RS.owner) &&
-          terms.every(t => [r.text, r.evidence, r.source_doc, r.owner, r.topic_label, r.action].join(" ").toLowerCase().includes(t)));
-        if (rows.length === 0) {
-          set(listBox, h("section", {class: "card"}, emptyState({icon: "results", title: "아직 점검 결과가 없습니다",
-            text: S.status && S.status.registered_folders ? "점검이 끝나면 결정별 결과가 여기에 표시됩니다." : "먼저 감시할 폴더를 추가하세요.",
-            action: S.status && S.status.registered_folders ? null : button("폴더 추가", {variant: "primary", icon: "folder-plus", onClick: () => startAddFolder()})})));
-          return;
-        }
-        if (shown.length === 0) {
-          set(listBox, h("section", {class: "card"}, emptyState({icon: "filter", title: "조건에 맞는 항목이 없습니다",
-            text: "필터나 검색어를 바꿔 보세요.", neutral: true,
-            action: button("필터 초기화", {onClick: () => { Object.assign(RS, {q: "", label: "all", folder: "all", owner: "all", status: "open"}); lastSig = ""; renderRoute(true); }})})));
-          return;
-        }
+          terms.every(t => [r.text, r.evidence, r.source_doc, r.owner, r.topic_label, r.decision_text, r.action].join(" ").toLowerCase().includes(t)));
+      }
+
+      function draw() {
+        const base = visible();
+        set(tabs, ...TAB_LABELS.map(([v, label]) => {
+          const n = base.filter(r => r.label === v).length;
+          return h("button", {type: "button", class: "result-tab", role: "tab", "aria-selected": String(RS.label === v), title: label + " " + n + "건",
+            onclick: () => { RS.label = v; RS.selected = null; draw(); }}, label, n ? h("span", {class: "result-tab-n"}, String(n)) : null);
+        }));
+        const shown = base.filter(r => r.label === RS.label);
         const groups = new Map();
         for (const r of shown) {
           const key = r.root + "|" + r.topic;
-          if (!groups.has(key)) groups.set(key, {label: r.topic_label, root: r.root, items: []});
+          if (!groups.has(key)) groups.set(key, {first: r, items: []});
           groups.get(key).items.push(r);
         }
         const list = [...groups.values()];
-        const score = (g) => g.items.filter(i => i.label === "INCONSISTENT").length * 100 + g.items.filter(i => i.label === "UNCERTAIN").length;
         const recent = (g) => g.items.map(i => i.last_seen || i.first_seen || "").sort().pop() || "";
-        if (RS.sort === "severity") list.sort((a, b) => score(b) - score(a));
-        else if (RS.sort === "recent") list.sort((a, b) => recent(b).localeCompare(recent(a)));
-        else list.sort((a, b) => a.label.localeCompare(b.label, "ko"));
-        set(listBox, ...list.map(groupCard));
+        if (RS.sort === "recent") list.sort((a, b) => recent(b).localeCompare(recent(a)));
+        else if (RS.sort === "name") list.sort((a, b) => a.first.decision_text.localeCompare(b.first.decision_text, "ko"));
+        else list.sort((a, b) => b.items.length - a.items.length);
+        if (!RS.selected || !shown.some(r => keyOf(r) === RS.selected)) RS.selected = shown.length ? keyOf(list[0].items[0]) : null;
+        if (rows.length === 0) {
+          set(listCard, emptyState({icon: "results", title: "아직 점검 결과가 없습니다",
+            text: S.status && S.status.registered_folders ? "점검이 끝나면 결정별 결과가 여기에 표시됩니다." : "먼저 확인할 폴더를 추가하세요.", neutral: true}));
+        } else if (shown.length === 0) {
+          set(listCard, h("p", {class: "result-none"}, RS.q ? "검색어에 맞는 항목이 없습니다." :
+            ({INCONSISTENT: "반영 안 된 항목이 없습니다.", UNCERTAIN: "확인이 필요한 항목이 없습니다.", CONSISTENT: "문제없음으로 확인된 항목이 없습니다."}[RS.label])));
+        } else {
+          set(listCard, ...list.map(g => h("div", {class: "result-group"},
+            h("h2", {class: "result-decision"}, g.first.decision_text),
+            h("p", {class: "result-decision-sub"}, [baseName(g.first.decision_source), shortDate(g.first.decision_date)].filter(Boolean).join(" · ") || "결정"),
+            ...g.items.map(r => h("button", {type: "button", class: "result-row" + (keyOf(r) === RS.selected ? " selected" : ""),
+              "aria-pressed": String(keyOf(r) === RS.selected), onclick: () => { RS.selected = keyOf(r); draw(); }},
+            icon(r.label === "CONSISTENT" ? "check" : "alert-circle", "result-icon " + labelTone(r.label)),
+            h("span", {class: "result-row-main"}, h("span", {class: "result-row-title truncate", title: r.text}, r.text),
+              h("span", {class: "result-row-sub truncate"}, baseName(r.source_doc) + (effectiveStatus(r) !== "open" ? " · " + HIDDEN[effectiveStatus(r)] : ""))),
+            h("span", {class: "result-row-label " + labelTone(r.label)}, DA.LABELS[r.label]))))));
+        }
+        const selected = shown.find(r => keyOf(r) === RS.selected);
+        set(detail, ...(selected ? detailPanel(selected, rows) : [h("p", {class: "result-none"}, "왼쪽에서 항목을 고르면 근거와 수정 문장을 볼 수 있습니다.")]));
       }
       draw();
-      const notice = overall === "demo" ? callout("warning", "alert", "데모 판정기 결과입니다", "실제 검사가 아니므로 결과를 근거로 판단하지 마세요.") : null;
-      const node = page(this.title, this.lead, null, notice,
-        h("div", {class: "card tight"}, h("div", {class: "toolbar"},
-          h("div", {class: "search-local"}, icon("search", "sm"), q), labelSeg, folderSel, ownerSel, statusSel, sortSel)),
-        listBox);
-      const target = params.get("open");
-      if (target) {
-        const [root, topic, artifact] = target.split("|");
-        const row = rows.find(r => r.root === root && r.topic === topic && r.artifact_id === artifact);
-        if (row) setTimeout(() => openFinding(row), 50);
-        history.replaceState(null, "", "#/results");
-      }
-      return node;
+      const demo = state === "demo";
+      return h("div", {class: "page results-page"},
+        h("div", {class: "page-head"}, h("h1", {}, "점검 결과"),
+          h("div", {class: "search", role: "search"}, icon("search"), search)),
+        h("div", {class: "result-toolbar"}, tabs, demo ? h("span", {class: "demo-note"}, icon("alert-circle", "sm"), "시연용 판정기 결과입니다. 실제 검사가 아닙니다.") : null, more),
+        h("div", {class: "result-columns"}, listCard, detail));
     },
   };
 
-  function groupCard(g) {
-    const bad = g.items.filter(i => i.label === "INCONSISTENT").length;
-    const unsure = g.items.filter(i => i.label === "UNCERTAIN").length;
-    return h("section", {class: "card group-card"},
-      h("div", {class: "group-head"},
-        h("div", {class: "group-title"}, h("span", {class: "small muted"}, "결정"), h("h3", {}, g.label)),
-        h("div", {class: "row"},
-          bad ? badge("danger", "x-circle", "불일치 " + bad) : null,
-          unsure ? badge("warning", "help", "불확실 " + unsure) : null,
-          h("span", {class: "chip", title: g.root}, icon("folder", "sm"), folderName(g.root)))),
-      ...g.items.map(r => h("button", {type: "button", class: "finding-row", onclick: () => openFinding(r)},
-        h("div", {}, labelBadge(r.label)),
-        h("div", {class: "stack-sm", style: {gap: "4px", minWidth: "0"}},
-          h("span", {class: "finding-text"}, r.text),
-          h("span", {class: "list-sub"},
-            h("span", {class: "chip"}, KINDS[r.kind] || r.kind),
-            h("span", {}, r.source_doc + (r.location ? " : " + r.location : "")),
-            r.owner ? h("span", {}, "· 담당 " + r.owner) : null,
-            effectiveStatus(r) !== "open" ? badge("neutral", null, HIDDEN[effectiveStatus(r)]) : null)),
-        icon("chevron-right", "chev"))));
+  function labelTone(label) { return {INCONSISTENT: "bad", UNCERTAIN: "warn", CONSISTENT: "ok"}[label] || ""; }
+
+  function selectControl(options, value, label, onChange) {
+    const node = select(options, value, {"aria-label": label});
+    node.addEventListener("change", () => onChange(node.value));
+    return h("label", {class: "mini-field"}, h("span", {}, label), node);
   }
 
-  function openFinding(f) {
-    const draftBox = h("div", {class: "stack-sm"});
-    const setStatus = async (status, hours) => {
-      await api("/api/finding/status", "POST", {root: f.root, topic: f.topic, artifact_id: f.artifact_id, status, snooze_hours: hours || 0});
-      close();
-      toast({dismissed: "확인함으로 표시했습니다.", false_positive: "잘못된 탐지로 표시했습니다. 다시 점검해도 숨겨집니다.",
-        snoozed: "내일 다시 보여 드립니다.", open: "다시 열었습니다."}[status], "success");
+  // The right-hand panel (Figma 15:216, 16:850, 19:1320, 19:1392).
+  function detailPanel(f, rows) {
+    const status = effectiveStatus(f);
+    const related = f.date ? f : rows.find(r => r.root === f.root && r.topic === f.topic && r.date);
+    const left = [
+      f.decision_source ? baseName(f.decision_source) + (f.decision_date ? " · " + shortDate(f.decision_date) + " 결정" : "") : null,
+      baseName(f.source_doc) + (f.location ? " · " + (/^\d+$/.test(f.location) ? f.location + "행" : f.location) : ""),
+    ].filter(Boolean);
+    const draftBox = h("div", {class: "draft-slot"});
+    const drawDraft = (d) => {
+      if (!d) {
+        const b = button("수정 문장 제안", {variant: "primary"});
+        b.addEventListener("click", () => busy(b, async () => {
+          RS.draft[keyOf(f)] = await api("/api/finding/draft", "POST", {root: f.root, topic: f.topic, artifact_id: f.artifact_id});
+          drawDraft(RS.draft[keyOf(f)]);
+        }));
+        set(draftBox, f.label === "CONSISTENT" ? null : b);
+        return;
+      }
+      const copyMain = button(d.revised_text ? "수정 문장 복사" : "메시지 복사", {variant: "primary"});
+      copyMain.addEventListener("click", async () => {
+        await copyText(d.revised_text || d.message, d.revised_text ? "수정 문장을 복사했습니다." : "메시지를 복사했습니다.");
+        set(copyMain, icon("check", "sm"), "복사 완료");
+      });
+      const copyMsg = h("button", {type: "button", class: "link strong draft-msg-copy"}, "메시지 복사");
+      copyMsg.addEventListener("click", async () => { await copyText(d.message, "메시지를 복사했습니다."); copyMsg.textContent = "복사 완료"; });
+      set(draftBox, h("div", {class: "draft-box"},
+        d.revised_text ? h("p", {class: "draft-text"}, d.revised_text)
+          : h("p", {class: "draft-note"}, d.model_used ? (d.note || "제안할 수정 문장을 만들지 못했습니다.") : "시연용 판정기에서는 수정 문장을 만들지 않습니다. 담당자에게 보낼 메시지만 만듭니다."),
+        copyMain,
+        h("p", {class: "draft-message"}, d.message),
+        d.revised_text ? copyMsg : null));
+    };
+    drawDraft(RS.draft[keyOf(f)]);
+    const setStatus = async (next, extra) => {
+      await api("/api/finding/status", "POST", Object.assign({root: f.root, topic: f.topic, artifact_id: f.artifact_id, status: next, snooze_hours: next === "snoozed" ? 24 : 0}, extra || {}));
+      const short = f.text.length > 20 ? f.text.slice(0, 19) + "…" : f.text;
+      if (next === "dismissed") { toast("확인 완료로 표시했습니다.", "success"); setFlash(short + " 항목을 확인 완료로 표시했습니다."); }
+      else if (next === "snoozed") toast("내일 다시 알림이 설정되었습니다.", "success");
+      else if (next === "false_positive") toast("잘못된 탐지로 표시했습니다. 다시 점검해도 숨겨집니다.", "success");
+      else toast("다시 열었습니다.", "success");
       await refreshAll();
     };
-    const actionBtn = (label, variant, iconName, status, hours) => {
-      const b = button(label, {variant, icon: iconName});
-      b.addEventListener("click", () => busy(b, () => setStatus(status, hours)));
-      return b;
-    };
-    const draftBtn = button("수정 초안 만들기", {icon: "note"});
-    draftBtn.addEventListener("click", () => busy(draftBtn, async () => {
-      const d = await api("/api/finding/draft", "POST", {root: f.root, topic: f.topic, artifact_id: f.artifact_id});
-      const message = textarea({readonly: true, rows: "6", "aria-label": "담당자에게 보낼 메시지"});
-      message.value = d.message;
-      set(draftBox, 
-        d.revised_text ? h("div", {class: "detail-block"},
-          h("div", {class: "row-between"}, h("span", {class: "detail-label"}, "고친 문장 제안"),
-            button("복사", {size: "sm", variant: "ghost", icon: "copy", onClick: () => copyText(d.revised_text)})),
-          h("div", {class: "detail-box"}, d.revised_text)) : null,
-        d.note ? h("p", {class: "small muted"}, d.note) : null,
-        !d.model_used ? callout("neutral", "info", null, "데모 판정기라 문장 제안은 없고 담당자에게 보낼 메시지만 만듭니다.") : null,
-        h("div", {class: "detail-block"},
-          h("div", {class: "row-between"}, h("span", {class: "detail-label"}, "담당자에게 보낼 메시지"),
-            button("복사", {size: "sm", variant: "ghost", icon: "copy", onClick: () => copyText(d.message)})),
-          message),
-        h("p", {class: "small muted"}, "이 프로그램은 파일을 고치거나 메시지를 보내지 않습니다. 복사해서 직접 사용하세요."));
-    }));
-    const status = effectiveStatus(f);
-    const block = (label, iconName, text) => text ? h("div", {class: "detail-block"},
-      h("span", {class: "detail-label"}, icon(iconName, "sm"), label), h("div", {class: "detail-box"}, text)) : null;
-    const confidence = typeof f.confidence === "number" && f.label !== "UNCERTAIN"
-      ? h("span", {class: "chip", title: "같은 판단을 여러 번 했을 때 같은 답이 나온 비율입니다. 보정된 확률이 아닙니다."}, "표본 일치율 " + Math.round(f.confidence * 100) + "%") : null;
-    const close = drawer({
-      title: f.text,
-      subtitle: h("div", {class: "row"}, labelBadge(f.label), confidence, status !== "open" ? badge("neutral", null, HIDDEN[status]) : null),
-      body: [
-        block("결정", "results", f.topic_label),
-        block("근거", "info", f.evidence),
-        block("권장 조치", "arrow-right", f.action),
+    const link = (label, fn) => h("button", {type: "button", class: "link detail-link", onclick: (e) => busy(e.currentTarget, fn)}, label);
+    const actions = status === "open"
+      ? [link("확인 완료", () => setStatus("dismissed")), link("잘못된 탐지", () => reportFalse(f, setStatus)), link("내일 다시 알림", () => setStatus("snoozed"))]
+      : [h("span", {class: "small muted"}, HIDDEN[status] + "로 표시됨" + (status === "snoozed" && f.snooze_until ? " (" + fmtTime(f.snooze_until) + "까지)" : "")),
+        link("다시 열기", () => setStatus("open"))];
+    const confidence = typeof f.confidence === "number" && f.label !== "UNCERTAIN" ? Math.round(f.confidence * 100) + "%" : "-";
+    return [
+      h("span", {class: "badge state " + {INCONSISTENT: "bad", UNCERTAIN: "attention", CONSISTENT: "ok"}[f.label]},
+        icon(f.label === "CONSISTENT" ? "check" : "alert-circle"), DA.LABELS[f.label]),
+      h("h2", {class: "detail-title"}, resultTitle(f)),
+      h("p", {class: "detail-caption"}, "변경된 결정"),
+      h("p", {class: "detail-decision"}, f.decision_text),
+      f.evidence ? h("p", {class: "detail-explain"}, f.evidence) : null,
+      h("div", {class: "detail-evidence"},
+        h("div", {class: "detail-sources"}, ...left.map(t => h("span", {}, t)), f.action ? h("span", {class: "detail-action"}, "권장 조치: " + f.action) : null),
+        h("div", {class: "detail-people"},
+          h("span", {}, "담당자  " + (f.owner || "지정되지 않음")),
+          related ? h("span", {}, "관련 일정  " + shortDate(related.date) + " " + related.text) : null)),
+      draftBox,
+      h("div", {class: "detail-links"}, ...actions),
+      h("details", {class: "detail-tech"}, h("summary", {}, "자세히 보기"),
         h("dl", {class: "kv"},
           h("dt", {}, "종류"), h("dd", {}, KINDS[f.kind] || f.kind),
-          h("dt", {}, "출처 파일"), h("dd", {class: "mono"}, f.source_doc),
-          h("dt", {}, "위치"), h("dd", {}, f.location || "-"),
-          h("dt", {}, "폴더"), h("dd", {class: "mono"}, f.root),
-          h("dt", {}, "담당자"), h("dd", {}, f.owner || "지정되지 않음"),
+          h("dt", {}, "표본 일치율"), h("dd", {title: "같은 판단을 여러 번 했을 때 같은 답이 나온 비율입니다. 보정된 확률이 아닙니다."}, confidence),
           h("dt", {}, "처음 발견"), h("dd", {}, fmtTime(f.first_seen)),
-          h("dt", {}, "마지막 확인"), h("dd", {}, fmtTime(f.last_seen))),
-        f.label === "INCONSISTENT" ? h("div", {class: "stack-sm"}, h("h3", {}, "수정 초안"), draftBox, h("div", {}, draftBtn)) : null,
-      ],
-      foot: status === "open"
-        ? [actionBtn("확인함", "primary", "check", "dismissed"), actionBtn("잘못된 탐지", "", "x", "false_positive"),
-          actionBtn("내일 다시", "ghost", "clock", "snoozed", 24)]
-        : [actionBtn("다시 열기", "primary", "refresh", "open")],
-    });
+          h("dt", {}, "마지막 확인"), h("dd", {}, fmtTime(f.last_seen)),
+          h("dt", {}, "폴더"), h("dd", {class: "mono", title: f.root}, folderName(f.root)))),
+      h("p", {class: "detail-foot"}, "AI가 원본 파일을 직접 수정하지 않습니다.", h("br"), "수정 문장만 제안합니다."),
+    ];
   }
+
+  // Figma 19:1392: an optional reason, then the item stays hidden on later checks.
+  function reportFalse(f, setStatus) {
+    const reason = input({placeholder: "사유 입력 (선택)", maxlength: "300", "aria-label": "사유"});
+    modal({title: "잘못된 탐지", plain: true, body: h("div", {class: "stack"}, h("p", {}, "해당 항목을 잘못된 탐지로 표시합니다."), reason),
+      actions: [{label: "제출", variant: "primary", onClick: () => setStatus("false_positive", {reason: reason.value.trim()})}, {label: "취소"}]});
+  }
+
+  // Older entry points (search results, calendar) still call this.
+  function openFinding(f) { go("results", {open: keyOf(f)}); }
 
   // ---------------------------------------------------------------- folders
 

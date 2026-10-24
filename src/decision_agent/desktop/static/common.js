@@ -282,7 +282,7 @@ const DA = (() => {
       box = h("div", {id: "toasts", class: "toasts", role: "status", "aria-live": "polite"});
       document.body.appendChild(box);
     }
-    const iconName = {success: "check-circle", danger: "x-circle", warning: "alert", info: "info"}[kind] || "info";
+    const iconName = {success: "check", danger: "alert-circle", warning: "alert-circle", info: "info"}[kind] || "info";
     const node = h("div", {class: "toast " + kind}, icon(iconName), h("div", {class: "toast-text"}, message),
       h("button", {class: "btn ghost icon-only sm", type: "button", "aria-label": "닫기", onclick: () => node.remove()}, icon("x", "sm")));
     box.appendChild(node);
@@ -394,7 +394,7 @@ const DA = (() => {
 
   // clipboard
 
-  async function copyText(text) {
+  async function copyText(text, message) {
     try {
       await navigator.clipboard.writeText(text);
     } catch (e) {
@@ -405,7 +405,7 @@ const DA = (() => {
       document.execCommand("copy");
       area.remove();
     }
-    toast("복사했습니다.", "success");
+    toast(message || "복사했습니다.", "success");
   }
 
   // theme

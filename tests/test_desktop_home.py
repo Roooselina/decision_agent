@@ -156,3 +156,26 @@ def test_controller_writes_activity_to_the_app_data_file(tmp_path):
     controller.stop()
     assert target.exists() and "점검" in target.read_text(encoding="utf-8")
     assert not any(p.name == "activity.jsonl" for p in root.rglob("*"))
+
+
+def test_findings_carry_decision_source_date_and_item_date(home):
+    client, _controller, _ = home
+    rows = client.get("/api/findings?all=1", headers=HEADERS).json()
+    assert rows
+    for row in rows:
+        assert row["decision_text"] and "decision_source" in row and "date" in row
+    assert any(r["decision_source"].endswith(".md") for r in rows)
+    assert any(r["date"] for r in rows if r["kind"] == "SCHEDULE")
+
+
+def test_false_positive_reason_goes_to_the_activity_list(home):
+    client, controller, _ = home
+    row = next(r for r in client.get("/api/findings", headers=HEADERS).json() if r["label"] == "INCONSISTENT")
+    body = {"root": row["root"], "topic": row["topic"], "artifact_id": row["artifact_id"],
+            "status": "false_positive", "reason": "이미 반영된 일정입니다"}
+    assert client.post("/api/finding/status", headers=HEADERS, json=body).status_code == 200
+    assert "이미 반영된 일정입니다" in controller.activity.recent(5)[0]["text"]
+    too_long = dict(body, reason="x" * 501)
+    assert client.post("/api/finding/status", headers=HEADERS, json=too_long).status_code == 422
+    hidden = [r for r in client.get("/api/findings", headers=HEADERS).json() if r["artifact_id"] == row["artifact_id"]]
+    assert hidden == []
