@@ -28,7 +28,7 @@ def test_tray_state_priority_and_title():
     assert tray_state(status(inconsistent=2, busy=True)) == "attention"
     assert tray_state(status(questions=1)) == "attention"
     assert tray_state(status(paused=True, inconsistent=5)) == "paused"
-    assert "불일치 2건" in tray_title(status(inconsistent=2))
+    assert "반영 안 됨 2건" in tray_title(status(inconsistent=2))
 
 
 @pytest.mark.parametrize("state", ["normal", "busy", "attention", "paused"])
@@ -71,7 +71,7 @@ def test_tray_menu_actions():
         open_log_folder=lambda: opened.append("logs"),
     )
     menu = {m.label if isinstance(m.label, str) else "status": m for m in tray.menu_spec() if not m.separator}
-    assert menu["status"].enabled is False and "불일치" in menu["status"].label()
+    assert menu["status"].enabled is False and "반영 안 됨" in menu["status"].label()
     assert menu["대시보드 열기"].default is True
     menu["대시보드 열기"].action()
     menu["지금 다시 점검"].action()

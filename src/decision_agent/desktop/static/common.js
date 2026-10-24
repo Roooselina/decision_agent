@@ -62,6 +62,7 @@ const DA = (() => {
     x: [{l: [18, 6, 6, 18]}, {l: [6, 6, 18, 18]}],
     "x-circle": [{c: [12, 12, 10]}, {l: [15, 9, 9, 15]}, {l: [9, 9, 15, 15]}],
     info: [{c: [12, 12, 10]}, {l: [12, 16, 12, 12]}, {l: [12, 8, 12.01, 8]}],
+    "alert-circle": [{c: [12, 12, 9]}, {l: [12, 7.5, 12, 12.5]}, {l: [12, 16, 12.01, 16]}],
     refresh: ["M21 12a9 9 0 0 1-15.5 6.2L3 16", "M3 12a9 9 0 0 1 15.5-6.2L21 8", {p: "21 3 21 8 16 8"}, {p: "3 21 3 16 8 16"}],
     pause: [{r: [6, 4, 4, 16, 1]}, {r: [14, 4, 4, 16, 1]}],
     play: [{p: "6 4 20 12 6 20 6 4"}],
@@ -99,6 +100,9 @@ const DA = (() => {
     cpu: [{r: [5, 5, 14, 14, 2]}, {r: [9, 9, 6, 6, 1]}, "M9 2v3", "M15 2v3", "M9 19v3", "M15 19v3", "M2 9h3", "M2 15h3", "M19 9h3", "M19 15h3"],
     eye: ["M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z", {c: [12, 12, 3]}],
     minus: [{l: [5, 12, 19, 12]}],
+    list: [{r: [5, 3, 14, 18, 2]}, {l: [9, 8, 15, 8]}, {l: [9, 12, 15, 12]}, {l: [9, 16, 13, 16]}],
+    more: [{c: [5, 12, 1]}, {c: [12, 12, 1]}, {c: [19, 12, 1]}],
+    "pause-bars": [{l: [9, 6, 9, 18]}, {l: [15, 6, 15, 18]}],
   };
 
   function icon(name, cls) {
@@ -446,45 +450,57 @@ const DA = (() => {
     return fmtTime(iso);
   }
 
-  // Maps overall().state to how it is shown. The wording of "검사 완료" stays tied to verified.
+  // Maps overall().state (plus pause) to the Figma status badges. "검사 완료" stays tied to
+  // verified: only a real model that checked everything is shown as 정상 / 검사 완료.
   const STATES = {
-    verified: {kind: "success", icon: "check-circle", short: "검사 완료"},
-    demo: {kind: "warning", icon: "alert", short: "데모 판정기 - 실제 검사 아님"},
-    failed: {kind: "danger", icon: "x-circle", short: "점검 실패"},
-    retrying: {kind: "warning", icon: "refresh", short: "일부만 점검, 재시도 예정"},
-    running: {kind: "info", icon: "loader", short: "점검 중"},
-    stale: {kind: "warning", icon: "refresh", short: "다시 점검 필요"},
-    incomplete: {kind: "neutral", icon: "clock", short: "점검 미완료"},
-    no_folders: {kind: "neutral", icon: "folder", short: "감시 폴더 없음"},
+    verified: {kind: "success", cls: "ok", icon: "check", short: "정상"},
+    demo: {kind: "warning", cls: "demo", icon: "alert-circle", short: "시연용 모드"},
+    failed: {kind: "danger", cls: "error", icon: "alert-circle", short: "오류"},
+    retrying: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
+    running: {kind: "info", cls: "busy", icon: "loader", short: "확인 중"},
+    stale: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
+    incomplete: {kind: "info", cls: "busy", icon: "clock", short: "확인 대기"},
+    no_folders: {kind: "neutral", cls: "paused", icon: "folder", short: "폴더 없음"},
+    paused: {kind: "neutral", cls: "paused", icon: "pause-bars", short: "일시 중지"},
   };
 
-  function stateInfo(overall) {
-    const base = STATES[overall.state] || {kind: "neutral", icon: "info", short: overall.label};
-    return Object.assign({}, base, {label: overall.label, detail: overall.detail});
+  // The state shown for the agent as a whole: pause wins, then the honest overall() state.
+  function agentState(st) {
+    if (!st) return "failed";
+    if (st.paused) return "paused";
+    return st.overall.state;
   }
 
-  function stateBadge(overall, size) {
-    const info = stateInfo(overall);
-    const node = badge(info.kind, info.icon, info.short, size);
-    if (overall.state === "running") node.querySelector("svg").classList.add("spin");
+  function stateInfo(overall, paused) {
+    const key = paused ? "paused" : overall.state;
+    const base = STATES[key] || {kind: "neutral", cls: "paused", icon: "info", short: overall.label};
+    return Object.assign({key}, base, {label: overall.label, detail: overall.detail});
+  }
+
+  function stateBadge(overall, size, paused) {
+    const info = stateInfo(overall, paused);
+    const node = h("span", {class: "badge state " + info.cls + (size ? " " + size : "")}, icon(info.icon), info.short);
+    if (info.key === "running") node.querySelector("svg").classList.add("spin");
     node.title = info.label + (info.detail ? " " + info.detail : "");
     return node;
   }
 
+  // Calm notice, not an alarm: sending to an external AI is a choice the user made.
   function transmissionBadge(provider) {
     if (provider.sends_externally) {
-      const node = badge("danger", "cloud", "문서 외부 전송 중");
+      const node = badge("info", "cloud", "외부 AI로 전송 중");
       node.title = provider.id + ": " + provider.reason;
       return node;
     }
-    const node = badge("success", "shield-check", "외부 전송 없음");
+    const node = badge("success", "shield-check", "외부 전송 안 함");
     node.title = "문서가 이 컴퓨터 밖으로 나가지 않습니다. " + provider.reason;
     return node;
   }
 
-  const LABELS = {INCONSISTENT: "불일치", UNCERTAIN: "불확실", CONSISTENT: "일치"};
+  // Display wording only; the stored values stay INCONSISTENT / UNCERTAIN / CONSISTENT.
+  const LABELS = {INCONSISTENT: "반영 안 됨", UNCERTAIN: "확인 필요", CONSISTENT: "문제없음"};
   const LABEL_STYLE = {
-    INCONSISTENT: ["danger", "x-circle"], UNCERTAIN: ["warning", "help"], CONSISTENT: ["success", "check-circle"],
+    INCONSISTENT: ["danger", "alert-circle"], UNCERTAIN: ["warning", "alert-circle"], CONSISTENT: ["success", "check"],
   };
   function labelBadge(label) {
     const [kind, iconName] = LABEL_STYLE[label] || ["neutral", "info"];
@@ -492,18 +508,22 @@ const DA = (() => {
   }
   const KINDS = {REQUIREMENT: "요구사항", TASK: "작업", TEST: "테스트", SCHEDULE: "일정", MEETING: "회의"};
 
+  // Short judge names used in the sidebar status line and settings ("로컬 AI · 정상").
+  function providerKind(id) {
+    if (!id || id.startsWith("mock")) return "demo";
+    if (id.startsWith("ollama")) return "local";
+    return "external";
+  }
+
   function providerName(id) {
     if (!id) return "-";
-    if (id.startsWith("mock")) return "데모 판정기 (내장 규칙)";
-    if (id.startsWith("anthropic")) return "Anthropic (외부 전송)";
-    if (id.startsWith("ollama")) return "Ollama (이 컴퓨터)";
-    return id;
+    return {demo: "시연용 판정기", local: "로컬 AI", external: "외부 AI"}[providerKind(id)];
   }
 
   return {
     h, set, append, icon, api, ApiError, button, busy, badge, field, input, textarea, select, toggle, segmented, callout,
     progressBar, skeleton, emptyState, errorState, toast, modal, confirmDialog, drawer, anyLayerOpen, copyText,
     applyTheme, initTheme, fmtTime, relTime, stateInfo, stateBadge, transmissionBadge, labelBadge, LABELS, KINDS,
-    providerName,
+    providerName, providerKind, agentState, STATES,
   };
 })();

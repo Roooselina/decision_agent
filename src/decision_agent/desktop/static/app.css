@@ -2,39 +2,41 @@
    Tokens first (color, spacing on an 8px grid, radius, shadow, type), then components,
    then the app layout and page-specific pieces. Light is the default; dark overrides tokens. */
 
+/* Colors, radii and type follow the Figma "제품 UI" variables (bg, card, line, text, muted, blue,
+   pale, green, mint, amber, warm, red). The older token names stay as aliases. */
 :root {
-  --font: "Pretendard Variable", "Pretendard", "Malgun Gothic", "맑은 고딕", "Segoe UI",
+  --font: "Noto Sans KR", "Pretendard Variable", "Pretendard", "Malgun Gothic", "맑은 고딕", "Segoe UI",
     "Apple SD Gothic Neo", system-ui, sans-serif;
   --mono: "Cascadia Mono", "Consolas", "D2Coding", ui-monospace, monospace;
 
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
   --r-sm: 6px; --r: 8px; --r-lg: 12px; --r-full: 999px;
 
-  --bg: #f5f6f8;
+  --bg: #f7f8fa;
   --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --surface-3: #e7eaef;
-  --border: #e2e5ea;
-  --border-strong: #cdd2da;
-  --text: #15181e;
-  --text-2: #444c5a;
-  --text-3: #687183;
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-soft: #eef0ff;
-  --primary-text: #3730a3;
+  --surface-2: #f7f8fa;
+  --surface-3: #e5e7eb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #1f2937;
+  --text-2: #374151;
+  --text-3: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-soft: #eff6ff;
+  --primary-text: #2563eb;
   --on-primary: #ffffff;
-  --success: #137a43; --success-soft: #e5f5eb; --success-border: #b9e2c8;
-  --warning: #9a5a00; --warning-soft: #fff3dd; --warning-border: #f3d29a;
-  --danger: #c0262d;  --danger-soft: #fdeceb;  --danger-border: #f5c0bd;
-  --info: #1f5fbf;    --info-soft: #e8f0fd;    --info-border: #bcd2f5;
-  --neutral-soft: #eef0f3;
-  --focus: #6366f1;
-  --scrim: rgba(15, 18, 25, 0.45);
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --success: #16a34a; --success-soft: #f0fdf4; --success-border: #bbf7d0;
+  --warning: #d97706; --warning-soft: #fffbeb; --warning-border: #fde68a;
+  --danger: #dc2626;  --danger-soft: #fef2f2;  --danger-border: #fecaca;
+  --info: #2563eb;    --info-soft: #eff6ff;    --info-border: #bfdbfe;
+  --neutral-soft: #f7f8fa;
+  --focus: #2563eb;
+  --scrim: rgba(17, 24, 39, 0.35);
+  --shadow-sm: none;
   --shadow: 0 2px 8px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
-  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.18);
-  --sidebar-w: 232px;
+  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.16);
+  --sidebar-w: 176px;
   --sidebar-collapsed-w: 68px;
   --topbar-h: 60px;
   color-scheme: light;
@@ -50,17 +52,17 @@ html[data-theme="dark"] {
   --text: #e9ebf0;
   --text-2: #b9bfcb;
   --text-3: #8d95a5;
-  --primary: #8b93ff;
-  --primary-hover: #a3a9ff;
-  --primary-soft: rgba(139, 147, 255, 0.14);
-  --primary-text: #c3c7ff;
-  --on-primary: #10121a;
+  --primary: #60a5fa;
+  --primary-hover: #93c5fd;
+  --primary-soft: rgba(96, 165, 250, 0.14);
+  --primary-text: #93c5fd;
+  --on-primary: #0b1220;
   --success: #4cc985; --success-soft: rgba(76, 201, 133, 0.12); --success-border: rgba(76, 201, 133, 0.35);
   --warning: #f1b54a; --warning-soft: rgba(241, 181, 74, 0.12); --warning-border: rgba(241, 181, 74, 0.35);
   --danger: #ff7b78;  --danger-soft: rgba(255, 123, 120, 0.12);  --danger-border: rgba(255, 123, 120, 0.35);
   --info: #7fb0ff;    --info-soft: rgba(127, 176, 255, 0.12);    --info-border: rgba(127, 176, 255, 0.35);
   --neutral-soft: #222731;
-  --focus: #a5abff;
+  --focus: #93c5fd;
   --scrim: rgba(0, 0, 0, 0.6);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
@@ -74,13 +76,13 @@ html[data-theme="dark"] {
 html, body { height: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--text); font-family: var(--font);
-  font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
   word-break: keep-all; overflow-wrap: anywhere;
 }
-h1, h2, h3, h4 { margin: 0; line-height: 1.3; letter-spacing: -0.01em; }
-h1 { font-size: 22px; font-weight: 700; }
-h2 { font-size: 17px; font-weight: 700; }
-h3 { font-size: 15px; font-weight: 650; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.5; }
+h1 { font-size: 24px; font-weight: 700; }
+h2 { font-size: 18px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 700; }
 h4 { font-size: 13px; font-weight: 650; color: var(--text-2); }
 p { margin: 0; }
 a { color: var(--primary); }
@@ -113,8 +115,8 @@ code { background: var(--surface-2); border: 1px solid var(--border); border-rad
 /* buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
-  height: 36px; padding: 0 var(--s4); border-radius: var(--r); border: 1px solid var(--border-strong);
-  background: var(--surface); color: var(--text); font: inherit; font-weight: 600; font-size: 13.5px;
+  height: 36px; padding: 0 var(--s4); border-radius: var(--r); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: inherit; font-weight: 700; font-size: 14px;
   cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s, color .12s;
 }
 .btn:hover { background: var(--surface-2); }
@@ -167,7 +169,7 @@ code { background: var(--surface-2); border: 1px solid var(--border); border-rad
 
 /* cards */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm); padding: var(--s5); min-width: 0; }
+  box-shadow: var(--shadow-sm); padding: 20px; min-width: 0; }
 .card.flush { padding: 0; }
 .card.tight { padding: var(--s4); }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
@@ -178,9 +180,18 @@ code { background: var(--surface-2); border: 1px solid var(--border); border-rad
 .card.clickable:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
 
 /* badges */
-.badge { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px;
-  border-radius: var(--r-full); font-size: 12px; font-weight: 650; white-space: nowrap; border: 1px solid transparent; }
-.badge .icon { width: 14px; height: 14px; stroke-width: 2.1; }
+.badge { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 8px;
+  border-radius: var(--r); font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.badge .icon { width: 16px; height: 16px; stroke-width: 2; }
+/* Status badges from the Figma "상태 배지" set: fixed 132px wide, left aligned. */
+.badge.state { min-width: 132px; border: 0; }
+.badge.state.ok { background: var(--success-soft); color: var(--success); }
+.badge.state.busy { background: var(--primary-soft); color: var(--primary); }
+.badge.state.attention { background: var(--warning-soft); color: var(--warning); }
+.badge.state.bad { background: var(--surface-2); color: var(--danger); }
+.badge.state.paused { background: var(--surface-2); color: var(--text-3); }
+.badge.state.error { background: var(--surface-2); color: var(--danger); }
+.badge.state.demo { background: transparent; color: var(--warning); }
 .badge.success { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }
 .badge.warning { background: var(--warning-soft); color: var(--warning); border-color: var(--warning-border); }
 .badge.danger { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-border); }
@@ -238,42 +249,34 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .app { display: flex; height: 100vh; min-width: 0; }
 .sidebar { width: var(--sidebar-w); flex: 0 0 auto; background: var(--surface); border-right: 1px solid var(--border);
   display: flex; flex-direction: column; transition: width .18s; min-height: 0; }
-.brand { height: var(--topbar-h); display: flex; align-items: center; gap: var(--s3); padding: 0 var(--s4);
-  border-bottom: 1px solid var(--border); flex: 0 0 auto; }
-.brand-logo { width: 32px; height: 32px; flex: 0 0 auto; }
-.brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-.brand-name { font-weight: 750; font-size: 15px; letter-spacing: -0.01em; }
-.brand-sub { font-size: 11.5px; color: var(--text-3); }
-.nav { flex: 1 1 auto; overflow-y: auto; padding: var(--s3) var(--s2); display: flex; flex-direction: column; gap: 2px; }
-.nav-group-label { font-size: 11px; font-weight: 700; color: var(--text-3); padding: var(--s3) var(--s3) var(--s1);
-  letter-spacing: 0.04em; }
-.nav-item { display: flex; align-items: center; gap: var(--s3); height: 38px; padding: 0 var(--s3); border-radius: var(--r);
-  color: var(--text-2); text-decoration: none; font-weight: 600; font-size: 13.5px; border: 0; background: none;
-  cursor: pointer; width: 100%; text-align: left; font-family: inherit; }
+/* Sidebar from the Figma "탐색" frame: 176px, "작업 공간" label, 152x42 items 8px apart,
+   then the quick-check button and a one-line status at the bottom. */
+.nav { flex: 1 1 auto; overflow-y: auto; padding: 26px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.nav-group-label { font-size: 12px; font-weight: 400; color: var(--text-3); padding: 0 8px; height: 18px;
+  margin-bottom: 8px; }
+.nav-item { display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 12px; border-radius: var(--r);
+  color: var(--text-3); text-decoration: none; font-weight: 400; font-size: 14px; border: 0; background: none;
+  cursor: pointer; width: 100%; text-align: left; font-family: inherit; position: relative; }
+.nav-item .icon { width: 20px; height: 20px; }
 .nav-item:hover { background: var(--surface-2); color: var(--text); }
-.nav-item[aria-current="page"] { background: var(--primary-soft); color: var(--primary-text); }
+.nav-item[aria-current="page"] { background: var(--primary-soft); color: var(--primary-text); font-weight: 700; }
 .nav-item .nav-label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-item .count-pill { flex: 0 0 auto; }
-.sidebar-foot { border-top: 1px solid var(--border); padding: var(--s2); display: flex; flex-direction: column; gap: 2px; }
-.sidebar-foot .version { font-size: 11.5px; color: var(--text-3); padding: var(--s1) var(--s3); }
-.app.collapsed .sidebar { width: var(--sidebar-collapsed-w); }
-.app.collapsed .brand-text, .app.collapsed .nav-label, .app.collapsed .nav-group-label,
-.app.collapsed .sidebar-foot .version, .app.collapsed .nav-item .count-pill { display: none; }
-.app.collapsed .nav-item { justify-content: center; padding: 0; position: relative; }
-.app.collapsed .nav-item .dot { display: block; }
-.nav-item .dot { display: none; position: absolute; top: 8px; right: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
-.app.collapsed .brand { justify-content: center; padding: 0; }
-
+.nav-item .count-pill { flex: 0 0 auto; margin-right: -4px; }
+.sidebar-foot { padding: 12px 12px 20px; display: flex; flex-direction: column; gap: 22px; }
+.sidebar-foot .btn { width: 100%; }
+.side-status { display: flex; align-items: center; gap: 8px; padding: 0 8px; font-size: 12px; color: var(--text-3);
+  min-height: 18px; }
+.side-status .icon { width: 16px; height: 16px; color: var(--success); }
+.side-status.demo .icon { color: var(--warning); }
+.side-status.error .icon { color: var(--danger); }
+.side-status.busy .icon { color: var(--primary); }
+.side-status.paused .icon { color: var(--text-3); }
 .main-col { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.topbar { height: var(--topbar-h); flex: 0 0 auto; display: flex; align-items: center; gap: var(--s3);
-  padding: 0 var(--s5); background: var(--surface); border-bottom: 1px solid var(--border); }
-.topbar .status-zone { display: flex; align-items: center; gap: var(--s2); min-width: 0; flex-wrap: nowrap; }
-.topbar .status-zone .badge { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.search { position: relative; flex: 1 1 260px; max-width: 420px; margin-left: auto; }
-.search .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
-.search .input { padding-left: 36px; padding-right: 52px; background: var(--surface-2); border-color: var(--border); height: 36px; }
-.search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-family: var(--font); font-size: 11px;
-  color: var(--text-3); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 5px; background: var(--surface); }
+/* Search box from the Figma "입력창/검색" component: 40px, search icon then text. */
+.search { position: relative; flex: 0 1 304px; min-width: 220px; }
+.search .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none;
+  width: 20px; height: 20px; }
+.search .input { padding-left: 44px; height: 40px; border-color: var(--border); }
 .popover { position: absolute; top: calc(100% + 6px); right: 0; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 40; min-width: 300px; max-height: 70vh; overflow-y: auto; }
 .search .popover { left: 0; right: 0; }
@@ -297,9 +300,12 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 .content { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
 .content:focus { outline: none; }
-.page { max-width: 1240px; margin: 0 auto; padding: var(--s5) var(--s6) var(--s7); display: flex; flex-direction: column; gap: var(--s5); }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
-.page-head .lead { color: var(--text-3); margin-top: 4px; max-width: 720px; }
+/* Content column: title 24px at 22px from the top, 23px side gutter, cards 16px apart. */
+.page { max-width: 1400px; margin: 0 auto; padding: 21px 24px 24px 23px; display: flex; flex-direction: column; gap: 16px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap;
+  min-height: 36px; margin-bottom: -6px; }
+.page-head .lead { color: var(--text-3); margin-top: 2px; max-width: 720px; font-size: 13px; }
+.page-date { font-size: 13px; color: var(--text-3); margin-right: 16px; }
 
 /* status hero on the home page */
 .hero { display: flex; gap: var(--s5); align-items: flex-start; }

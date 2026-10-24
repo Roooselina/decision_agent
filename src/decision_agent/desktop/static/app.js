@@ -5,7 +5,7 @@
   const {h, set, icon, api, button, busy, badge, field, input, textarea, select, toggle, segmented, callout,
     progressBar, skeleton, emptyState, errorState, toast, modal, confirmDialog, drawer, anyLayerOpen,
     copyText, applyTheme, fmtTime, relTime, stateInfo, stateBadge, transmissionBadge, labelBadge, KINDS,
-    providerName} = DA;
+    providerName, providerKind, agentState} = DA;
 
   const S = {status: null, settings: null, offline: false};
   const REFRESH_MS = 4000;
@@ -13,18 +13,25 @@
 
   // ---------------------------------------------------------------- routing
 
-  const NAV = [
-    {group: "점검", items: ["home", "results", "questions"]},
-    {group: "자료", items: ["folders", "accounts", "notes"]},
-    {group: "기록", items: ["digest", "activity"]},
-  ];
-  const FOOT = ["settings", "profile"];
+  // The Figma sidebar has four screens. Older pages live on inside them; their old addresses
+  // (from bookmarks, toasts, or the tray) are sent to the new place.
+  const NAV = ["home", "results", "folders", "settings"];
   const ROUTES = {};
+  const MOVED = {
+    questions: ["home", {}], digest: ["home", {}], activity: ["home", {log: "1"}],
+    accounts: ["settings", {tab: "connect"}], profile: ["settings", {tab: "data"}], notes: ["folders", {}],
+  };
 
   function parseHash() {
     const raw = (location.hash || "#/home").slice(2);
-    const [name, query] = raw.split("?");
-    return {name: ROUTES[name] ? name : "home", params: new URLSearchParams(query || "")};
+    let [name, query] = raw.split("?");
+    let params = new URLSearchParams(query || "");
+    if (MOVED[name]) {
+      const [target, extra] = MOVED[name];
+      for (const [k, v] of Object.entries(extra)) if (!params.has(k)) params.set(k, v);
+      name = target;
+    }
+    return {name: ROUTES[name] ? name : "home", params};
   }
 
   function go(name, params) {
@@ -81,39 +88,55 @@
 
   // ---------------------------------------------------------------- chrome
 
+  // Sidebar: "작업 공간", the four screens, then "빠른 점검" and one status line
+  // ("로컬 AI · 정상", "시연용 모드", "로컬 AI · 오류", ...).
+  const NAV_ICONS = {home: "home", results: "list", folders: "folder", settings: "settings"};
+
   function renderNav() {
     const nav = document.getElementById("nav");
     const current = parseHash().name;
     const st = S.status;
-    const counts = {
-      results: st ? st.inconsistent : 0,
-      questions: st ? st.questions : 0,
-    };
+    const count = st ? st.inconsistent : 0;
     const item = (name) => {
       const r = ROUTES[name];
-      const count = counts[name] || 0;
-      return h("a", {class: "nav-item", href: "#/" + name, "aria-current": name === current ? "page" : null,
-        title: r.title},
-      icon(r.icon), h("span", {class: "nav-label"}, r.title),
-      count ? h("span", {class: "count-pill", "aria-label": count + "건"}, String(count)) : null,
-      count ? h("span", {class: "dot", "aria-hidden": "true"}) : null);
+      const badgeCount = name === "results" ? count : 0;
+      return h("a", {class: "nav-item", href: "#/" + name, "aria-current": name === current ? "page" : null},
+        icon(NAV_ICONS[name]), h("span", {class: "nav-label"}, r.title),
+        badgeCount ? h("span", {class: "count-pill", "aria-label": "반영 안 됨 " + badgeCount + "건"}, String(badgeCount)) : null);
     };
-    set(nav, ...NAV.flatMap(g => [h("div", {class: "nav-group-label"}, g.group), ...g.items.map(item)]));
-    const foot = document.getElementById("sidebar-foot");
-    const collapsed = document.getElementById("app").classList.contains("collapsed");
-    set(foot, ...FOOT.map(item),
-      h("button", {type: "button", class: "nav-item", title: collapsed ? "메뉴 펼치기" : "메뉴 접기",
-        "aria-label": collapsed ? "메뉴 펼치기" : "메뉴 접기", "aria-expanded": String(!collapsed),
-        onclick: toggleSidebar}, icon(collapsed ? "chevron-right" : "chevron-left"),
-      h("span", {class: "nav-label"}, "메뉴 접기")),
-      h("div", {class: "version"}, "버전 " + (st ? st.version : "")));
+    set(nav, h("div", {class: "nav-group-label"}, "작업 공간"), ...NAV.map(item));
+    renderSidebarFoot();
   }
 
-  function toggleSidebar() {
-    const app = document.getElementById("app");
-    app.classList.toggle("collapsed");
-    try { localStorage.setItem("da.sidebar", app.classList.contains("collapsed") ? "1" : "0"); } catch (e) { /* ignore */ }
-    renderNav();
+  // One line under the quick-check button. It never says "정상" for the demo judge.
+  function sideStatus(st) {
+    if (S.offline || !st) return ["error", "alert-circle", "프로그램 연결 끊김"];
+    const judge = providerName(st.provider.id);
+    const state = agentState(st);
+    if (state === "demo" || (st.provider.local_only && state !== "failed")) {
+      if (state === "paused") return ["paused", "pause-bars", "시연용 모드 · 일시 중지"];
+      return ["demo", "alert-circle", "시연용 모드"];
+    }
+    const info = DA.STATES[state] || DA.STATES.incomplete;
+    const cls = {ok: "ok", busy: "busy", paused: "paused", error: "error", attention: "demo"}[info.cls] || "ok";
+    return [cls, state === "verified" ? "shield-check" : info.icon, judge + " · " + info.short];
+  }
+
+  function renderSidebarFoot() {
+    const foot = document.getElementById("sidebar-foot");
+    const [cls, iconName, text] = sideStatus(S.status);
+    const line = h("div", {class: "side-status " + cls, role: "status"}, icon(iconName), h("span", {class: "truncate"}, text));
+    if (iconName === "loader") line.querySelector("svg").classList.add("spin");
+    set(foot, button("빠른 점검", {onClick: openQuick}), line);
+  }
+
+  // Opens the quick-check window (its own always-on-top window in the desktop app).
+  async function openQuick() {
+    try {
+      const r = await api("/api/app/activate", "POST", {page: "/quick"});
+      if (r.ok) return;
+    } catch (e) { /* fall back to a tab below */ }
+    window.open("/quick", "_blank", "noopener,width=480,height=640");
   }
 
   let openPopover = null;
@@ -123,136 +146,9 @@
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closePopover();
-    if ((e.ctrlKey && e.key.toLowerCase() === "k") || (e.key === "/" && !isTyping() && !anyLayerOpen())) {
-      const box = document.getElementById("global-search");
-      if (box) { e.preventDefault(); box.focus(); box.select(); }
-    }
   });
 
-  let topbarBuilt = false;
-  const topRefs = {};
-
-  function buildTopbar() {
-    const bar = document.getElementById("topbar");
-    topRefs.status = h("div", {class: "status-zone", "aria-live": "polite"});
-    topRefs.search = h("input", {id: "global-search", class: "input", type: "search", placeholder: "결정, 점검 결과, 파일, 메모 검색",
-      "aria-label": "검색", autocomplete: "off"});
-    const searchWrap = h("div", {class: "search anchor", role: "search"}, icon("search", "sm"), topRefs.search, h("kbd", {}, "Ctrl K"));
-    let timer = null;
-    topRefs.search.addEventListener("input", () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => runSearch(searchWrap, topRefs.search.value.trim()), 220);
-    });
-    topRefs.search.addEventListener("focus", () => { if (topRefs.search.value.trim()) runSearch(searchWrap, topRefs.search.value.trim()); });
-    topRefs.bellDot = h("span", {class: "count-pill bell-dot", hidden: true});
-    const bellWrap = h("div", {class: "anchor"});
-    const bell = h("button", {type: "button", class: "btn ghost icon-only", "aria-label": "알림", title: "알림",
-      onclick: () => toggleBell(bellWrap)}, icon("bell"), topRefs.bellDot);
-    bellWrap.appendChild(bell);
-    const profileWrap = h("div", {class: "anchor"});
-    topRefs.avatar = h("button", {type: "button", class: "avatar-btn", "aria-label": "프로필 메뉴", "aria-haspopup": "menu",
-      onclick: () => toggleProfileMenu(profileWrap)});
-    profileWrap.appendChild(topRefs.avatar);
-    set(bar, topRefs.status, searchWrap, bellWrap, profileWrap);
-    topbarBuilt = true;
-  }
-
-  function avatar(size) {
-    const s = S.settings || {};
-    const name = (s.display_name || "").trim();
-    return h("span", {class: "avatar" + (size ? " " + size : ""), style: {background: s.profile_color || "#4f46e5"},
-      "aria-hidden": "true"}, name ? Array.from(name)[0] : icon("user", "sm"));
-  }
-
-  function renderTopbar() {
-    if (!topbarBuilt) buildTopbar();
-    const st = S.status;
-    if (S.offline || !st) {
-      set(topRefs.status, badge("danger", "x-circle", "프로그램과 연결이 끊겼습니다", "lg"));
-    } else {
-      set(topRefs.status, 
-        stateBadge(st.overall, "lg"),
-        (() => { const b = transmissionBadge(st.provider); b.classList.add("lg"); return b; })(),
-        st.paused ? badge("neutral", "pause", "일시 중지됨", "lg optional") : null);
-    }
-    set(topRefs.avatar, avatar());
-    updateBell();
-  }
-
-  async function runSearch(wrap, q) {
-    closePopover();
-    if (!q) return;
-    let r;
-    try { r = await api("/api/search?q=" + encodeURIComponent(q)); } catch (e) { return; }
-    const pop = h("div", {class: "popover", role: "listbox", "aria-label": "검색 결과"});
-    const section = (title, items) => items.length ? h("div", {class: "popover-section"}, h("div", {class: "popover-title"}, title), ...items) : null;
-    const item = (iconName, text, sub, onClick) => h("button", {type: "button", class: "popover-item", onclick: () => { closePopover(); onClick(); }},
-      icon(iconName, "sm"), h("div", {class: "list-main"}, h("span", {class: "truncate"}, text), sub ? h("span", {class: "list-sub"}, sub) : null));
-    const parts = [
-      section("결정", r.decisions.slice(0, 5).map(d => item("results", d.latest || d.topic, d.date || "", () => go("results", {q: d.latest || d.topic})))),
-      section("점검 결과", r.findings.slice(0, 6).map(f => item(f.label === "INCONSISTENT" ? "x-circle" : "help", f.text,
-        (DA.LABELS[f.label] || f.label) + " · " + f.source_doc, () => go("results", {open: [f.root, f.topic, f.artifact_id].join("|")})))),
-      section("파일", r.files.slice(0, 5).map(p => item("file", p, "", () => go("activity", {tab: "files", q: p})))),
-      section("메모", r.notes.slice(0, 4).map(n => item("note", n.text, n.date, () => go("notes")))),
-    ].filter(Boolean);
-    append(pop, parts.length ? parts : [h("div", {class: "popover-empty"}, "'" + q + "'에 대한 결과가 없습니다.")]);
-    wrap.appendChild(pop);
-    openPopover = pop;
-  }
-
   function append(node, children) { DA.append(node, children); return node; }
-
-  let inbox = [];
-  function lastSeen() { try { return localStorage.getItem("da.seen") || ""; } catch (e) { return ""; } }
-  function updateBell() {
-    const unread = inbox.filter(i => i.time > lastSeen()).length;
-    topRefs.bellDot.hidden = unread === 0;
-    topRefs.bellDot.textContent = unread > 9 ? "9+" : String(unread);
-  }
-  async function refreshInbox() {
-    try { inbox = await api("/api/notifications"); } catch (e) { return; }
-    updateBell();
-  }
-
-  function toggleBell(wrap) {
-    if (openPopover && wrap.contains(openPopover)) { closePopover(); return; }
-    closePopover();
-    const seen = lastSeen();
-    const pop = h("div", {class: "popover", style: {width: "380px"}},
-      h("div", {class: "popover-section row-between"}, h("strong", {}, "알림"),
-        h("span", {class: "small muted"}, "이 컴퓨터에서만 보관")),
-      inbox.length === 0 ? h("div", {class: "popover-empty"}, "새 알림이 없습니다.") :
-        h("div", {class: "popover-section"}, ...inbox.slice(0, 20).map(n => h("div", {class: "popover-item"},
-          icon(n.level === "error" ? "x-circle" : (n.level === "attention" ? "alert" : "info"), "sm"),
-          h("div", {class: "list-main"}, h("span", {class: n.time > seen ? "strong" : ""}, n.text),
-            h("span", {class: "list-sub"}, relTime(n.time)))))));
-    wrap.appendChild(pop);
-    openPopover = pop;
-    if (inbox.length) { try { localStorage.setItem("da.seen", inbox[0].time); } catch (e) { /* ignore */ } }
-    updateBell();
-  }
-
-  function toggleProfileMenu(wrap) {
-    if (openPopover && wrap.contains(openPopover)) { closePopover(); return; }
-    closePopover();
-    const s = S.settings || {};
-    const menu = (iconName, text, fn) => h("button", {type: "button", class: "menu-item", role: "menuitem",
-      onclick: () => { closePopover(); fn(); }}, icon(iconName, "sm"), text);
-    const dark = document.documentElement.getAttribute("data-theme") === "dark";
-    const pop = h("div", {class: "popover", role: "menu", style: {width: "260px"}},
-      h("div", {class: "popover-section row"}, avatar(), h("div", {class: "list-main"},
-        h("strong", {}, s.display_name || "이름 없음"), h("span", {class: "list-sub"}, "이 컴퓨터의 로컬 프로필"))),
-      h("div", {class: "popover-section"},
-        menu("user", "내 정보", () => go("profile")),
-        menu("settings", "설정", () => go("settings")),
-        menu(dark ? "sun" : "moon", dark ? "라이트 테마로 전환" : "다크 테마로 전환", () => saveTheme(dark ? "light" : "dark")),
-        menu("shield", "이 앱이 읽는 범위", () => go("settings", {section: "access"})),
-        menu("database", "데이터 폴더 열기", () => openLocation("data"))));
-    wrap.appendChild(pop);
-    openPopover = pop;
-    const first = pop.querySelector(".menu-item");
-    if (first) first.focus();
-  }
 
   async function saveTheme(theme) {
     applyTheme(theme);
@@ -1463,7 +1359,6 @@
       saveProfile.addEventListener("click", () => busy(saveProfile, async () => {
         await api("/api/settings", "POST", {display_name: name.value, profile_color: color});
         S.settings = await api("/api/settings");
-        renderTopbar();
         toast("프로필을 저장했습니다.", "success");
       }));
       const profile = card("프로필", null, null, h("div", {class: "row", style: {gap: "24px", alignItems: "flex-start"}}, preview,
@@ -1732,10 +1627,9 @@
       S.offline = false;
     } catch (e) {
       S.offline = true;
-      renderTopbar();
+      renderNav();
       return;
     }
-    renderTopbar();
     renderNav();
     if (ONB.active && ONB.step === 3) drawOnboarding();
     maybeOnboarding();
@@ -1743,7 +1637,6 @@
 
   async function loop() {
     await tick();
-    refreshInbox();
     const route = ROUTES[parseHash().name];
     if (!S.offline && route.auto && !anyLayerOpen() && !isTyping() && !openPopover && !ONB.active) {
       await renderRoute(false);
@@ -1751,7 +1644,6 @@
   }
 
   async function boot() {
-    try { if (localStorage.getItem("da.sidebar") === "1") document.getElementById("app").classList.add("collapsed"); } catch (e) { /* ignore */ }
     buildDropVeil();
     try {
       S.settings = await api("/api/settings");
@@ -1760,7 +1652,6 @@
       S.settings = null;
     }
     await tick();
-    refreshInbox();
     await renderRoute(true);
     window.addEventListener("hashchange", () => { closePopover(); renderRoute(true); document.getElementById("view").focus({preventScroll: true}); });
     setInterval(loop, REFRESH_MS);

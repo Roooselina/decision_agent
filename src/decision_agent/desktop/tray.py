@@ -40,7 +40,7 @@ def tray_state(status: dict) -> str:
 
 
 def tray_title(status: dict) -> str:
-    return f"결정 변경 점검 - 불일치 {status['inconsistent']}건, 질문 {status['questions']}건"
+    return f"결정 변경 점검 - 반영 안 됨 {status['inconsistent']}건, 질문 {status['questions']}건"
 
 
 def make_icon_image(state: str, size: int = 64):
