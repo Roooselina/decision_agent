@@ -179,3 +179,24 @@ def test_false_positive_reason_goes_to_the_activity_list(home):
     assert client.post("/api/finding/status", headers=HEADERS, json=too_long).status_code == 422
     hidden = [r for r in client.get("/api/findings", headers=HEADERS).json() if r["artifact_id"] == row["artifact_id"]]
     assert hidden == []
+
+
+def test_folder_tree_counts_documents_by_kind():
+    from decision_agent.desktop.folders import add_kind_counts
+
+    tree = {"rel": "", "children": [{"rel": "meetings", "children": [{"rel": "meetings/old", "children": []}]},
+                                    {"rel": "plans", "children": []}]}
+    add_kind_counts(tree, {"meetings/a.md": ["MEETING"], "meetings/old/b.md": ["MEETING", "SCHEDULE"],
+                           "plans/s.csv": ["SCHEDULE"], "top.md": ["REQUIREMENT"], "gone/x.md": ["TASK"]})
+    assert tree["kinds"] == {"MEETING": 2, "SCHEDULE": 2, "REQUIREMENT": 1, "TASK": 1}
+    meetings = tree["children"][0]
+    assert meetings["kinds"] == {"MEETING": 2, "SCHEDULE": 1}
+    assert meetings["children"][0]["kinds"] == {"MEETING": 1, "SCHEDULE": 1}
+
+
+def test_folder_tree_api_includes_kinds_for_the_demo(home):
+    client, _controller, root = home
+    data = client.get("/api/folders/tree", headers=HEADERS, params={"root": str(root.resolve())}).json()
+    assert data["tree"]["kinds"].get("MEETING", 0) >= 1
+    meetings = next(c for c in data["tree"]["children"] if c["name"] == "meetings")
+    assert meetings["kinds"] == {"MEETING": 1}

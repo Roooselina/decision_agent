@@ -717,3 +717,54 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .detail-tech summary { cursor: pointer; }
 .detail-tech .kv { margin-top: 8px; font-size: 12px; grid-template-columns: 90px 1fr; }
 .detail-foot { margin-top: auto; padding-top: 24px; font-size: 12px; color: var(--text-3); }
+
+/* folders (Figma 15:233, 16:1054, 18:930, 19:1023, 19:1472, 16:1612) */
+.folder-card { padding: 17px 20px 20px 19px; display: flex; flex-direction: column; gap: 0; }
+.folder-head { display: flex; align-items: flex-start; gap: 16px; }
+.folder-head .folder-big { width: 28px; height: 28px; color: var(--primary); margin-top: 6px; stroke-width: 1.7; }
+.folder-title { flex: 1 1 auto; min-width: 0; }
+.folder-title h2 { font-size: 18px; }
+.folder-summary { font-size: 13px; color: var(--text-3); margin-top: 6px; }
+.folder-head .badge.state { margin-top: 2px; }
+.folder-head .anchor { margin-top: 4px; }
+.folder-target { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--primary); margin-top: 10px; }
+.folder-tree { display: flex; flex-direction: column; gap: 8px; margin-top: 30px; max-height: 420px; overflow-y: auto; }
+.tree-line { display: flex; align-items: center; gap: 12px; min-height: 48px; padding-right: 12px; border-radius: var(--r); background: var(--surface-2); }
+.tree-line.off .tree-name { color: var(--text-3); }
+.check-box { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; margin: 0 5px 0 0; flex: 0 0 auto; border: 1px solid var(--border);
+  border-radius: 4px; background: var(--surface); cursor: pointer; display: inline-grid; place-content: center; }
+.check-box:checked { background: var(--primary); border-color: var(--primary); }
+.check-box:checked::after { content: ""; width: 9px; height: 5px; border: solid #fff; border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+.check-box:disabled { cursor: default; opacity: .85; }
+.check-box:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tree-caret { width: 20px; height: 20px; border: 0; background: none; padding: 0; color: var(--text-3); cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; margin: 0 -8px 0 -6px; }
+.tree-caret .icon { width: 16px; height: 16px; }
+.tree-folder { width: 20px; height: 20px; color: var(--text-3); }
+.tree-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+.tree-count { font-size: 13px; color: var(--text-3); white-space: nowrap; }
+.tree-kinds { font-size: 12px; color: var(--text-3); margin-left: auto; white-space: nowrap; }
+.tree-off { font-size: 12px; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
+.tree-kinds + .tree-off { margin-left: 0; }
+.tree-count + .tree-off { margin-left: auto; }
+.folder-note { font-size: 13px; color: var(--text-3); margin-top: 28px; }
+.folder-note + .folder-note { margin-top: 12px; }
+.folder-empty, .folder-error { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  gap: 10px; min-height: 572px; }
+.folder-empty.dashed { border-style: dashed; }
+.folder-empty .folder-empty-icon { width: 40px; height: 40px; color: var(--text-3); margin-bottom: 18px; }
+.folder-error .folder-error-icon { width: 34px; height: 34px; color: #b91c1c; margin-bottom: 26px; }
+.folder-empty strong, .folder-error strong { font-size: 18px; }
+.folder-empty p, .folder-error p { font-size: 13px; color: var(--text-3); }
+.folder-empty .btn, .folder-error .btn.primary { min-width: 192px; margin-top: 30px; }
+.folder-error .row { justify-content: center; }
+.folder-error .row .btn:not(.primary) { margin-top: 30px; }
+.folder-manual { font-size: 13px; color: var(--text-3); }
+.folder-manual summary { cursor: pointer; }
+.folder-manual-body { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.menu-item.danger { color: var(--danger); }
+.pick-folder { display: flex; align-items: center; gap: 18px; margin: 8px 0 18px; }
+.pick-folder .pick-folder-icon { width: 24px; height: 24px; color: var(--primary); }
+.pick-folder strong { font-size: 15px; }
+.modal.plain .modal-head > .icon { color: var(--danger); width: 26px; height: 26px; }
+.btn.danger-outline { background: var(--surface); }

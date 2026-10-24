@@ -165,3 +165,38 @@ def folder_tree(root: Path, settings: AppSettings) -> dict:
     tree = nodes[()]
     tree["name"] = root.name or str(root)
     return {"root": str(root), "tree": tree, "excluded": sorted(excluded), "truncated": truncated}
+
+
+def add_kind_counts(tree: dict, kinds_by_path: dict[str, list[str]]) -> dict:
+    """Add per-folder document counts by kind (meeting notes, requirements, schedules, ...).
+
+    kinds_by_path maps a file path relative to the root to the kinds found in it. A document
+    with two kinds counts once for each. Counts include every subfolder below a node.
+    """
+    nodes: dict[str, dict] = {}
+
+    def index(node: dict) -> None:
+        node["kinds"] = {}
+        nodes[node["rel"]] = node
+        for child in node["children"]:
+            index(child)
+
+    index(tree)
+    for path, kinds in kinds_by_path.items():
+        parts = path.split("/")[:-1]
+        while parts and "/".join(parts) not in nodes:
+            parts.pop()
+        own = nodes["/".join(parts)]
+        for kind in set(kinds):
+            own["kinds"][kind] = own["kinds"].get(kind, 0) + 1
+
+    def total(node: dict) -> dict:
+        counts = dict(node["kinds"])
+        for child in node["children"]:
+            for kind, n in total(child).items():
+                counts[kind] = counts.get(kind, 0) + n
+        node["kinds"] = counts
+        return counts
+
+    total(tree)
+    return tree

@@ -729,142 +729,155 @@
 
   // ---------------------------------------------------------------- folders
 
-  const FS = {open: null, trees: {}};
+  // Figma 15:233 and its variants: one card per registered folder with the subfolder tree.
+  const FS = {trees: {}, expanded: {}, saving: {}};
+  const KIND_NAMES = {MEETING: "회의록", REQUIREMENT: "요구사항", TASK: "작업", TEST: "테스트", SCHEDULE: "일정"};
 
   ROUTES.folders = {
-    title: "폴더 관리", icon: "folder", auto: false,
-    lead: "선택한 폴더와 그 안의 모든 하위 폴더를 읽습니다. 파일은 읽기만 하고 수정하거나 새로 만들지 않습니다.",
-    async load() { return api("/api/folders"); },
-    render(cards) {
+    title: "폴더 관리", auto: false,
+    async load() {
+      const cards = await api("/api/folders");
+      const trees = await Promise.all(cards.map(c => c.exists
+        ? api("/api/folders/tree?root=" + encodeURIComponent(c.root)).catch(() => null) : Promise.resolve(null)));
+      cards.forEach((c, i) => { FS.trees[c.root] = trees[i]; });
+      return {cards, busy: S.status ? S.status.busy : false};
+    },
+    render({cards, busy}) {
       const actions = [
-        button("경로 직접 입력", {variant: "ghost", onClick: manualPathDialog}),
-        button("폴더 추가", {variant: "primary", icon: "folder-plus", onClick: () => startAddFolder()}),
+        button("파일 가져오기", {onClick: openImport}),
+        button("폴더 추가", {variant: cards.length ? "primary" : "", onClick: () => startAddFolder()}),
       ];
-      const drop = h("div", {class: "dropzone"}, h("div", {class: "folder-icon"}, icon("upload")),
-        h("div", {class: "stack-sm", style: {gap: "2px"}}, h("strong", {}, "폴더를 이 창으로 끌어다 놓아도 추가할 수 있습니다"),
-          h("span", {class: "small muted"}, "가장 위의 폴더 하나만 고르면 그 아래 폴더는 자동으로 포함됩니다. 필요 없는 하위 폴더는 '하위 폴더 선택'에서 뺄 수 있습니다.")));
+      const manual = h("details", {class: "folder-manual"}, h("summary", {}, "고급: 경로 직접 입력"),
+        h("div", {class: "folder-manual-body"}, h("p", {class: "small muted"}, "폴더 선택 창을 쓸 수 없을 때만 사용하세요."),
+          button("경로 입력", {size: "sm", onClick: () => manualPathDialog()})));
       if (cards.length === 0) {
-        return page(this.title, this.lead, actions, h("section", {class: "card"}, emptyState({icon: "folder-plus", title: "아직 등록한 폴더가 없습니다",
-          text: "프로젝트 문서가 있는 가장 위의 폴더를 고르세요. 드라이브 전체, 사용자 폴더 전체, 시스템 폴더는 등록할 수 없습니다.",
-          action: button("폴더 추가", {variant: "primary", icon: "folder-plus", onClick: () => startAddFolder()})})), drop);
+        return page("폴더 관리", null, actions, h("section", {class: "card folder-empty dashed"},
+          icon("folder", "folder-empty-icon"), h("strong", {}, "등록된 폴더가 없습니다."),
+          h("p", {}, "문서가 저장된 폴더를 선택하십시오. 하위 폴더는 자동으로 포함됩니다."),
+          button("폴더 선택", {variant: "primary", onClick: () => startAddFolder()})), manual);
       }
-      return page(this.title, this.lead, actions, ...cards.map(folderCard), drop);
+      return page("폴더 관리", null, actions, ...cards.map(c => folderCard(c, busy)), manual);
     },
   };
 
-  function folderCard(c) {
-    const WATCH = {watching: ["success", "eye", "감시 중"], paused: ["neutral", "pause", "일시 중지"], missing: ["danger", "x-circle", "폴더 없음"]};
-    const [kind, iconName, text] = WATCH[c.watch] || WATCH.watching;
-    const treeBox = h("div");
-    const treeBtn = button(FS.open === c.root ? "하위 폴더 닫기" : "하위 폴더 선택", {icon: "filter", disabled: !c.exists});
-    treeBtn.addEventListener("click", () => {
-      if (FS.open === c.root) { FS.open = null; set(treeBox, ); treeBtn.lastChild.textContent = "하위 폴더 선택"; return; }
-      FS.open = c.root;
-      treeBtn.lastChild.textContent = "하위 폴더 닫기";
-      loadTree(c.root, treeBox);
-    });
-    if (FS.open === c.root) setTimeout(() => loadTree(c.root, treeBox), 0);
-    const remove = button("제거", {variant: "danger-outline", icon: "trash"});
-    remove.addEventListener("click", async () => {
-      const ok = await confirmDialog({title: "폴더를 목록에서 제거할까요?", danger: true, confirmLabel: "제거",
-        message: h("div", {class: "stack-sm"}, h("p", {class: "mono"}, c.root),
-          h("p", {}, "폴더와 그 안의 파일은 그대로 남습니다. 이 앱이 저장한 읽은 내용의 사본과 점검 결과만 지웁니다."))});
-      if (!ok) return;
-      await busy(remove, async () => {
+  function countIncluded(node, excluded) {
+    if (node.rel && excluded.has(node.rel)) return 0;
+    return node.readable + node.children.reduce((sum, c) => sum + countIncluded(c, excluded), 0);
+  }
+
+  function kindText(kinds) {
+    return Object.entries(kinds || {}).filter(([k]) => KIND_NAMES[k])
+      .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => KIND_NAMES[k] + " " + n).join(" · ");
+  }
+
+  function folderCard(c, busy) {
+    if (!c.exists) {
+      return h("section", {class: "card folder-error"}, icon("alert-circle", "folder-error-icon"),
+        h("strong", {}, "등록된 폴더를 찾을 수 없습니다."),
+        h("p", {}, "폴더가 이동되었거나 접근 권한이 변경되었는지 확인하십시오."),
+        h("p", {class: "small muted", title: c.root}, folderName(c.root)),
+        h("div", {class: "row"}, button("폴더 다시 선택", {variant: "primary", onClick: () => startAddFolder(async () => {
+          await api("/api/folders/remove", "POST", {path: c.root});
+        })}), button("목록에서 제거", {onClick: () => stopFolder(c)})));
+    }
+    const data = FS.trees[c.root];
+    const excluded = new Set(data ? data.excluded : c.excluded);
+    const total = data ? data.tree.total_readable : c.files_ok;
+    const included = data ? countIncluded(data.tree, excluded) : c.files_ok;
+    const STATE = {watching: busy ? ["busy", "loader", "확인 중"] : ["ok", "check", "정상"], paused: ["paused", "pause-bars", "일시 중지"]};
+    const [cls, iconName, text] = STATE[c.watch] || STATE.watching;
+    const badgeNode = h("span", {class: "badge state " + cls}, icon(iconName), text);
+    if (iconName === "loader") badgeNode.querySelector("svg").classList.add("spin");
+    const menuWrap = h("div", {class: "anchor"});
+    const menuBtn = h("button", {type: "button", class: "icon-btn", "aria-label": "폴더 메뉴", "aria-haspopup": "menu",
+      onclick: () => folderMenu(menuWrap, c)}, icon("more"));
+    menuWrap.appendChild(menuBtn);
+    const tree = h("div", {class: "folder-tree", role: "tree", "aria-label": "하위 폴더"});
+    const summary = h("p", {class: "folder-summary"});
+    const drawSummary = () => {
+      const inc = data ? countIncluded(data.tree, excluded) : included;
+      summary.textContent = "문서 " + total + "개 · 포함 " + inc + "개 · 제외 " + (total - inc) + "개";
+    };
+    drawSummary();
+    if (data) {
+      if (!FS.expanded[c.root]) FS.expanded[c.root] = new Set([""]);
+      const expanded = FS.expanded[c.root];
+      const save = async () => {
+        try {
+          await api("/api/folders/excluded", "POST", {root: c.root, excluded: [...excluded]});
+          toast("포함할 폴더를 저장했습니다. 다음 점검부터 적용됩니다.", "success");
+        } catch (e) { toast(e.message, "danger"); }
+      };
+      const ancestorOff = (rel) => [...excluded].some(e => rel !== e && rel.startsWith(e + "/"));
+      const rows = [];
+      const walk = (node, depth) => {
+        const isRoot = node.rel === "";
+        const off = !isRoot && (excluded.has(node.rel) || ancestorOff(node.rel));
+        const hasKids = node.children.length > 0;
+        const open = expanded.has(node.rel);
+        const box = h("input", {type: "checkbox", class: "check-box", checked: !off, disabled: isRoot || ancestorOff(node.rel),
+          "aria-label": node.name + " 포함"});
+        if (!isRoot) box.addEventListener("change", () => {
+          for (const e of [...excluded]) if (e.startsWith(node.rel + "/")) excluded.delete(e);
+          if (box.checked) excluded.delete(node.rel); else excluded.add(node.rel);
+          drawTree(); drawSummary(); save();
+        });
+        const kinds = kindText(node.kinds);
+        rows.push(h("div", {class: "tree-line" + (off ? " off" : ""), role: "treeitem", style: {paddingLeft: (12 + depth * 24) + "px"},
+          "aria-expanded": hasKids ? String(open) : null},
+        box,
+        hasKids && !isRoot ? h("button", {type: "button", class: "tree-caret", "aria-label": (open ? "접기: " : "펼치기: ") + node.name,
+          onclick: () => { open ? expanded.delete(node.rel) : expanded.add(node.rel); drawTree(); }}, icon(open ? "chevron-down" : "chevron-right")) : null,
+        icon("folder", "tree-folder"),
+        h("span", {class: "tree-name", title: node.rel || c.root}, isRoot ? folderName(c.root) : node.name),
+        h("span", {class: "tree-count"}, "문서 " + node.total_readable + "개"),
+        kinds ? h("span", {class: "tree-kinds"}, kinds) : null,
+        off ? h("span", {class: "tree-off"}, "제외") : null));
+        if (hasKids && (open || isRoot)) node.children.forEach(child => walk(child, depth + 1));
+      };
+      const drawTree = () => { rows.length = 0; walk(data.tree, 0); set(tree, ...rows); };
+      drawTree();
+    }
+    return h("section", {class: "card folder-card"},
+      h("div", {class: "folder-head"}, icon("folder", "folder-big"),
+        h("div", {class: "folder-title"}, h("h2", {title: c.root}, folderName(c.root)), summary),
+        badgeNode, menuWrap),
+      c.is_target ? h("p", {class: "folder-target"}, icon("link", "sm"), "메일, 캘린더, 메모, 가져온 파일을 이 폴더와 함께 분석합니다.") : null,
+      data ? tree : h("p", {class: "small muted"}, "하위 폴더를 불러오지 못했습니다."),
+      data && data.truncated ? h("p", {class: "small muted"}, "폴더가 많아 일부만 표시했습니다.") : null,
+      h("p", {class: "folder-note"}, "포함 여부를 변경하면 다음 점검부터 적용됩니다."),
+      h("p", {class: "folder-note"}, "다른 위치의 폴더도 추가할 수 있습니다. 폴더를 이 창에 끌어다 놓아도 됩니다."));
+  }
+
+  function folderMenu(wrap, c) {
+    if (openPopover && wrap.contains(openPopover)) { closePopover(); return; }
+    closePopover();
+    const item = (label, fn, danger) => h("button", {type: "button", class: "menu-item" + (danger ? " danger" : ""), role: "menuitem",
+      onclick: () => { closePopover(); fn(); }}, label);
+    const pop = h("div", {class: "popover", role: "menu", style: {width: "220px"}}, h("div", {class: "popover-section"},
+      item("탐색기에서 열기", () => openLocation(c.root)),
+      c.is_target ? null : item("연결 자료를 이 폴더와 분석", async () => {
+        await api("/api/settings", "POST", {connector_target: c.root}); toast("연결 자료를 이 폴더와 함께 분석합니다.", "success"); renderRoute(true);
+      }),
+      item("폴더 확인 중지", () => stopFolder(c), true)));
+    wrap.appendChild(pop);
+    openPopover = pop;
+  }
+
+  // Figma 16:1612: removing a folder only stops checking it; the files stay untouched.
+  function stopFolder(c) {
+    modal({title: "폴더 확인을 중지하시겠습니까?", plain: true,
+      body: h("p", {class: "muted"}, "원본 파일은 그대로 두고, 확인만 중지합니다."),
+      actions: [{label: "확인 중지", variant: "danger-outline", onClick: async () => {
         await api("/api/folders/remove", "POST", {path: c.root});
-        toast("폴더를 목록에서 제거했습니다. 원본 파일은 그대로입니다.", "success");
+        toast("폴더 확인을 중지했습니다. 원본 파일은 그대로입니다.", "success");
         await refreshAll();
         renderRoute(true);
-      });
-    });
-    return h("section", {class: "card folder-card"},
-      h("div", {class: "folder-top"},
-        h("div", {class: "folder-icon" + (c.exists ? "" : " missing")}, icon("folder", "lg")),
-        h("div", {class: "stack-sm", style: {flex: "1 1 auto", minWidth: "0"}},
-          h("div", {class: "row"}, h("strong", {}, folderName(c.root)), badge(kind, iconName, text),
-            c.is_target ? h("span", {class: "chip", title: "메일, 캘린더, 메모, 가져온 파일을 이 폴더와 함께 분석합니다."}, "연결 자료 분석 대상") : null),
-          h("span", {class: "folder-path truncate", title: c.root}, c.root),
-          !c.exists ? callout("danger", "alert", "폴더를 찾을 수 없습니다", "옮겨졌거나 이름이 바뀌었을 수 있습니다. 다시 추가하거나 목록에서 제거하세요.") : null),
-        h("div", {class: "btn-group"}, treeBtn,
-          button("탐색기에서 열기", {icon: "external", disabled: !c.exists, onClick: () => openLocation(c.root)}), remove)),
-      h("div", {class: "stats"},
-        stat(c.files_ok, "읽은 파일"), stat(c.files_unsupported, "지원하지 않는 파일"), stat(c.files_error, "읽지 못한 파일"),
-        stat(c.excluded.length, "제외한 하위 폴더"), stat(relTime(c.last_checked), "마지막 점검")),
-      treeBox);
+      }}, {label: "취소"}]});
   }
 
   function stat(value, label) {
     return h("div", {class: "stat"}, h("span", {class: "stat-value"}, String(value)), h("span", {class: "stat-label"}, label));
-  }
-
-  async function loadTree(root, box) {
-    set(box, skeleton(4));
-    let data;
-    try { data = await api("/api/folders/tree?root=" + encodeURIComponent(root)); } catch (e) {
-      set(box, errorState(e.message, () => loadTree(root, box)));
-      return;
-    }
-    const excluded = new Set(data.excluded);
-    const original = JSON.stringify([...excluded].sort());
-    const expanded = new Set([""]);
-    const container = h("div", {class: "stack-sm"});
-    const under = (rel, parent) => parent === "" ? true : rel === parent || rel.startsWith(parent + "/");
-    const ancestorExcluded = (rel) => [...excluded].some(e => e !== rel && under(rel, e) && rel !== e);
-    const saveBtn = button("변경 저장", {variant: "primary", icon: "check"});
-    const summary = h("span", {class: "small muted"});
-
-    function includedCount(node) {
-      if (excluded.has(node.rel) && node.rel !== "") return 0;
-      return node.readable + node.children.reduce((sum, c) => sum + includedCount(c), 0);
-    }
-
-    function nodeView(node) {
-      const isRoot = node.rel === "";
-      const off = !isRoot && (excluded.has(node.rel) || ancestorExcluded(node.rel));
-      const hasKids = node.children.length > 0;
-      const open = expanded.has(node.rel);
-      const toggleBtn = hasKids ? h("button", {type: "button", class: "tree-toggle", "aria-expanded": String(open),
-        "aria-label": (open ? "접기: " : "펼치기: ") + node.name, onclick: () => { open ? expanded.delete(node.rel) : expanded.add(node.rel); draw(); }},
-      icon("chevron-right")) : h("span", {class: "tree-toggle", "aria-hidden": "true"});
-      let box = null;
-      if (!isRoot) {
-        box = h("input", {type: "checkbox", "aria-label": node.name + " 포함", checked: !off, disabled: ancestorExcluded(node.rel)});
-        const partial = !off && [...excluded].some(e => e.startsWith(node.rel + "/"));
-        box.indeterminate = partial;
-        box.addEventListener("change", () => {
-          for (const e of [...excluded]) if (e.startsWith(node.rel + "/")) excluded.delete(e);
-          if (box.checked) excluded.delete(node.rel); else excluded.add(node.rel);
-          draw();
-        });
-      }
-      const row = h("div", {class: "tree-row" + (off ? " off" : ""), role: "treeitem", "aria-expanded": hasKids ? String(open) : null},
-        toggleBtn, box || icon("folder", "sm"), h("span", {class: "name", title: node.rel || node.name}, isRoot ? node.name + " (선택한 폴더)" : node.name),
-        h("span", {class: "tree-counts"}, "문서 " + node.total_readable + (node.total_unsupported ? " · 지원 안 함 " + node.total_unsupported : "")));
-      return h("li", {}, row, hasKids && open ? h("ul", {role: "group"}, ...node.children.map(nodeView)) : null);
-    }
-
-    function draw() {
-      const dirty = JSON.stringify([...excluded].sort()) !== original;
-      saveBtn.disabled = !dirty;
-      summary.textContent = "제외 " + excluded.size + "개 · 포함되는 문서 " + includedCount(data.tree) + "개" + (dirty ? " · 저장하지 않은 변경이 있습니다" : "");
-      set(container, 
-        h("div", {class: "tree", role: "tree", "aria-label": "하위 폴더"}, h("ul", {}, nodeView(data.tree))),
-        data.truncated ? h("p", {class: "small muted"}, "폴더가 많아 일부만 표시했습니다.") : null);
-    }
-
-    saveBtn.addEventListener("click", () => busy(saveBtn, async () => {
-      await api("/api/folders/excluded", "POST", {root, excluded: [...excluded]});
-      toast("하위 폴더 설정을 저장했습니다. 다시 점검합니다.", "success");
-      FS.open = null;
-      await refreshAll();
-      renderRoute(true);
-    }));
-    draw();
-    set(box, h("div", {class: "card-section stack-sm"},
-      h("div", {class: "row-between"}, h("div", {}, h("h3", {}, "포함할 하위 폴더"),
-        h("p", {class: "small muted"}, "기본은 전부 포함입니다. 체크를 해제한 폴더와 그 안의 폴더는 읽지 않습니다. .git, node_modules 같은 폴더는 제외 규칙으로 이미 빠져 있습니다.")),
-      h("div", {class: "btn-group"}, button("취소", {variant: "ghost", onClick: () => { FS.open = null; renderRoute(true); }}), saveBtn)),
-      container, summary));
   }
 
   async function startAddFolder(onAdded) {
@@ -881,14 +894,15 @@
 
   function manualPathDialog(onAdded) {
     const path = input({placeholder: "예: C:\\Users\\me\\Documents\\project", class: "input mono", autofocus: true});
-    modal({title: "폴더 경로 입력", icon: "folder",
+    modal({title: "폴더 경로 입력", plain: true,
       body: [field("폴더 경로", path, "선택한 폴더와 그 안의 모든 폴더를 포함합니다.")],
-      actions: [{label: "취소"}, {label: "미리보기", variant: "primary", onClick: () => {
+      actions: [{label: "확인", variant: "primary", onClick: () => {
         if (!path.value.trim()) throw new Error("경로를 입력하세요.");
         openPreview(path.value.trim(), onAdded);
-      }}]});
+      }}, {label: "취소"}]});
   }
 
+  // Details for the onboarding preview and the "자세히 보기" part of the folder dialog.
   function previewBody(p) {
     if (!p.ok) {
       return [callout("danger", "x-circle", "이 폴더는 추가할 수 없습니다", p.reason),
@@ -897,27 +911,23 @@
     const rel = p.relation;
     const unsupported = Object.values(p.unsupported).reduce((a, b) => a + b, 0);
     const skipped = Object.values(p.skipped).reduce((a, b) => a + b, 0);
-    const out = [h("div", {class: "folder-top"}, h("div", {class: "folder-icon"}, icon("folder", "lg")),
-      h("div", {class: "stack-sm", style: {minWidth: "0", gap: "2px"}}, h("strong", {}, folderName(p.path)), h("span", {class: "folder-path"}, p.path)))];
-    if (rel.kind === "contained") out.push(callout("danger", "x-circle", "이미 포함되어 있습니다", "등록된 폴더 " + rel.folders[0] + " 안에 있어 이미 읽고 있습니다."));
+    const out = [h("div", {class: "pick-folder"}, icon("folder", "pick-folder-icon"), h("strong", {title: p.path}, folderName(p.path)))];
+    if (rel.kind === "contained") out.push(callout("danger", "x-circle", "이미 포함되어 있습니다", "등록된 폴더 " + folderName(rel.folders[0]) + " 안에 있어 이미 읽고 있습니다."));
     else if (rel.kind === "duplicate") out.push(callout("info", "info", "이미 등록된 폴더입니다", null));
     else if (rel.kind === "parent") out.push(callout("info", "folder", "이미 등록된 폴더를 포함하는 상위 폴더입니다",
       h("div", {class: "stack-sm"}, h("p", {}, "합치면 아래 폴더가 이 폴더 하나로 바뀝니다. 기존에 제외한 하위 폴더 설정은 유지됩니다."),
-        h("ul", {}, ...rel.folders.map(f => h("li", {class: "mono"}, f))))));
-    out.push(callout("neutral", "info", null, "선택한 폴더와 그 안의 모든 하위 폴더(" + p.subfolders + "개)를 포함합니다. 필요 없는 하위 폴더는 추가한 뒤 뺄 수 있습니다."));
-    out.push(h("div", {class: "stats"}, stat(p.readable, "읽을 수 있는 파일"), stat(p.subfolders, "하위 폴더"),
-      stat(unsupported, "지원하지 않는 파일"), stat(skipped, "건너뛰는 파일")));
-    const formats = Object.entries(p.formats);
-    if (formats.length) out.push(h("div", {class: "stack-sm"}, h("h4", {}, "형식별 파일 수"),
-      h("div", {class: "row"}, ...formats.map(([ext, n]) => h("span", {class: "chip"}, "." + ext + " " + n)))));
-    if (unsupported) out.push(h("div", {class: "stack-sm"}, h("h4", {}, "읽지 않는 형식"),
-      h("div", {class: "row"}, ...Object.entries(p.unsupported).map(([ext, n]) => h("span", {class: "chip"}, "." + ext + " " + n))),
-      h("p", {class: "small muted"}, "hwp, doc, xls, ppt는 hwpx, docx, xlsx, pptx로 저장하면 읽을 수 있습니다.")));
-    if (p.excluded_dirs.length) out.push(h("div", {class: "stack-sm"}, h("h4", {}, "자동으로 제외되는 폴더"),
-      h("div", {class: "row"}, ...p.excluded_dirs.slice(0, 12).map(d => h("span", {class: "chip mono"}, d)))));
-    if (skipped) out.push(h("details", {}, h("summary", {class: "small"}, "건너뛰는 파일 이유 보기"),
-      h("ul", {class: "small muted"}, ...Object.entries(p.skipped).map(([why, n]) => h("li", {}, why + ": " + n + "개")))));
+        h("ul", {}, ...rel.folders.map(f => h("li", {title: f}, folderName(f)))))));
+    out.push(h("p", {class: "muted"}, "선택한 폴더의 하위 폴더를 포함합니다.", h("br"), "포함 여부는 폴더 관리에서 변경할 수 있습니다."));
+    out.push(h("p", {class: "small muted"}, "읽을 수 있는 문서 " + p.readable + "개 · 하위 폴더 " + p.subfolders + "개" + (unsupported ? " · 읽지 않는 형식 " + unsupported + "개" : "")));
     for (const w of p.warnings) out.push(callout("warning", "alert", null, w));
+    const formats = Object.entries(p.formats);
+    const more = h("details", {class: "detail-tech"}, h("summary", {}, "자세히 보기"), h("div", {class: "stack-sm", style: {marginTop: "8px"}},
+      h("div", {class: "stats"}, stat(p.readable, "읽을 수 있는 파일"), stat(p.subfolders, "하위 폴더"), stat(unsupported, "지원하지 않는 파일"), stat(skipped, "건너뛰는 파일")),
+      formats.length ? h("div", {class: "row"}, ...formats.map(([ext, n]) => h("span", {class: "chip"}, "." + ext + " " + n))) : null,
+      unsupported ? h("p", {class: "small muted"}, "hwp, doc, xls, ppt는 hwpx, docx, xlsx, pptx로 저장하면 읽을 수 있습니다.") : null,
+      p.excluded_dirs.length ? h("div", {class: "row"}, ...p.excluded_dirs.slice(0, 12).map(d => h("span", {class: "chip mono"}, d))) : null,
+      skipped ? h("ul", {class: "small muted"}, ...Object.entries(p.skipped).map(([why, n]) => h("li", {}, why + ": " + n + "개"))) : null));
+    out.push(more);
     return out;
   }
 
@@ -935,28 +945,54 @@
     return true;
   }
 
+  // Figma 19:1023 (폴더 선택) and 19:1472 (선택할 수 없는 위치).
   async function openPreview(path, onAdded) {
-    const body = h("div", {class: "stack"}, skeleton(5));
-    const close = modal({title: "폴더 추가 미리보기", icon: "folder-plus", wide: true, body, actions: [{label: "취소"}]});
     let p;
-    try { p = await api("/api/folders/preview", "POST", {path}); } catch (e) {
-      set(body, errorState(e.message, () => { close(); openPreview(path, onAdded); }));
+    try { p = await api("/api/folders/preview", "POST", {path}); } catch (e) { toast(e.message, "danger"); return; }
+    if (!p.ok) {
+      modal({title: "선택할 수 없는 위치", plain: true, icon: "alert-circle",
+        body: h("div", {class: "stack-sm"}, h("p", {class: "muted"}, "드라이브 전체와 시스템 폴더는 등록할 수 없습니다.", h("br"), "프로젝트 문서가 있는 폴더를 선택하십시오."),
+          h("p", {class: "small muted"}, p.reason)),
+        actions: [{label: "다른 폴더 선택", variant: "primary", onClick: () => { setTimeout(() => startAddFolder(onAdded), 0); }}, {label: "취소"}]});
       return;
     }
-    set(body, ...previewBody(p));
-    const blocked = !p.ok || p.relation.kind === "contained" || p.relation.kind === "duplicate";
-    close.setActions([
-      {label: "다른 폴더 선택", icon: "folder", onClick: () => { close(); startAddFolder(onAdded); }},
-      {label: p.ok && p.relation.kind === "parent" ? "합쳐서 추가" : "이 폴더 추가", variant: "primary", icon: "check", disabled: blocked,
+    const blocked = p.relation.kind === "contained" || p.relation.kind === "duplicate";
+    modal({title: "폴더 선택", plain: true, body: h("div", {class: "stack"}, ...previewBody(p)),
+      actions: [{label: p.relation.kind === "parent" ? "합쳐서 선택" : "이 폴더 선택", variant: "primary", disabled: blocked,
         onClick: async () => {
+          if (onAdded) await onAdded(p.path);
           const added = await addFolder(p.path, p.relation.kind === "parent");
           if (!added) return false;
-          if (onAdded) onAdded(p.path);
           await refreshAll();
           if (parseHash().name === "folders") renderRoute(true);
           return true;
-        }},
-    ]);
+        }}, {label: "취소"}]});
+  }
+
+  // File import and notes live here now: a one-off file, or a decision typed in quick check.
+  async function openImport() {
+    const file = h("input", {type: "file", class: "input", "aria-label": "가져올 파일"});
+    const notesBox = h("div", {class: "stack-sm"});
+    const drawNotes = async () => {
+      let notes = [];
+      try { notes = await api("/api/notes"); } catch (e) { set(notesBox, h("p", {class: "small muted"}, e.message)); return; }
+      set(notesBox, notes.length === 0 ? h("p", {class: "small muted"}, "빠른 점검 창에서 저장한 메모가 여기에 표시됩니다.")
+        : h("div", {class: "list"}, ...notes.map(n => h("div", {class: "list-item"}, h("span", {class: "chip"}, n.date),
+          h("div", {class: "list-main"}, n.text),
+          button("", {variant: "ghost", size: "sm", icon: "trash", title: "메모 삭제", onClick: async () => {
+            await api("/api/notes/" + encodeURIComponent(n.id), "DELETE"); drawNotes();
+          }})))));
+    };
+    drawNotes();
+    modal({title: "파일 가져오기", plain: true, wide: true,
+      body: h("div", {class: "stack"},
+        h("p", {class: "muted"}, "확인 폴더 밖의 회의록이나 일정 파일(.ics 포함)을 한 번 읽어 점검에 포함합니다. 원본은 수정하지 않고 파일 자체도 저장하지 않으며, 읽은 텍스트만 앱 데이터에 남습니다."),
+        file,
+        h("details", {class: "detail-tech"}, h("summary", {}, "저장한 메모"), notesBox)),
+      actions: [{label: "가져오기", variant: "primary", onClick: async () => {
+        if (!file.files[0]) throw new Error("파일을 선택하세요.");
+        await importFile(file.files[0]);
+      }}, {label: "닫기"}]});
   }
 
   // drag and drop of a folder onto the window
@@ -978,8 +1014,9 @@
     e.preventDefault();
     dragDepth = 0;
     document.body.classList.remove("dragging");
-    if (parseHash().name === "notes" && e.dataTransfer.files.length && e.dataTransfer.files[0].size > 0) {
-      importFile(e.dataTransfer.files[0]);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && dropped.size > 0 && /\.[a-z0-9]{2,5}$/i.test(dropped.name) && dropped.type !== "") {
+      importFile(dropped);
       return;
     }
     handleFolderDrop();
@@ -1247,41 +1284,6 @@
     }
     await refreshAll();
   }
-
-  ROUTES.notes = {
-    title: "메모와 가져오기", icon: "note", auto: false,
-    lead: "회의 중에 정한 내용을 바로 적거나, 감시 폴더 밖의 파일을 한 번 읽어 점검에 포함합니다.",
-    async load() { return api("/api/notes"); },
-    render(notes) {
-      const text = textarea({rows: "3", placeholder: "예: 발표는 다음 주 월요일로 연기한다"});
-      const date = input({type: "date", "aria-label": "날짜"});
-      const add = button("메모 추가", {variant: "primary", icon: "plus"});
-      add.addEventListener("click", () => busy(add, async () => {
-        if (text.value.trim().length < 2) throw new Error("메모 내용을 입력하세요.");
-        await api("/api/notes", "POST", {text: text.value.trim(), date: date.value || null});
-        toast("메모를 저장했고 다음 점검에 포함합니다.", "success");
-        renderRoute(true);
-      }));
-      const file = h("input", {type: "file", class: "input", "aria-label": "가져올 파일"});
-      const imp = button("가져오기", {variant: "primary", icon: "upload"});
-      imp.addEventListener("click", () => busy(imp, async () => { await importFile(file.files[0]); file.value = ""; }));
-      return page(this.title, this.lead, null,
-        card("결정 메모", "파일에 쓰기 전에도 점검에 포함됩니다. 메모는 이 컴퓨터의 앱 데이터에만 저장됩니다.", null,
-          h("div", {class: "stack"}, field("내용", text), h("div", {class: "row-between"}, h("div", {style: {width: "220px"}}, field("날짜 (비우면 오늘)", date)), add)),
-          h("div", {class: "card-section"},
-            notes.length === 0 ? emptyState({icon: "note", title: "메모가 없습니다", text: "회의 중 단축키(기본 Ctrl+Alt+D)로 빠른 점검 창을 열어도 메모를 남길 수 있습니다.", neutral: true})
-              : h("div", {class: "list"}, ...notes.map(n => h("div", {class: "list-item"},
-                h("span", {class: "chip"}, n.date), h("div", {class: "list-main"}, n.text),
-                button("", {variant: "ghost", size: "sm", icon: "trash", title: "메모 삭제", onClick: async () => {
-                  if (!await confirmDialog({title: "메모를 삭제할까요?", message: n.text, confirmLabel: "삭제", danger: true})) return;
-                  await api("/api/notes/" + encodeURIComponent(n.id), "DELETE");
-                  renderRoute(true);
-                }})))))),
-        card("파일 가져오기", "md, docx, xlsx, pdf, pptx, ics 등. 원본은 수정하지 않고 파일 자체도 저장하지 않으며, 읽은 텍스트만 앱 데이터에 남습니다.", null,
-          h("div", {class: "dropzone"}, h("div", {class: "folder-icon"}, icon("upload")),
-            h("div", {class: "stack-sm", style: {flex: "1 1 auto"}}, h("strong", {}, "파일을 이 화면에 끌어다 놓거나 선택하세요"), file), imp)));
-    },
-  };
 
   // ---------------------------------------------------------------- digest
 

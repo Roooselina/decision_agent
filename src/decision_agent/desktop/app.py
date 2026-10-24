@@ -1110,7 +1110,15 @@ class DecisionAgentApp:
         folder = self._registered(root)
         if not folder.is_dir():
             raise UserError("폴더를 찾을 수 없습니다. 옮겨졌거나 삭제되었을 수 있습니다.")
-        return folders_module.folder_tree(folder, self.settings)
+        data = folders_module.folder_tree(folder, self.settings)
+        runtime = self.runtimes.get(str(folder.resolve()))
+        build = runtime.engine.last_build if runtime is not None else None
+        kinds = {
+            s.path: list(s.kinds) for s in (build.summaries if build else [])
+            if not s.path.startswith(EXTERNAL_PREFIX)
+        }
+        folders_module.add_kind_counts(data["tree"], kinds)
+        return data
 
     def set_excluded(self, root: str, relative: list[str]) -> list[str]:
         new = self.settings.model_copy(deep=True)
