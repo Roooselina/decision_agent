@@ -207,6 +207,13 @@ class CalendarEvent:
     description: str = ""
     location: str = ""
     cancelled: bool = False
+    time: str = ""
+
+
+def clock_of(raw: str) -> str:
+    """HH:MM from an ISO date-time such as 2026-10-26T13:00:00+09:00, or "" for all-day dates."""
+    match = re.match(r"\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2})", raw or "")
+    return f"{match.group(1)}:{match.group(2)}" if match else ""
 
 
 MEETING_WORDS = re.compile(r"회의|미팅|회고|스크럼|킥오프|meeting|sync|standup|retro|review", re.IGNORECASE)
@@ -221,7 +228,10 @@ def calendar_documents(events: list[CalendarEvent]) -> dict[str, ParsedDocument]
             continue
         description = event.description.strip()
         rows.append(
-            [event.summary.strip(), event.date, description.replace("\n", " ")[:300], event.location]
+            [
+                event.summary.strip(), event.date, event.time,
+                description.replace("\n", " ")[:300], event.location,
+            ]
         )
         if description and MEETING_WORDS.search(event.summary):
             notes.blocks.append(Block(text=f"{event.date} {event.summary.strip()}", kind="heading", level=2))
@@ -234,7 +244,9 @@ def calendar_documents(events: list[CalendarEvent]) -> dict[str, ParsedDocument]
     docs: dict[str, ParsedDocument] = {}
     if rows:
         table = Table(
-            headers=["summary", "date", "description", "location"], rows=rows, first_row_location=1
+            headers=["summary", "date", "time", "description", "location"],
+            rows=rows,
+            first_row_location=1,
         )
         doc = ParsedDocument(path="", fmt="connector", sections=[Section(name="schedule", tables=[table])])
         doc.meta["kind"] = "SCHEDULE"

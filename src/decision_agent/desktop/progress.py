@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import collections
+import json
 import logging
 import threading
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -19,19 +21,57 @@ PHASE_LABELS = {
 
 
 class ActivityLog:
-    """Short in-memory list of what the program did recently, shown in the dashboard.
+    """Short list of what the program did recently, shown in the dashboard.
 
-    The full technical log is the rotating log file; this list holds readable one-liners.
+    The full technical log is the rotating log file; this list holds readable one-liners. With
+    a path (in the app data folder, never a watched folder) the list survives a restart: lines
+    are appended as JSON and the file is trimmed when it grows past twice the limit.
     """
 
-    def __init__(self, limit: int = 300) -> None:
+    def __init__(self, limit: int = 300, path: Path | None = None) -> None:
         self._items: collections.deque[dict] = collections.deque(maxlen=limit)
         self._lock = threading.Lock()
+        self.limit = limit
+        self.path = path
+        self._written = 0
+        if path is not None:
+            self._load()
+
+    def _load(self) -> None:
+        try:
+            lines = self.path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return
+        for line in lines[-self.limit:]:
+            try:
+                item = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(item, dict) and {"time", "level", "text"} <= set(item):
+                self._items.append(item)
+        self._written = len(lines)
+
+    def _persist(self, item: dict) -> None:
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            if self._written >= self.limit * 2:
+                kept = [json.dumps(i, ensure_ascii=False) for i in self._items]
+                self.path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+                self._written = len(kept)
+                return
+            with self.path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(item, ensure_ascii=False) + "\n")
+            self._written += 1
+        except OSError:
+            log.debug("could not save activity", exc_info=True)
 
     def add(self, text: str, level: str = "info") -> None:
         stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        item = {"time": stamp, "level": level, "text": text}
         with self._lock:
-            self._items.append({"time": stamp, "level": level, "text": text})
+            self._items.append(item)
+            if self.path is not None:
+                self._persist(item)
 
     def recent(self, count: int = 100) -> list[dict]:
         with self._lock:

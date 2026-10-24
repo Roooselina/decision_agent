@@ -189,126 +189,335 @@
   // ---------------------------------------------------------------- home
 
   ROUTES.home = {
-    title: "홈", icon: "home", auto: true,
-    async load() {
-      const [findings, activity] = await Promise.all([api("/api/findings"), api("/api/activity")]);
+    title: "홈", auto: true,
+    async load(params) {
+      if (params.has("week")) HS.week = params.get("week");
+      const [findings, questions, activity, week] = await Promise.all([
+        api("/api/findings"), api("/api/questions"), api("/api/activity"),
+        api("/api/calendar" + (HS.week ? "?start=" + encodeURIComponent(HS.week) : "")),
+      ]);
       const st = S.status || await api("/api/status");
-      return {st, findings: findings.filter(f => f.label === "INCONSISTENT").slice(0, 5), activity: activity.slice(0, 8)};
+      return {st, findings, questions, activity: activity.slice(0, 5), week, flash: HS.flash};
     },
-    render({st, findings, activity}) {
+    render({st, findings, questions, activity, week}, params) {
+      if (params.get("log")) setTimeout(() => { history.replaceState(null, "", "#/home"); openLogModal(); }, 30);
       if (st.registered_folders === 0) {
-        return page("홈", null, null, h("section", {class: "card"}, emptyState({
-          icon: "folder-plus", title: "감시할 폴더를 추가하세요",
+        return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))], h("section", {class: "card"}, emptyState({
+          icon: "folder-plus", title: "확인할 폴더를 추가하세요",
           text: "회의록, 요구사항, 작업 표, 테스트 계획, 일정이 있는 프로젝트 폴더를 고르면 결정이 바뀌었는데 반영되지 않은 항목을 찾아 알려 줍니다. 선택한 폴더와 그 안의 모든 폴더를 포함합니다.",
-          action: button("폴더 추가", {variant: "primary", icon: "folder-plus", onClick: () => startAddFolder()}),
+          action: button("폴더 추가", {variant: "primary", onClick: () => startAddFolder()}),
         })));
       }
-      return page("홈", null, null, statusHero(st), progressCard(st), metrics(st),
-        h("div", {class: "grid grid-2"},
-          card("최근 불일치", "결정과 맞지 않는 것으로 보이는 항목", [button("모두 보기", {variant: "ghost", size: "sm", icon: "arrow-right", onClick: () => go("results", {label: "INCONSISTENT"})})],
-            findings.length === 0
-              ? emptyState({icon: "check-circle", title: "불일치 항목이 없습니다", text: st.overall.state === "demo" ? "데모 판정기 결과입니다. 실제 검사가 아니므로 놓친 항목이 있을 수 있습니다." : "새 불일치가 생기면 여기와 알림으로 알려 드립니다.", neutral: true})
-              : h("div", {class: "list"}, ...findings.map(f => h("div", {class: "list-item clickable", tabindex: "0", role: "button",
-                onclick: () => openFinding(f), onkeydown: (e) => { if (e.key === "Enter") openFinding(f); }},
-              labelBadge(f.label),
-              h("div", {class: "list-main"}, h("span", {class: "strong"}, f.text),
-                h("span", {class: "list-sub"}, f.topic_label, h("span", {}, "·"), f.source_doc, f.owner ? h("span", {}, "· 담당 " + f.owner) : null)),
-              icon("chevron-right", "sm"))))),
-          card("최근 활동", "이 프로그램이 한 일", [button("전체 기록", {variant: "ghost", size: "sm", icon: "arrow-right", onClick: () => go("activity")})],
-            activity.length === 0 ? emptyState({icon: "activity", title: "아직 기록이 없습니다", neutral: true}) : timeline(activity))));
+      return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))],
+        agentCard(st),
+        h("div", {class: "home-grid"}, calendarCard(week, st), todoCard(st, findings, questions)),
+        recentCard(st, activity));
     },
   };
 
-  function statusHero(st) {
-    const o = st.overall;
-    const info = stateInfo(o);
-    const heroIcon = icon(info.icon, "xl" + (o.state === "running" ? " spin" : ""));
-    const pauseBtn = button(st.paused ? "다시 시작" : "일시 중지", {icon: st.paused ? "play" : "pause"});
-    pauseBtn.addEventListener("click", () => busy(pauseBtn, async () => {
-      await api("/api/pause", "POST", {paused: !st.paused});
-      await refreshAll();
-    }));
-    const rescanBtn = button("지금 다시 점검", {variant: "primary", icon: "refresh"});
-    rescanBtn.addEventListener("click", () => busy(rescanBtn, async () => {
-      await api("/api/rescan", "POST", {});
-      toast("다시 점검을 시작했습니다.", "info");
-      await refreshAll();
-    }));
-    const sends = st.provider.sends_externally;
-    const extras = [];
-    if (o.state === "demo") {
-      extras.push(callout("warning", "alert", "데모 판정기 결과는 실제 검사가 아닙니다",
-        "내장 규칙 판정기는 예시 문서의 어휘만 알아 실제 문서에서는 대부분을 놓칩니다. 실제 문서를 검사하려면 판정 방식을 설정하세요.",
-        [button("판정 방식 설정", {size: "sm", icon: "arrow-right", onClick: () => go("profile", {section: "judge"})})]));
-    } else if (o.state === "failed") {
-      extras.push(callout("danger", "x-circle", "설정을 고쳐야 점검할 수 있습니다", o.detail,
-        [button("판정 방식 확인", {size: "sm", onClick: () => go("profile", {section: "judge"})})]));
-    } else if (o.state === "stale") {
-      extras.push(callout("warning", "refresh", "판정 방식이 바뀌었습니다", "이전 결과는 예전 판정 방식으로 만든 것입니다. 다시 점검하면 새 방식으로 바뀝니다."));
-    }
-    if (st.last_error && o.state !== "failed") extras.push(callout("danger", "alert", "최근 문제", st.last_error));
-    return h("section", {class: "card"},
-      h("div", {class: "hero"},
-        h("div", {class: "hero-icon " + info.kind}, heroIcon),
-        h("div", {class: "hero-main"},
-          h("div", {class: "row"}, stateBadge(o), transmissionBadge(st.provider)),
-          h("div", {class: "hero-title"}, o.label),
-          o.detail && o.state !== "failed" ? h("p", {class: "muted"}, o.detail.replace(/(\d{4}-\d\d-\d\d)T(\d\d:\d\d):\d\d/g, "$1 $2")) : null),
-        h("div", {class: "btn-group"}, pauseBtn, rescanBtn)),
-      h("div", {class: "meta-grid"},
-        meta("clock", "마지막 점검", relTime(lastCompletion(st) || st.last_cycle)),
-        meta("cpu", "판정 방식", providerName(st.provider.id)),
-        meta(sends ? "cloud" : "shield-check", "문서 외부 전송", sends ? "예. " + st.provider.id + "로 전송됩니다" : "아니요. 이 컴퓨터 안에서만 처리합니다"),
-        meta("eye", "감시 상태", st.paused ? "일시 중지됨" : (st.busy ? "점검 중" : "폴더 " + st.registered_folders + "개 감시 중"))),
-      extras.length ? h("div", {class: "stack-sm", style: {marginTop: "16px"}}, extras) : null);
+  const HS = {week: null, day: null, flash: null};
+  const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+  function toDate(iso) {
+    const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function isoDay(d) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function addDays(iso, n) { const d = toDate(iso); d.setDate(d.getDate() + n); return isoDay(d); }
+  function longDate(d) { return (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + WEEKDAYS[d.getDay()] + "요일"; }
+  function clock(iso) { return iso ? String(iso).slice(11, 16) : "—"; }
+  function baseName(path) { return String(path || "").split(/[\\/]/).filter(Boolean).pop() || path; }
+
+  // "14:32" for today, "10월 23일 14:32" otherwise.
+  function stamp(iso) {
+    if (!iso) return "—";
+    return String(iso).slice(0, 10) === isoDay(new Date()) ? clock(iso) : (toDate(iso).getMonth() + 1) + "월 " + toDate(iso).getDate() + "일 " + clock(iso);
   }
 
-  function meta(iconName, label, value) {
-    return h("div", {class: "meta-item"}, h("span", {class: "meta-label"}, icon(iconName, "sm"), label),
-      h("span", {class: "meta-value"}, value));
+  // A relative time that keeps moving without re-rendering ("3분 전").
+  function relSpan(iso, cls) {
+    return h("span", {class: cls || "rel-time", "data-rel": iso || ""}, iso ? relTime(iso) : "");
   }
+  setInterval(() => document.querySelectorAll("[data-rel]").forEach(el => {
+    if (el.dataset.rel) el.textContent = relTime(el.dataset.rel);
+  }), 30000);
 
-  function progressCard(st) {
-    const rows = st.folders.map(f => {
+  // Running numbers for the thin bar: files while reading, decisions while checking.
+  function runningProgress(st) {
+    let done = 0, total = 0, text = "";
+    for (const f of st.folders) {
       const p = f.progress;
-      const active = st.busy && p.phase !== "idle" && p.phase !== "done";
-      const c = f.completion;
-      const head = h("div", {class: "row-between"},
-        h("div", {class: "row", style: {minWidth: "0"}}, icon("folder", "sm"), h("strong", {class: "truncate", title: f.root}, folderName(f.root))),
-        active ? badge("info", "loader", p.phase_label) : (p.phase === "error" ? badge("danger", "x-circle", p.phase_label) : badge("neutral", "clock", "대기 중")));
-      if (!active && !p.files_total && !p.topics_total) {
-        return h("div", {class: "stack-sm"}, head, h("p", {class: "small muted"},
-          c ? "마지막 완료 " + fmtTime(c.at) + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건" + (c.verified ? "" : " · 데모 판정기") : "아직 완료된 점검이 없습니다."));
-      }
-      return h("div", {class: "stack-sm"}, head,
-        h("div", {class: "grid grid-2", style: {gap: "12px"}},
-          progressBar(p.files_done, p.files_total, "읽은 파일"),
-          progressBar(p.topics_done, p.topics_total, "점검한 결정" + (p.topics_unchanged ? " (변경 없어 건너뜀 " + p.topics_unchanged + ")" : ""))),
-        h("div", {class: "row small muted"},
-          h("span", {}, "LLM 호출 " + p.llm_calls + "회"),
-          p.elapsed_seconds !== null ? h("span", {}, "· 경과 " + p.elapsed_seconds + "초") : null,
-          p.current ? h("span", {class: "truncate", style: {maxWidth: "480px"}, title: p.current}, "· 처리 중: " + p.current) : null));
-    });
-    if (rows.length === 0) return null;
-    return card("진행도", st.busy ? "지금 점검하고 있습니다" : "폴더별 최근 점검", null, h("div", {class: "stack"}, rows));
+      if (p.phase === "checking" && p.topics_total) { done += p.topics_done; total += p.topics_total; text = "결정"; }
+      else if (p.files_total) { done += p.files_done; total += p.files_total; text = text || "문서"; }
+    }
+    if (!total) return {pct: 0, text: "문서를 확인하고 있습니다."};
+    return {pct: Math.round(done * 100 / total), text: text === "결정" ? "결정 " + total + "건 중 " + done + "건 확인" : "문서 " + total + "개 중 " + done + "개 확인"};
   }
 
-  function metrics(st) {
-    const m = (kind, iconName, label, value, foot, onClick) => h("button", {type: "button", class: "card clickable metric " + kind, onclick: onClick},
-      h("div", {class: "metric-top"}, h("span", {}, label), icon(iconName, "sm")),
-      h("div", {class: "metric-value"}, String(value)), h("div", {class: "metric-foot"}, foot));
-    return h("div", {class: "metrics"},
-      m(st.inconsistent ? "danger" : "", "x-circle", "불일치", st.inconsistent, "반영이 필요해 보이는 항목", () => go("results", {label: "INCONSISTENT"})),
-      m(st.uncertain ? "warning" : "", "help", "불확실", st.uncertain, "근거가 부족한 항목", () => go("results", {label: "UNCERTAIN"})),
-      m("", "help", "확인 질문", st.questions, "답하면 다시 점검합니다", () => go("questions")),
-      m("", "folder", "감시 중인 폴더", st.registered_folders, "하위 폴더 포함", () => go("folders")),
-      m("", "link", "연결된 계정", st.connected_accounts, "읽기 전용", () => go("accounts")));
+  // The "문서 확인 AI AGENT" card (Figma 15:44 and the 문서 확인 상태 카드 variants).
+  function agentCard(st) {
+    const state = agentState(st);
+    const info = stateInfo(st.overall, st.paused);
+    const watch = st.watch || {};
+    const demo = state === "demo";
+    const ICON = {verified: ["shield-check", "ok"], running: ["loader", "busy"], paused: ["pause-bars", "paused"],
+      failed: ["alert-circle", "error"], demo: ["shield-check", "demo"], retrying: ["alert-circle", "attention"],
+      stale: ["alert-circle", "attention"], incomplete: ["clock", "busy"]};
+    const [iconName, tone] = ICON[state] || ICON.incomplete;
+    const mainIcon = icon(iconName, "agent-icon " + tone + (state === "running" ? " spin" : ""));
+    const rescan = h("button", {type: "button", class: "btn ghost icon-only sm", title: "지금 확인하기", "aria-label": "지금 확인하기",
+      onclick: (e) => busy(e.currentTarget, async () => { await api("/api/rescan", "POST", {}); toast("지금 확인을 시작했습니다.", "info"); await refreshAll(); })},
+    icon("refresh", "sm"));
+    const head = h("div", {class: "agent-head"}, mainIcon, h("h2", {class: "agent-title"}, "문서 확인 AI AGENT"),
+      h("div", {class: "agent-badge"}, rescan, stateBadge(st.overall, null, st.paused)));
+    const folders = st.paused ? "0개 · 등록 " + st.registered_folders + "개" : st.registered_folders + "개";
+    const metaBlock = (label, value, extra) => h("div", {class: "agent-meta"}, h("span", {class: "agent-label"}, label),
+      h("span", {class: "agent-value"}, value, extra || null));
+    let right = null, action = null, bar = null, sub = null;
+    if (state === "running") {
+      const p = runningProgress(st);
+      right = h("span", {class: "agent-note"}, p.text);
+      bar = h("div", {class: "agent-bar", role: "progressbar", "aria-valuenow": String(p.pct), "aria-valuemin": "0", "aria-valuemax": "100",
+        "aria-label": "확인 진행도"}, h("div", {style: {width: Math.max(p.pct, 4) + "%"}}));
+    } else if (state === "paused") {
+      right = h("span", {class: "agent-note"}, "자동 확인이 일시 중지되었습니다.");
+      action = button("다시 시작", {variant: "primary", onClick: async (e) => busy(e.currentTarget, async () => {
+        await api("/api/pause", "POST", {paused: false}); await refreshAll(); })});
+    } else if (state === "failed") {
+      right = h("span", {class: "agent-note danger", title: info.detail || ""}, aiErrorText(info.detail));
+      action = button("연결 설정 확인", {variant: "primary", onClick: () => go("settings", {tab: "connect", section: "judge"})});
+    } else if (demo) {
+      sub = h("p", {class: "agent-sub"}, "시연용 판정기로 동작 중입니다. 실제 문서 검사가 수행되지 않습니다.");
+      action = button("AI 설정", {onClick: () => go("settings", {tab: "connect", section: "judge"})});
+    } else {
+      const r = st.last_result;
+      const sends = st.provider.sends_externally;
+      right = h("div", {class: "agent-right"},
+        r && state === "verified" ? h("span", {class: "agent-note"}, "검사 완료 · 문서 " + r.files + "개, 결정 " + r.topics + "건 확인") : null,
+        state === "retrying" || state === "stale" ? h("span", {class: "agent-note warn", title: info.detail || ""}, info.label) : null,
+        state === "incomplete" ? h("span", {class: "agent-note"}, "첫 확인을 준비하고 있습니다.") : null,
+        h("span", {class: "agent-note" + (sends ? " info" : "")}, sends ? "문서 처리: 외부 AI로 전송 중 (" + st.provider.id + ")" : "문서 처리: 내 컴퓨터 · 외부 전송 안 함"));
+    }
+    const metas = demo
+      ? h("div", {class: "agent-meta-line"}, "마지막 확인 ", stamp(watch.last_checked), "   ·   확인 중인 폴더 " + folders)
+      : h("div", {class: "agent-metas"},
+        metaBlock("마지막 확인", stamp(watch.last_checked), watch.last_checked ? relSpan(watch.last_checked, "agent-rel") : null),
+        metaBlock("확인 중인 폴더", folders),
+        h("div", {class: "agent-side"}, right));
+    return h("section", {class: "card agent-card " + tone + (demo ? " demo" : ""), "aria-label": "문서 확인 상태"},
+      head, sub, metas, action ? h("div", {class: "agent-action"}, action) : null, bar);
+  }
+
+  function aiErrorText(detail) {
+    const text = String(detail || "");
+    if (/키|key|인증|401|403/i.test(text)) return "AI 연결을 확인할 수 없습니다. API 키를 확인하세요.";
+    if (/모델|model/i.test(text)) return "AI 연결을 확인할 수 없습니다. 모델 이름을 확인하세요.";
+    return "AI 연결을 확인할 수 없습니다.";
+  }
+
+  // ---------------------------------------------------------------- calendar card
+
+  function calendarCard(week, st) {
+    const noSource = !week.calendar_connected && !week.has_events;
+    if (noSource) {
+      return h("section", {class: "card home-card cal-card", "aria-label": "캘린더"},
+        h("div", {class: "home-card-head"}, h("h2", {}, "캘린더")),
+        h("div", {class: "cal-empty"}, icon("calendar", "cal-empty-icon"),
+          h("strong", {}, "캘린더가 연결되지 않았습니다."),
+          h("p", {}, "계정을 연결하면 관련 일정을 확인할 수 있습니다."),
+          agentState(st) === "demo" ? null : button("캘린더 연결", {variant: "primary", onClick: () => go("settings", {tab: "connect", focus: "google_calendar"})})));
+    }
+    const start = week.start;
+    const days = Array.from({length: 7}, (_, i) => addDays(start, i));
+    const byDay = new Map(days.map(d => [d, []]));
+    for (const e of week.events) if (byDay.has(e.date)) byDay.get(e.date).push(e);
+    if (!HS.day || !days.includes(HS.day)) {
+      HS.day = days.includes(week.today) ? week.today : (days.find(d => byDay.get(d).length) || days[0]);
+    }
+    const s = toDate(start), e = toDate(week.end);
+    const range = s.getFullYear() + "년 " + (s.getMonth() + 1) + "월 " + s.getDate() + "일–" +
+      (e.getMonth() !== s.getMonth() ? (e.getMonth() + 1) + "월 " : "") + e.getDate() + "일";
+    const move = (n) => { HS.week = addDays(start, 7 * n); HS.day = null; renderRoute(false); };
+    const list = h("div", {class: "cal-list"});
+    const strip = h("div", {class: "cal-strip", role: "tablist", "aria-label": "요일"});
+    const drawDay = () => {
+      set(strip, ...days.map(d => {
+        const date = toDate(d);
+        return h("button", {type: "button", class: "cal-day" + (d === HS.day ? " selected" : "") + (d === week.today ? " today" : ""),
+          role: "tab", "aria-selected": String(d === HS.day), "aria-label": longDate(date) + " 일정 " + byDay.get(d).length + "건",
+          onclick: () => { HS.day = d; drawDay(); }},
+        h("span", {class: "cal-wd"}, WEEKDAYS[date.getDay()]), h("span", {class: "cal-dn"}, String(date.getDate())),
+        byDay.get(d).length ? h("span", {class: "cal-dot", "aria-hidden": "true"}) : null);
+      }));
+      const items = byDay.get(HS.day);
+      if (items.length) {
+        set(list, ...items.map(eventRow));
+      } else if (week.events.length === 0 && week.nearest_week) {
+        set(list, h("div", {class: "cal-none"}, h("span", {}, "이번 주에는 일정이 없습니다."),
+          h("button", {type: "button", class: "link", onclick: () => { HS.week = week.nearest_week; HS.day = null; renderRoute(false); }}, "일정이 있는 주로 이동")));
+      } else {
+        set(list, h("div", {class: "cal-none"}, h("span", {}, "이 날에는 일정이 없습니다.")));
+      }
+    };
+    drawDay();
+    return h("section", {class: "card home-card cal-card", "aria-label": "캘린더"},
+      h("div", {class: "home-card-head"}, h("h2", {}, "캘린더"),
+        h("div", {class: "cal-nav"},
+          h("button", {type: "button", class: "icon-btn", "aria-label": "이전 주", title: "이전 주", onclick: () => move(-1)}, icon("chevron-left")),
+          h("button", {type: "button", class: "icon-btn", "aria-label": "다음 주", title: "다음 주", onclick: () => move(1)}, icon("chevron-right")),
+          h("span", {class: "cal-view"}, "주간"))),
+      h("p", {class: "cal-range"}, range),
+      strip, list);
+  }
+
+  function eventRow(e) {
+    const linked = Boolean(e.decision);
+    return h("button", {type: "button", class: "cal-event" + (linked ? " linked" : ""), onclick: () => openEvent(e)},
+      h("span", {class: "cal-bar", "aria-hidden": "true"}),
+      h("span", {class: "cal-time"}, e.time ? e.time : "종일"),
+      h("span", {class: "cal-title truncate"}, e.title),
+      linked ? h("span", {class: "cal-link"}, icon("link", "sm"), "결정 관련") : null);
+  }
+
+  // Figma 16:1247: the selected event and its linked decision.
+  function openEvent(e) {
+    const date = toDate(e.date);
+    const d = e.decision;
+    const body = h("div", {class: "stack-sm"},
+      d ? h("div", {}, labelBadge(d.label)) : null,
+      h("p", {class: "ev-when"}, longDate(date) + (e.time ? " · " + e.time : " · 종일")),
+      h("p", {class: "small muted"}, "출처 " + e.source_name),
+      d ? h("div", {class: "ev-decision"}, h("span", {class: "small muted"}, "연결된 결정"), h("strong", {}, d.topic_label),
+        h("p", {class: "muted"}, d.evidence || (e.source_name + "의 " + e.title + " 항목이 변경된 결정과 맞는지 확인이 필요합니다."))) :
+        h("p", {class: "muted"}, "이 일정과 연결된 결정이 없습니다."));
+    modal({title: e.title, body, plain: true, actions: d
+      ? [{label: "관련 점검 결과", variant: "primary", onClick: () => { go("results", {open: [d.root, d.topic, d.artifact_id].join("|")}); }}, {label: "닫기"}]
+      : [{label: "닫기"}]});
+  }
+
+  // ---------------------------------------------------------------- to-do card
+
+  function itemTitle(f) {
+    const text = f.text.length > 26 ? f.text.slice(0, 25) + "…" : f.text;
+    return text + (f.label === "INCONSISTENT" ? " 변경 미반영" : " 확인 필요");
+  }
+
+  function todoCard(st, findings, questions) {
+    const open = findings.filter(f => f.label !== "CONSISTENT")
+      .sort((a, b) => (a.label === "INCONSISTENT" ? 0 : 1) - (b.label === "INCONSISTENT" ? 0 : 1));
+    const total = open.length + questions.length;
+    const demo = agentState(st) === "demo";
+    const flash = HS.flash && HS.flash.until > Date.now() ? HS.flash.text : null;
+    const findingNode = (f) => h("button", {type: "button", class: "todo-item", onclick: () => go("results", {open: [f.root, f.topic, f.artifact_id].join("|")})},
+      icon("alert-circle", "todo-icon " + (f.label === "INCONSISTENT" ? "bad" : "warn")),
+      h("span", {class: "todo-main"}, h("span", {class: "todo-title truncate", title: f.text}, itemTitle(f)),
+        h("span", {class: "todo-sub truncate"}, baseName(f.source_doc) + (f.owner ? " · " + f.owner : "")),
+        h("span", {class: "todo-label " + (f.label === "INCONSISTENT" ? "bad" : "warn")}, DA.LABELS[f.label])),
+      h("span", {class: "todo-more"}, "자세히"));
+    const questionNode = (q) => h("button", {type: "button", class: "todo-question", onclick: () => openQuestion(q)},
+      icon("alert-circle", "todo-icon warn"),
+      h("span", {class: "todo-main"}, h("span", {class: "todo-qtitle truncate", title: q.text}, q.text),
+        h("span", {class: "todo-sub truncate"}, q.topic_label + " · 확인 질문")),
+      h("span", {class: "todo-more"}, "답변"));
+    // As in the design: the two most serious items, then the AI questions, then the rest.
+    const items = [...open.slice(0, 2).map(findingNode), ...questions.map(questionNode), ...open.slice(2).map(findingNode)];
+    return h("section", {class: "card home-card todo-card", "aria-label": "내가 할 일"},
+      h("div", {class: "home-card-head"}, h("h2", {}, "내가 할 일"),
+        demo ? h("span", {class: "todo-count demo"}, "시연 데이터") : h("span", {class: "todo-count"}, "확인 대기 " + total + "건")),
+      total === 0 && !flash
+        ? h("div", {class: "todo-empty"}, icon("check", "todo-empty-icon"), h("strong", {}, "현재 처리할 항목이 없습니다."))
+        : h("div", {class: "todo-list"}, ...items),
+      flash ? h("p", {class: "todo-flash", role: "status"}, flash) : null,
+      h("button", {type: "button", class: "link strong todo-all", onclick: () => go("results")}, "전체 결과 보기"));
+  }
+
+  function setFlash(text) {
+    HS.flash = {text, until: Date.now() + 15000};
+    setTimeout(() => { if (HS.flash && HS.flash.until <= Date.now()) { HS.flash = null; if (parseHash().name === "home") renderRoute(false); } }, 15200);
+  }
+
+  // Figma 16:1355 / 18:1622: pick an option (or type), then only that decision is checked again.
+  function openQuestion(q) {
+    const options = (q.options && q.options.length ? q.options : ["예", "아니오"]).slice(0, 4);
+    let chosen = null;
+    const extra = input({placeholder: "추가 내용을 입력하십시오", "aria-label": "추가 내용", maxlength: "500"});
+    const optionBox = h("div", {class: "q-options", role: "radiogroup", "aria-label": "답변 선택지"});
+    const drawOptions = () => set(optionBox, ...options.map(o => h("button", {type: "button", class: "q-option" + (o === chosen ? " selected" : ""),
+      role: "radio", "aria-checked": String(o === chosen), onclick: () => { chosen = chosen === o ? null : o; drawOptions(); }}, o)));
+    drawOptions();
+    modal({title: "결정 변경 범위 확인", plain: true,
+      body: h("div", {class: "stack"}, h("p", {class: "q-text"}, q.text), optionBox, extra,
+        h("p", {class: "small muted"}, "출처: " + q.topic_label)),
+      actions: [{label: "답변 저장", variant: "primary", onClick: async () => {
+        const typed = extra.value.trim();
+        if (!chosen && !typed) throw new Error("선택지를 고르거나 내용을 입력하세요.");
+        const text = chosen && typed ? chosen + ". " + typed : (chosen || typed);
+        await api("/api/answer", "POST", {root: q.root, topic: q.topic, text});
+        setFlash("답변이 저장되었습니다.");
+        await refreshAll();
+      }}, {label: "취소"}]});
+  }
+
+  // ---------------------------------------------------------------- recent records
+
+  function recentCard(st, activity) {
+    return h("section", {class: "card recent-card", "aria-label": "최근 점검 기록"},
+      h("div", {class: "recent-head"}, h("h2", {}, "최근 점검 기록"),
+        h("button", {type: "button", class: "link", onclick: openLogModal}, "전체 보기")),
+      activity.length === 0
+        ? h("p", {class: "recent-lines muted"}, agentState(st) === "demo" ? "실제 점검 기록이 없습니다." : "아직 기록이 없습니다.")
+        : h("ul", {class: "recent-lines"}, ...activity.map(a => h("li", {class: a.level === "error" ? "error" : null},
+          h("span", {class: "recent-time"}, clock(a.time.replace(" ", "T"))), h("span", {}, a.text)))));
   }
 
   function timeline(items) {
     return h("div", {class: "timeline"}, ...items.map(a => h("div", {class: "tl-item"},
       h("span", {class: "tl-dot " + (a.level || "")}, icon(a.level === "error" ? "x" : (a.level === "attention" ? "alert" : "check"))),
       h("div", {class: "stack-sm", style: {gap: "2px"}}, h("span", {}, a.text), h("span", {class: "tl-time"}, relTime(a.time) + " · " + fmtTime(a.time))))));
+  }
+
+  // Full history. Technical details (files, check records, system log) sit behind "자세히 보기".
+  async function openLogModal() {
+    const panel = h("div", {class: "stack"}, skeleton(4));
+    const close = modal({title: "점검 기록", wide: true, body: panel, actions: [{label: "닫기"}]});
+    let data;
+    try {
+      const [activity, files, log, digest] = await Promise.all([api("/api/activity"), api("/api/files"), api("/api/log"), api("/api/digest")]);
+      data = {activity, files, log, digest};
+    } catch (e) { set(panel, errorState(e.message)); return; }
+    let tab = "activity";
+    const tabs = [["activity", "활동"], ["digest", "오늘 요약"], ["checks", "자세히 보기: 점검 기록"], ["files", "자세히 보기: 읽은 파일"], ["log", "자세히 보기: 시스템 로그"]];
+    const bar = h("div", {class: "tabs", role: "tablist"});
+    const body = h("div");
+    const draw = () => {
+      set(bar, ...tabs.map(([id, label]) => h("button", {type: "button", class: "tab", role: "tab", "aria-selected": String(tab === id),
+        onclick: () => { tab = id; draw(); }}, label)));
+      if (tab === "files") set(body, filesPanel(data.files));
+      else if (tab === "checks") set(body, checksPanel(S.status));
+      else if (tab === "digest") set(body, digestPanel(data.digest, async () => { data.digest = await api("/api/digest/now", "POST"); data.digest = await api("/api/digest"); draw(); }));
+      else if (tab === "log") {
+        set(body, h("div", {class: "stack-sm"}, h("div", {class: "row-between"},
+          h("span", {class: "muted small"}, "decision-agent.log 최근 " + data.log.lines.length + "줄 (비밀 값은 기록하지 않습니다)"),
+          h("div", {class: "btn-group"}, button("복사", {size: "sm", icon: "copy", onClick: () => copyText(data.log.lines.join("\n"))}),
+            button("로그 폴더 열기", {size: "sm", icon: "external", onClick: () => openLocation("logs")}))),
+        h("pre", {class: "log"}, data.log.lines.join("\n") || "로그가 없습니다.")));
+      } else set(body, data.activity.length === 0 ? emptyState({icon: "activity", title: "아직 기록이 없습니다", neutral: true}) : timeline(data.activity));
+    };
+    draw();
+    set(panel, bar, body);
+    return close;
+  }
+
+  function digestPanel(d, makeNow) {
+    const now = button("지금 요약 만들기", {icon: "refresh"});
+    now.addEventListener("click", () => busy(now, makeNow));
+    return h("div", {class: "stack-sm"}, h("div", {class: "row-between"},
+      h("span", {class: "small muted"}, d.name ? d.name : "하루 요약 시각은 설정의 '알림 및 데이터'에서 정합니다."), h("div", {class: "btn-group"}, now,
+        d.markdown ? button("복사", {size: "sm", icon: "copy", onClick: () => copyText(d.markdown)}) : null)),
+    d.markdown ? markdownView(d.markdown) : emptyState({icon: "calendar", title: "아직 만든 요약이 없습니다", neutral: true}));
   }
 
   // ---------------------------------------------------------------- results
@@ -489,43 +698,12 @@
     });
   }
 
-  // ---------------------------------------------------------------- questions
-
-  ROUTES.questions = {
-    title: "확인 질문", icon: "help", auto: true,
-    lead: "근거가 부족해 추측하지 않고 남겨 둔 질문입니다. 답하면 그 결정만 다시 점검합니다.",
-    async load() { return api("/api/questions"); },
-    render(rows) {
-      if (rows.length === 0) {
-        return page(this.title, this.lead, null, h("section", {class: "card"}, emptyState({icon: "check-circle",
-          title: "답변이 필요한 질문이 없습니다", text: "결정의 적용 범위가 불분명한 항목이 생기면 여기에 질문이 쌓입니다.",
-          action: button("점검 결과 보기", {onClick: () => go("results")})})));
-      }
-      return page(this.title, this.lead, null, ...rows.map(q => {
-        const answer = textarea({rows: "3", placeholder: "답변을 입력하세요", "aria-label": "답변"});
-        const quick = ["예", "아니오", "일부만 해당합니다"].map(t => button(t, {size: "sm", variant: "ghost", onClick: () => { answer.value = t; answer.focus(); }}));
-        const send = button("답변 보내기", {variant: "primary", icon: "arrow-right"});
-        send.addEventListener("click", () => busy(send, async () => {
-          if (!answer.value.trim()) throw new Error("답변을 입력하세요.");
-          await api("/api/answer", "POST", {root: q.root, topic: q.topic, text: answer.value.trim()});
-          toast("답변을 반영해 이 결정을 다시 점검합니다.", "success");
-          await refreshAll();
-        }));
-        return h("section", {class: "card stack"},
-          h("div", {class: "row-between"}, h("div", {class: "row"}, badge("info", "help", "확인 필요"), h("span", {class: "muted small"}, "결정: " + q.topic_label)),
-            h("span", {class: "small muted"}, relTime(q.created_at))),
-          h("h3", {}, q.text),
-          answer, h("div", {class: "row-between"}, h("div", {class: "row"}, quick), send));
-      }));
-    },
-  };
-
   // ---------------------------------------------------------------- folders
 
   const FS = {open: null, trees: {}};
 
   ROUTES.folders = {
-    title: "폴더", icon: "folder", auto: false,
+    title: "폴더 관리", icon: "folder", auto: false,
     lead: "선택한 폴더와 그 안의 모든 하위 폴더를 읽습니다. 파일은 읽기만 하고 수정하거나 새로 만들지 않습니다.",
     async load() { return api("/api/folders"); },
     render(cards) {
@@ -1089,62 +1267,9 @@
     return out;
   }
 
-  ROUTES.digest = {
-    title: "오늘 요약", icon: "calendar", auto: false,
-    lead: "하루 한 번 불일치, 질문, 점검 상태를 요약합니다. 요약 파일은 앱 데이터 폴더의 digests에 저장됩니다.",
-    async load() {
-      const [d, s] = await Promise.all([api("/api/digest"), api("/api/settings")]);
-      return {d, s};
-    },
-    render({d, s}) {
-      const on = toggle("매일 요약 받기", s.digest_enabled, "정한 시각 이후 프로그램이 켜져 있을 때 하루 한 번 알립니다.");
-      const time = input({type: "time", value: s.digest_time, "aria-label": "요약 시각"});
-      const save = button("저장", {variant: "primary"});
-      save.addEventListener("click", () => busy(save, async () => {
-        await api("/api/settings", "POST", {digest_enabled: on.input.checked, digest_time: time.value});
-        toast("요약 설정을 저장했습니다.", "success");
-      }));
-      const now = button("지금 요약 만들기", {icon: "refresh"});
-      now.addEventListener("click", () => busy(now, async () => { await api("/api/digest/now", "POST"); renderRoute(true); }));
-      return page(this.title, this.lead, [now],
-        card("요약 설정", null, null, h("div", {class: "row-between"}, on, h("div", {class: "row"}, h("div", {style: {width: "160px"}}, field("시각", time)), save))),
-        card(d.name ? "최근 요약" : null, d.name || null, d.markdown ? [button("복사", {variant: "ghost", size: "sm", icon: "copy", onClick: () => copyText(d.markdown)})] : null,
-          d.markdown ? markdownView(d.markdown) : emptyState({icon: "calendar", title: "아직 만든 요약이 없습니다", text: "'지금 요약 만들기'를 누르면 바로 만들어 볼 수 있습니다.", neutral: true})));
-    },
-  };
-
   // ---------------------------------------------------------------- activity
 
   const AS = {tab: "activity", q: ""};
-
-  ROUTES.activity = {
-    title: "활동 기록", icon: "activity", auto: true,
-    lead: "이 프로그램이 읽은 파일, 점검 기록, 시스템 로그입니다.",
-    async load(params) {
-      if (params.has("tab")) AS.tab = params.get("tab");
-      if (params.has("q")) AS.q = params.get("q");
-      const [activity, files, log] = await Promise.all([api("/api/activity"), api("/api/files"), api("/api/log")]);
-      return {activity, files, log, st: S.status};
-    },
-    render({activity, files, log, st}) {
-      const tabs = [["activity", "활동"], ["files", "읽은 파일 " + files.length], ["checks", "점검 기록"], ["log", "시스템 로그"]];
-      const panel = h("div");
-      const tabBar = h("div", {class: "tabs", role: "tablist"}, ...tabs.map(([id, label]) => h("button", {type: "button", class: "tab", role: "tab",
-        "aria-selected": String(AS.tab === id), onclick: () => { AS.tab = id; lastSig = ""; renderRoute(false); }}, label)));
-      if (AS.tab === "files") panel.appendChild(filesPanel(files));
-      else if (AS.tab === "checks") panel.appendChild(checksPanel(st));
-      else if (AS.tab === "log") {
-        panel.appendChild(card(null, null, null, h("div", {class: "row-between", style: {marginBottom: "12px"}},
-          h("span", {class: "muted small"}, "decision-agent.log 최근 " + log.lines.length + "줄 (비밀 값은 기록하지 않습니다)"),
-          h("div", {class: "btn-group"}, button("복사", {size: "sm", icon: "copy", onClick: () => copyText(log.lines.join("\n"))}),
-            button("로그 폴더 열기", {size: "sm", icon: "external", onClick: () => openLocation("logs")}))),
-        h("pre", {class: "log"}, log.lines.join("\n") || "로그가 없습니다.")));
-      } else {
-        panel.appendChild(card(null, null, null, activity.length === 0 ? emptyState({icon: "activity", title: "아직 기록이 없습니다", neutral: true}) : timeline(activity)));
-      }
-      return page(this.title, this.lead, null, tabBar, panel);
-    },
-  };
 
   function filesPanel(files) {
     const STATUS = {ok: ["success", "check", "읽음"], error: ["danger", "x", "읽지 못함"], unsupported: ["neutral", "minus", "지원 안 함"]};

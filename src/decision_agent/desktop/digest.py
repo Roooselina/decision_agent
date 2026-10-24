@@ -5,7 +5,7 @@ from pathlib import Path
 
 from decision_agent.desktop.paths import app_home
 
-LABELS = {"INCONSISTENT": "불일치", "UNCERTAIN": "불확실"}
+LABELS = {"INCONSISTENT": "반영 안 됨", "UNCERTAIN": "확인 필요"}
 
 
 def build_digest(status: dict, findings: list[dict], questions: list[dict], now: datetime.datetime) -> dict:
@@ -15,7 +15,7 @@ def build_digest(status: dict, findings: list[dict], questions: list[dict], now:
     unsure = [f for f in findings if f["label"] == "UNCERTAIN"]
     lines = [f"# 결정 변경 점검 요약 ({now.strftime('%Y-%m-%d %H:%M')})", ""]
     lines.append(f"- 점검 상태: {overall['label']} {overall['detail']}".rstrip())
-    lines.append(f"- 불일치 {len(bad)}건, 불확실 {len(unsure)}건, 답변이 필요한 질문 {len(questions)}건")
+    lines.append(f"- 반영 안 됨 {len(bad)}건, 확인 필요 {len(unsure)}건, 답변이 필요한 질문 {len(questions)}건")
     if status["provider"]["local_only"]:
         lines.append("- 주의: 데모 판정기라 이 요약은 실제 검사 결과가 아닙니다.")
     if bad:
@@ -27,7 +27,7 @@ def build_digest(status: dict, findings: list[dict], questions: list[dict], now:
         lines += ["", "## 확인이 필요한 질문"]
         lines += [f"- {q['topic_label']}: {q['text']}" for q in questions[:10]]
     short = (
-        f"불일치 {len(bad)}건, 불확실 {len(unsure)}건, 질문 {len(questions)}건"
+        f"반영 안 됨 {len(bad)}건, 확인 필요 {len(unsure)}건, 질문 {len(questions)}건"
         + (" (데모 판정기)" if status["provider"]["local_only"] else "")
     )
     return {"title": "오늘의 결정 점검 요약", "short": short, "markdown": "\n".join(lines) + "\n"}

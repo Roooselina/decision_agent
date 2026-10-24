@@ -22,7 +22,7 @@ from decision_agent.desktop.autostart import Autostart
 from decision_agent.desktop.engine import ProjectEngine
 from decision_agent.desktop.hotkey import HotkeyListener
 from decision_agent.desktop.notify import CallbackNotifier, ChainNotifier, make_notifier
-from decision_agent.desktop.paths import app_home, log_path, state_db_path
+from decision_agent.desktop.paths import activity_path, app_home, log_path, state_db_path
 from decision_agent.desktop.providers import build_provider
 from decision_agent.desktop.settings import (
     AppSettings,
@@ -141,7 +141,9 @@ def _serve(args: argparse.Namespace, settings: AppSettings, port: int) -> int:
 
     token = pysecrets.token_urlsafe(32)
     write_token(token)
-    controller = DecisionAgentApp(settings, settings_file=None, notifier=make_notifier(None))
+    controller = DecisionAgentApp(
+        settings, settings_file=None, notifier=make_notifier(None), activity_file=activity_path()
+    )
     controller.settings_file = app_home() / "settings.json"
     controller.start()
     server = WebServer(create_web_app(controller, token, port), port)
@@ -176,7 +178,9 @@ def _run_desktop(args: argparse.Namespace, settings: AppSettings, port: int) -> 
     notifier = make_notifier(tray_notify)
     if not isinstance(notifier, ChainNotifier):
         notifier = ChainNotifier(CallbackNotifier(tray_notify))
-    controller = DecisionAgentApp(settings, settings_file=None, notifier=notifier)
+    controller = DecisionAgentApp(
+        settings, settings_file=None, notifier=notifier, activity_file=activity_path()
+    )
     controller.settings_file = app_home() / "settings.json"
     controller.autostart = Autostart()
     controller.start()

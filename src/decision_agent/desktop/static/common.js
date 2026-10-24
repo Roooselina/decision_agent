@@ -332,10 +332,11 @@ const DA = (() => {
     return close;
   }
 
-  function modal({title, body, actions = [], wide = false, onClose, icon: iconName}) {
+  // plain: the Figma "확인 모달" look (no footer bar, main action on the left, others on the right).
+  function modal({title, body, actions = [], wide = false, onClose, icon: iconName, plain = false}) {
     const titleId = "m" + Math.random().toString(36).slice(2, 8);
     const foot = h("div", {class: "modal-foot"});
-    const panel = h("div", {class: "modal" + (wide ? " wide" : ""), role: "dialog", "aria-modal": "true", "aria-labelledby": titleId},
+    const panel = h("div", {class: "modal" + (wide ? " wide" : "") + (plain ? " plain" : ""), role: "dialog", "aria-modal": "true", "aria-labelledby": titleId},
       h("div", {class: "modal-head"}, iconName ? icon(iconName, "lg") : null, h("h2", {id: titleId}, title),
         h("button", {type: "button", class: "btn ghost icon-only sm", "aria-label": "닫기", onclick: () => close()}, icon("x"))),
       h("div", {class: "modal-body"}, body));

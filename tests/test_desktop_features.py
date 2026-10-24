@@ -274,7 +274,7 @@ def test_digest_is_sent_once_a_day_after_the_set_time(tmp_path):
         controller.digest_tick()
         assert toasts.count("오늘의 결정 점검 요약") == 1
         latest = controller.latest_digest()
-        assert latest["name"] == "2026-10-22.md" and "불일치" in latest["markdown"]
+        assert latest["name"] == "2026-10-22.md" and "반영 안 됨" in latest["markdown"]
         now["value"] = datetime.datetime(2026, 10, 23, 9, 1)
         controller.digest_tick()
         assert toasts.count("오늘의 결정 점검 요약") == 2

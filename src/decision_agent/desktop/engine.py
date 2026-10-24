@@ -78,6 +78,12 @@ def _sha(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode("utf-8")).hexdigest()[:20]
 
 
+def short_label(text: str, limit: int = 30) -> str:
+    """A decision sentence cut to fit one line of the activity list."""
+    text = " ".join(str(text).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
 def decision_fingerprint(store: SQLiteStore, topic: str) -> str:
     """Content-based fingerprint of a topic's decisions and relations (ids are not included)."""
     decisions = store.list_decisions(topic)
@@ -504,7 +510,8 @@ class ProjectEngine:
                 return report
             report.rebuilt = True
             self.progress.activity.add(
-                f"{len(docs)}개 문서에서 회의 항목 {len(built.meetings)}건, 산출물 {len(built.artifacts)}건을 읽었습니다."
+                f"문서 {len(docs)}개를 확인했습니다. 회의 결정 {len(built.meetings)}건, "
+                f"관련 항목 {len(built.artifacts)}건을 찾았습니다."
             )
             try:
                 project = ingest_items(
@@ -588,7 +595,8 @@ class ProjectEngine:
                 self.progress.set_llm_calls(self.counter.calls)
                 self.progress.topic_done(topic)
                 self.progress.activity.add(
-                    f"'{topic}' 점검 완료: 불일치 {outcome.inconsistent_total}건"
+                    f"'{short_label(latest.text if latest else topic)}' 결정을 점검했습니다. "
+                    f"반영 안 됨 {outcome.inconsistent_total}건"
                     + (", 확인 질문 1건" if outcome.pending_question else "")
                 )
             report.llm_calls = self.counter.calls

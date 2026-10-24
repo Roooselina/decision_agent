@@ -45,6 +45,7 @@ EDITABLE_FIELDS = {
 }
 PURGE_CONFIRM = "모두 삭제"
 PAGE_HASH = re.compile(r"^#/[a-z-]{0,30}$")
+DATE_PARAM = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 CSP = (
     "default-src 'none'; script-src 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; "
@@ -310,6 +311,13 @@ def create_web_app(
     @app.get("/api/activity", dependencies=auth)
     async def activity():
         return controller.activity.recent(150)
+
+    @app.get("/api/calendar", dependencies=auth)
+    def calendar(start: str = ""):
+        """Read-only week of events for the home calendar. Titles only, no bodies or secrets."""
+        if start and not DATE_PARAM.match(start):
+            raise HTTPException(status_code=400, detail="날짜는 YYYY-MM-DD 형식이어야 합니다.")
+        return controller.calendar_week(start or None)
 
     @app.get("/api/log", dependencies=auth)
     async def log_lines():

@@ -461,6 +461,22 @@ def _ics_date(value: str) -> str:
     return f"{digits.group(1)}-{digits.group(2)}-{digits.group(3)}" if digits else ""
 
 
+def _ics_clock(value: str) -> str:
+    """Start time as HH:MM in local time. UTC times (ending in Z) are converted; dates give ""."""
+    match = re.match(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z?)", value.strip())
+    if not match:
+        return ""
+    year, month, day, hour, minute = (int(match.group(i)) for i in range(1, 6))
+    if match.group(7):
+        try:
+            moment = datetime.datetime(year, month, day, hour, minute, tzinfo=datetime.UTC)
+        except ValueError:
+            return ""
+        local = moment.astimezone()
+        return f"{local.hour:02d}:{local.minute:02d}"
+    return f"{hour:02d}:{minute:02d}"
+
+
 MEETING_WORDS = re.compile(r"회의|미팅|meeting|minutes|sync|standup|스탠드업|리뷰|review", re.IGNORECASE)
 
 
@@ -491,7 +507,10 @@ def read_ics_file(path: Path, fmt: str) -> ParsedDocument:
         description = event.get("DESCRIPTION", "").strip()
         if not summary:
             continue
-        rows.append([summary, date, description.replace("\n", " "), event.get("LOCATION", "")])
+        rows.append(
+            [summary, date, _ics_clock(event.get("DTSTART", "")), description.replace("\n", " "),
+             event.get("LOCATION", "")]
+        )
         if date and description and MEETING_WORDS.search(summary):
             notes.blocks.append(Block(text=f"{date} {summary}", kind="heading", level=2))
             for part in description.splitlines():
@@ -504,7 +523,9 @@ def read_ics_file(path: Path, fmt: str) -> ParsedDocument:
     doc = ParsedDocument(path=str(path), fmt=fmt)
     if rows:
         table = Table(
-            headers=["summary", "date", "description", "location"], rows=rows, first_row_location=1
+            headers=["summary", "date", "time", "description", "location"],
+            rows=rows,
+            first_row_location=1,
         )
         doc.sections.append(Section(name="schedule", tables=[table]))
     if notes.blocks:

@@ -27,6 +27,11 @@ def log_path() -> Path:
     return app_home() / "decision-agent.log"
 
 
+def activity_path() -> Path:
+    """Readable one-line history shown as "최근 점검 기록" (app data, never a watched folder)."""
+    return app_home() / "activity.jsonl"
+
+
 def state_db_path(root: Path) -> Path:
     """One state database per watched folder, named by a hash of the resolved folder path."""
     digest = hashlib.sha1(str(root.resolve()).lower().encode("utf-8")).hexdigest()[:12]

@@ -14,6 +14,7 @@ from decision_agent.connectors.base import (
     calendar_documents,
     check_response,
     clean_message_text,
+    clock_of,
     message_document,
     strip_html,
     unique_name,
@@ -111,6 +112,7 @@ class GoogleCalendar(_GoogleBase):
                         CalendarEvent(
                             summary=item.get("summary", ""),
                             date=raw[:10],
+                            time=clock_of(raw),
                             description=strip_html(item.get("description", "")),
                             location=item.get("location", ""),
                             cancelled=item.get("status") == "cancelled",

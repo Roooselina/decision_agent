@@ -20,6 +20,7 @@ from decision_agent import __version__
 from decision_agent.connectors.base import ConnectorError, SecretStore
 from decision_agent.connectors.http import Http
 from decision_agent.connectors.registry import CONNECTORS
+from decision_agent.desktop import calendar_view
 from decision_agent.desktop import digest as digest_module
 from decision_agent.desktop import folders as folders_module
 from decision_agent.desktop import notes as notes_store
@@ -53,6 +54,7 @@ from decision_agent.desktop.settings import (
 from decision_agent.desktop.shell import DropBox
 from decision_agent.desktop.state import StateDB, now_iso
 from decision_agent.desktop.watcher import Debouncer, FolderWatcher, PeriodicTimer
+from decision_agent.sources.model import ParsedDocument
 from decision_agent.sources.readers import (
     READERS,
     UNSUPPORTED_HINTS,
@@ -108,6 +110,7 @@ class DecisionAgentApp:
         connector_http: Http | None = None,
         secret_store: SecretStore | None = None,
         clock: Callable[[], datetime.datetime] = datetime.datetime.now,
+        activity_file: Path | None = None,
     ) -> None:
         self.clock = clock
         self.hotkey_state: dict = {"enabled": False, "active": False, "spec": "", "reason": ""}
@@ -135,7 +138,7 @@ class DecisionAgentApp:
         self._timers: list[threading.Timer] = []
         self._lock_attempts: dict[Path, int] = {}
         self.listeners: list[Callable[[], None]] = []
-        self.activity = ActivityLog()
+        self.activity = ActivityLog(path=activity_file)
         self.connectors = ConnectorManager(lambda: self.settings, connector_http, secret_store)
         self._connector_timer: PeriodicTimer | None = None
         self.idle = threading.Event()
@@ -335,6 +338,12 @@ class DecisionAgentApp:
             report = self._notes_cycle(runtime)
         else:
             report = engine.analyze(force=False)
+        stamp = now_iso()
+        if job.kind == "sync":
+            # The heartbeat: the folder was looked at, whether or not anything changed.
+            runtime.db.meta_put("last_checked", stamp)
+        if report.rebuilt and not report.error and not report.needs_followup:
+            runtime.db.meta_put("last_analyzed", stamp)
         self.last_error = report.error
         for path in report.sync.retry:
             attempts = self._lock_attempts.get(path, 0) + 1
@@ -559,6 +568,34 @@ class DecisionAgentApp:
             files += [r["path"] for r in runtime.db.list_files()]
         return quick_module.search(query, findings, topics, files, self.list_notes())
 
+    # home calendar
+
+    def calendar_week(self, start: str | None = None) -> dict:
+        """One week (Monday to Sunday) of dated items from calendars, .ics files and schedules."""
+        today = self.clock().date()
+        first = calendar_view.week_start(calendar_view.parse_day(start, today))
+        artifacts: list[tuple[str, object]] = []
+        docs = []
+        for key, runtime in self._each():
+            build = runtime.engine.last_build
+            if build is not None:
+                artifacts.extend((key, a) for a in build.artifacts)
+            for row in runtime.db.list_files():
+                if row["status"] != "ok" or not row["payload"]:
+                    continue
+                if '"time"' not in row["payload"]:
+                    continue
+                try:
+                    docs.append(ParsedDocument.model_validate_json(row["payload"]))
+                except ValueError:
+                    continue
+        connected = any(c in self.connectors.enabled_ids() for c in calendar_view.CALENDAR_SOURCES)
+        week = calendar_view.build_week(
+            first, artifacts, self.findings(), calendar_view.event_times(docs), connected
+        )
+        week["today"] = today.isoformat()
+        return week
+
     # daily digest
 
     def digest_now(self) -> dict:
@@ -673,13 +710,13 @@ class DecisionAgentApp:
             title = "처음 점검을 마쳤습니다" if previous is None else "데모 판정기로 다시 점검했습니다"
             body = (
                 f"파일 {files}개, 결정 {topics}건. 데모 판정기라 실제 검사가 아닙니다. "
-                f"불일치 가능성 {total_new}건."
+                f"반영 안 됨 {total_new}건."
             )
         else:
             title = "실제 모델 점검을 마쳤습니다" if previous is not None else "처음 점검을 마쳤습니다"
             body = (
                 f"{self.bundle.provider_id}로 파일 {files}개, 결정 {topics}건을 점검했습니다. "
-                f"불일치 가능성 {total_new}건."
+                f"반영 안 됨 {total_new}건."
             )
         return title, body
 
@@ -768,6 +805,8 @@ class DecisionAgentApp:
                     "completion": runtime.engine.completion(),
                     "failure": runtime.engine.last_failure(),
                     "scan_stats": json.loads(runtime.db.meta_get("scan_stats") or "null"),
+                    "last_checked": runtime.db.meta_get("last_checked"),
+                    "last_analyzed": runtime.db.meta_get("last_analyzed"),
                 }
             )
         return {
@@ -793,6 +832,38 @@ class DecisionAgentApp:
             "debounce_seconds": self.settings.debounce_seconds,
             "overall": self.overall(folders),
             "hotkey": self.hotkey_state,
+            "watch": self.watch_info(folders),
+            "last_result": self.last_result(folders),
+        }
+
+    def watch_info(self, folders: list[dict]) -> dict:
+        """How the folders are watched and when they were last looked at.
+
+        last_checked moves on every check, even when nothing changed; last_analyzed only when
+        the documents were analysed again. Times are ISO strings in local time.
+        """
+        checked = [f["last_checked"] for f in folders if f.get("last_checked")]
+        analyzed = [f["last_analyzed"] for f in folders if f.get("last_analyzed")]
+        modes = {f["watcher"] for f in folders}
+        return {
+            "mode": "realtime" if modes & {"native", "polling"} else "periodic",
+            "rescan_minutes": self.settings.rescan_minutes,
+            "last_checked": max(checked) if checked else None,
+            "last_analyzed": max(analyzed) if analyzed else None,
+            "folders": len(folders),
+        }
+
+    @staticmethod
+    def last_result(folders: list[dict]) -> dict | None:
+        """The last finished check across folders ("문서 5개, 결정 4건 확인"), or None."""
+        records = [f["completion"] for f in folders if f.get("completion")]
+        if not records:
+            return None
+        return {
+            "at": max(r["at"] for r in records),
+            "files": sum(r["files_ok"] for r in records),
+            "topics": sum(r["topics"] for r in records),
+            "verified": all(r["verified"] for r in records),
         }
 
     def overall(self, folders: list[dict]) -> dict:
@@ -1129,7 +1200,10 @@ class DecisionAgentApp:
         home = app_home()
         for name in ("state", "digests", "tmp", "webview"):
             shutil.rmtree(home / name, ignore_errors=True)
-        targets = [home / "settings.json", home / "settings.broken.json", home / "ui_state.json"]
+        targets = [
+            home / "settings.json", home / "settings.broken.json", home / "ui_state.json",
+            home / "activity.jsonl",
+        ]
         if self.settings_file is not None:
             targets.append(self.settings_file)
         for target in targets:

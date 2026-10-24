@@ -13,6 +13,7 @@ from decision_agent.connectors.base import (
     calendar_documents,
     check_response,
     clean_message_text,
+    clock_of,
     message_document,
     strip_html,
     unique_name,
@@ -99,6 +100,7 @@ class OutlookCalendar(_MicrosoftBase):
                     CalendarEvent(
                         summary=item.get("subject", ""),
                         date=((item.get("start") or {}).get("dateTime") or "")[:10],
+                        time=clock_of((item.get("start") or {}).get("dateTime") or ""),
                         description=content.strip(),
                         location=(item.get("location") or {}).get("displayName", ""),
                         cancelled=bool(item.get("isCancelled")),
