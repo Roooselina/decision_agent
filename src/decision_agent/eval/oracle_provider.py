@@ -5,6 +5,7 @@ import re
 
 from decision_agent.eval.dataset import EvalCase
 from decision_agent.llm.base import LLMProvider
+from decision_agent.llm.batch import answer_batch, is_batch
 from decision_agent.llm.mock_provider import MockProvider, _field
 
 
@@ -31,6 +32,8 @@ class GoldOracleProvider(LLMProvider):
         temperature: float = 0.0,
         json_schema: dict | None = None,
     ) -> str:
+        if is_batch(system):
+            return answer_batch(self.complete, system, user, temperature)
         if "TASK:DECISION_EXTRACT" in system:
             return self._extract(user)
         if "TASK:RELATION_CLASSIFY" in system:

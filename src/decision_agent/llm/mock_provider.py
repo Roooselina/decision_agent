@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import random
 import re
+import threading
 
 from decision_agent.llm.base import LLMProvider
+from decision_agent.llm.batch import answer_batch, is_batch
 
 
 def _field(text: str, name: str) -> str:
@@ -39,7 +42,10 @@ class MockProvider(LLMProvider):
 
     def __init__(self, seed: int = 0) -> None:
         self.random = random.Random(seed)
+        self.seed = seed
         self.calls = 0
+        self._lock = threading.Lock()
+        self._variance: dict[str, int] = {}
 
     def complete(
         self,
@@ -48,7 +54,10 @@ class MockProvider(LLMProvider):
         temperature: float = 0.0,
         json_schema: dict | None = None,
     ) -> str:
-        self.calls += 1
+        with self._lock:
+            self.calls += 1
+        if is_batch(system):
+            return answer_batch(self.complete, system, user, temperature)
         if "TASK:DECISION_EXTRACT" in system:
             return self._extract(user)
         if "TASK:RELATION_CLASSIFY" in system:
@@ -140,6 +149,14 @@ class MockProvider(LLMProvider):
                     break
         return json.dumps({"artifact_ids": picked}, ensure_ascii=False)
 
+    def _flip(self, user: str) -> bool:
+        """Deterministic per prompt and per repeat, so parallel calls give reproducible samples."""
+        with self._lock:
+            repeat = self._variance.get(user, 0)
+            self._variance[user] = repeat + 1
+        digest = hashlib.sha256(f"{self.seed}|{repeat}|{user}".encode()).digest()
+        return digest[0] / 255.0 < 0.35
+
     def _consistency(self, user: str, temperature: float) -> str:
         decision = _field(user, "DECISION")
         artifact = _field(user, "ARTIFACT")
@@ -147,7 +164,7 @@ class MockProvider(LLMProvider):
         due = _field(user, "DECISION_DUE")
         evidence = user.split("EVIDENCE:", 1)[1] if "EVIDENCE:" in user else ""
         label = self._judge(decision, artifact, artifact_date, due, evidence)
-        if temperature > 0 and "SAMPLE_VARIANCE" in user and self.random.random() < 0.35:
+        if temperature > 0 and "SAMPLE_VARIANCE" in user and self._flip(user):
             label = "INCONSISTENT" if label == "CONSISTENT" else "CONSISTENT"
         action = {
             "INCONSISTENT": "유효한 결정에 맞게 이 항목을 수정하거나 담당자에게 확인하세요.",

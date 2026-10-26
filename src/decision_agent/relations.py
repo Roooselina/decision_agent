@@ -14,6 +14,7 @@ from decision_agent.models import (
     RelationType,
     ScopeKind,
 )
+from decision_agent.parallel import run_parallel
 from decision_agent.storage import SQLiteStore
 
 RELATION_SYSTEM = """TASK:RELATION_CLASSIFY
@@ -100,13 +101,20 @@ def classify_and_store(
     provider: LLMProvider,
     store: SQLiteStore,
 ) -> list[DecisionRelation]:
-    """Classify relations for every decision pair candidate and persist the non-NONE ones."""
-    rels: list[DecisionRelation] = []
+    """Classify relations for every decision pair candidate and persist the non-NONE ones.
+
+    The model calls run in parallel. The results are applied in date order afterwards, because
+    the status cache depends on the order in which relations are applied.
+    """
+    pairs: list[tuple[Decision, Decision]] = []
     for new in sorted(decisions, key=lambda d: (d.date, d.id)):
         for old in relation_candidates(decisions, new):
-            rel = classify_relation(old, new, provider)
-            if rel.relation_type != RelationType.NONE:
-                store.save_relation(rel)
-                apply_relation_status(store, rel)
-                rels.append(rel)
+            pairs.append((old, new))
+    classified = run_parallel(lambda pair: classify_relation(pair[0], pair[1], provider), pairs)
+    rels: list[DecisionRelation] = []
+    for rel in classified:
+        if rel.relation_type != RelationType.NONE:
+            store.save_relation(rel)
+            apply_relation_status(store, rel)
+            rels.append(rel)
     return rels

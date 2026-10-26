@@ -466,3 +466,51 @@ def test_http_client_is_https_only_and_never_follows_redirects():
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_gmail_follows_next_page_tokens_up_to_the_limit():
+    http = FakeHttp()
+    pages = {
+        None: {"messages": [{"id": f"a{i}"} for i in range(3)], "nextPageToken": "p2"},
+        "p2": {"messages": [{"id": f"b{i}"} for i in range(3)], "nextPageToken": "p3"},
+        "p3": {"messages": [{"id": "c0"}]},
+    }
+    http.add("GET", "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+             lambda p, b, f: pages[p.get("pageToken")])
+
+    def one(p, b, f):
+        return {"internalDate": "1760000000000", "payload": {"headers": [{"name": "Subject", "value": "s"}],
+                "mimeType": "text/plain", "body": {"data": base64.urlsafe_b64encode("결정: 발표는 취소한다.".encode()).decode()}}}
+
+    http.add("GET", "https://gmail.googleapis.com/gmail/v1/users/me/messages/", one)
+    outcome = Gmail({"client_id": "cid", "label": "x", "max_messages": 5}, context(http)).fetch(TODAY)
+    listing_calls = [c for c in http.calls if c["url"].endswith("/messages")]
+    assert len(listing_calls) == 2
+    assert listing_calls[0]["params"]["maxResults"] == 5 and listing_calls[1]["params"]["pageToken"] == "p2"
+    assert len(outcome.docs) == 5
+
+
+def test_outlook_mail_follows_next_links_and_refuses_other_hosts():
+    http = FakeHttp()
+    http.add("GET", "https://graph.microsoft.com/v1.0/me/mailFolders", lambda p, b, f: {
+        "value": [{"id": "F1", "displayName": "회의록"}]})
+
+    def item(n):
+        return {"id": f"x{n}", "subject": f"결정 {n}", "receivedDateTime": "2026-10-21T01:00:00Z",
+                "from": {"emailAddress": {"address": "a@b.c"}},
+                "body": {"contentType": "text", "content": f"- 결정 항목 {n}을 확정한다"}}
+
+    http.add("GET", "https://graph.microsoft.com/v1.0/me/mailFolders/F1/messages", lambda p, b, f: {
+        "value": [item(1), item(2)], "@odata.nextLink": "https://graph.microsoft.com/v1.0/next?page=2"})
+    http.add("GET", "https://graph.microsoft.com/v1.0/next", lambda p, b, f: {"value": [item(3)]})
+    outcome = OutlookMail({"client_id": "cid", "folder": "회의록", "max_messages": 3}, context(http)).fetch(TODAY)
+    assert len(outcome.docs) == 3
+
+    evil = FakeHttp()
+    evil.add("GET", "https://graph.microsoft.com/v1.0/me/mailFolders", lambda p, b, f: {
+        "value": [{"id": "F1", "displayName": "회의록"}]})
+    evil.add("GET", "https://graph.microsoft.com/v1.0/me/mailFolders/F1/messages", lambda p, b, f: {
+        "value": [item(1)], "@odata.nextLink": "https://evil.example.com/steal"})
+    with pytest.raises(ConnectorError):
+        OutlookMail({"client_id": "cid", "folder": "회의록", "max_messages": 50}, context(evil)).fetch(TODAY)
+    assert not any("evil.example.com" in c["url"] for c in evil.calls)

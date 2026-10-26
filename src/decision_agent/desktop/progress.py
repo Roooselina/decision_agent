@@ -102,6 +102,8 @@ class ProgressTracker:
             self.topics_total = 0
             self.topics_done = 0
             self.topics_unchanged = 0
+            self.extract_total = 0
+            self.extract_done = 0
             self.llm_calls = 0
             self.started_at: float | None = None
             self.finished_at: float | None = None
@@ -141,6 +143,13 @@ class ProgressTracker:
                 self.current = name
         self._notify()
 
+    def set_extract(self, done: int, total: int) -> None:
+        """Meeting items whose decisions were extracted so far (called from worker threads)."""
+        with self._lock:
+            self.extract_done = done
+            self.extract_total = total
+        self._notify()
+
     def set_topics(self, total: int) -> None:
         with self._lock:
             self.topics_total = total
@@ -174,6 +183,8 @@ class ProgressTracker:
                 "topics_total": self.topics_total,
                 "topics_done": self.topics_done,
                 "topics_unchanged": self.topics_unchanged,
+                "extract_total": self.extract_total,
+                "extract_done": self.extract_done,
                 "llm_calls": self.llm_calls,
                 "current": self.current,
                 "elapsed_seconds": elapsed,

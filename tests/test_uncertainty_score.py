@@ -42,7 +42,7 @@ class VarianceProvider(MockProvider):
 def test_agreement_threshold_boundary(demo):
     _, project = demo
     artifact = next(a for a in project.artifacts if a.id == "TASK_02")
-    settings = Settings(n=5, tau_conf=0.8)
+    settings = Settings(n=5, tau_conf=0.8, adaptive_min_samples=0)
     # 4 of 5 agree -> agreement 0.8, not below tau_conf, so the label stays.
     four = estimate_uncertainty(
         project.store, "email_auth", artifact, "2026-12-31", VarianceProvider(4), settings

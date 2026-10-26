@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from decision_agent.config import DEFAULT_SETTINGS
+from decision_agent.config import DEFAULT_SETTINGS, effective_k
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import Artifact, Decision, DecisionRelation
 from decision_agent.scope import scope_overlaps
@@ -46,6 +46,7 @@ def _rank_candidates(
     """Top-k artifacts by character TF-IDF similarity, dropping zero-similarity and scope conflicts."""
     if not artifacts or not decisions:
         return []
+    k = effective_k(k, len(artifacts))
     matrix = _vectorizer().fit_transform([a.text for a in artifacts] + [query])
     sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
     result: list[Artifact] = []

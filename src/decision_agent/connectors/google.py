@@ -141,7 +141,7 @@ class Gmail(_GoogleBase):
         OptionSpec("client_id", "클라이언트 ID", required=True),
         OptionSpec("label", "읽을 라벨 이름", help="예: 회의록. 라벨을 지정해야만 읽습니다.", required=True),
         OptionSpec("days_back", "과거 일수", "number", 14),
-        OptionSpec("max_messages", "최대 메일 수", "number", 50),
+        OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
 
     @staticmethod
@@ -171,14 +171,21 @@ class Gmail(_GoogleBase):
     def fetch(self, today: datetime.date) -> FetchOutcome:
         label = self.text_option("label")
         days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 50, 1, 200)
+        limit = self.int_option("max_messages", 200, 1, 1000)
         query = f'label:"{label}" newer_than:{days}d'
-        listing = self._get(
-            "https://gmail.googleapis.com/gmail/v1/users/me/messages",
-            {"q": query, "maxResults": limit},
-        )
+        refs: list[dict] = []
+        token = None
+        while len(refs) < limit:
+            params = {"q": query, "maxResults": min(limit - len(refs), 100)}
+            if token:
+                params["pageToken"] = token
+            listing = self._get("https://gmail.googleapis.com/gmail/v1/users/me/messages", params)
+            refs.extend(listing.get("messages", []))
+            token = listing.get("nextPageToken")
+            if not token:
+                break
         docs = {}
-        for ref in listing.get("messages", [])[:limit]:
+        for ref in refs[:limit]:
             message = self._get(
                 f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{ref['id']}",
                 {"format": "full"},

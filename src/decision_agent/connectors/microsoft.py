@@ -49,6 +49,9 @@ class _MicrosoftBase(Connector):
         )
 
     def _get(self, url: str, params: dict | None = None, prefer: str = "") -> dict:
+        if not url.startswith("https://graph.microsoft.com/"):
+            # A next-page link must never send the access token to another host.
+            raise ConnectorError("허용되지 않은 주소입니다.")
         token = self.ctx.oauth.access_token(self.id, self.oauth_app())
         headers = {"Authorization": f"Bearer {token}"}
         if prefer:
@@ -129,7 +132,7 @@ class OutlookMail(_MicrosoftBase):
         OptionSpec("tenant", "테넌트", default="common"),
         OptionSpec("folder", "읽을 메일 폴더 이름", help="예: 회의록. 받은 편지함 하위 폴더도 찾습니다.", required=True),
         OptionSpec("days_back", "과거 일수", "number", 14),
-        OptionSpec("max_messages", "최대 메일 수", "number", 50),
+        OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
 
     def _folder_id(self, name: str) -> str:
@@ -147,20 +150,23 @@ class OutlookMail(_MicrosoftBase):
     def fetch(self, today: datetime.date) -> FetchOutcome:
         folder = self._folder_id(self.text_option("folder"))
         days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 50, 1, 200)
+        limit = self.int_option("max_messages", 200, 1, 1000)
         since = (today - datetime.timedelta(days=days)).isoformat()
-        body = self._get(
-            f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages",
-            {
-                "$top": limit,
-                "$select": "id,subject,receivedDateTime,from,body",
-                "$filter": f"receivedDateTime ge {since}T00:00:00Z",
-                "$orderby": "receivedDateTime desc",
-            },
-            'outlook.body-content-type="text"',
-        )
+        prefer = 'outlook.body-content-type="text"'
+        url: str | None = f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages"
+        params: dict | None = {
+            "$top": min(limit, 100),
+            "$select": "id,subject,receivedDateTime,from,body",
+            "$filter": f"receivedDateTime ge {since}T00:00:00Z",
+            "$orderby": "receivedDateTime desc",
+        }
+        items: list[dict] = []
+        while url and len(items) < limit:
+            body = self._get(url, params, prefer)
+            items.extend(body.get("value", []))
+            url, params = body.get("@odata.nextLink"), None
         docs = {}
-        for item in body.get("value", [])[:limit]:
+        for item in items[:limit]:
             content = (item.get("body") or {}).get("content", "")
             if (item.get("body") or {}).get("contentType") == "html":
                 content = strip_html(content)

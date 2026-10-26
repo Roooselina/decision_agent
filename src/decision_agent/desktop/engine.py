@@ -26,7 +26,7 @@ from decision_agent.desktop.providers import (
     describe_llm_error,
     is_loopback_url,
 )
-from decision_agent.desktop.settings import AppSettings
+from decision_agent.desktop.settings import AppSettings, apply_speed_settings
 from decision_agent.desktop.state import FindingInput, StateDB, sha256_file
 from decision_agent.impact import candidate_artifacts_for_topic
 from decision_agent.llm.caching import CachingProvider
@@ -71,6 +71,8 @@ class CycleReport:
     needs_followup: bool = False
     error: str | None = None
     fatal: bool = False
+    # True when the per-cycle call budget stopped the check before every topic was judged.
+    partial: bool = False
     llm_calls: int = 0
 
 
@@ -135,6 +137,7 @@ class ProjectEngine:
         self.db = db
         self.bundle = bundle
         self.policy = FolderPolicy.for_root(self.root, settings)
+        apply_speed_settings(settings)
         self.counter = CountingProvider(bundle.provider, settings.max_llm_calls_per_cycle)
         self.persistent = PersistentCachingProvider(self.counter, db, bundle.provider_id)
         self.lock = threading.RLock()
@@ -464,6 +467,7 @@ class ProjectEngine:
                         "at": datetime.datetime.now().replace(microsecond=0).isoformat(),
                         "message": report.error,
                         "fatal": report.fatal,
+                        "partial": report.partial,
                     },
                     ensure_ascii=False,
                 ),
@@ -515,10 +519,12 @@ class ProjectEngine:
             )
             try:
                 project = ingest_items(
-                    built.meetings, built.artifacts, profile.config, profile.aliases, self.persistent
+                    built.meetings, built.artifacts, profile.config, profile.aliases, self.persistent,
+                    on_progress=self.progress.set_extract,
                 )
             except BudgetExceeded as exc:
                 report.error = str(exc)
+                report.partial = True
                 report.needs_followup = True
                 report.llm_calls = self.counter.calls
                 return report
@@ -579,6 +585,7 @@ class ProjectEngine:
                 except BudgetExceeded as exc:
                     self.db.topic_put(topic, "", decision_fp, "deferred", summary, judge)
                     report.error = str(exc)
+                    report.partial = True
                     report.needs_followup = True
                     report.outcomes.append(TopicOutcome(topic=topic, state="deferred"))
                     all_done = False

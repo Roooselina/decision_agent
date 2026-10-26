@@ -73,6 +73,7 @@ MAX_LOCK_RETRIES = 4
 MAX_FOLLOWUPS = 6
 LOG_TAIL_LINES = 200
 SUPERVISE_SECONDS = 30.0
+PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다시 점검하세요."
 
 
 @dataclass
@@ -949,6 +950,10 @@ class DecisionAgentApp:
             if failure and failure.get("fatal"):
                 return {"state": "failed", "label": "점검에 실패했습니다.", "detail": failure["message"]}
         for folder in folders:
+            failure = folder["failure"]
+            if failure and failure.get("partial"):
+                return {"state": "partial", "label": PARTIAL_LABEL, "detail": failure["message"]}
+        for folder in folders:
             if folder["failure"]:
                 return {
                     "state": "retrying",
@@ -971,7 +976,7 @@ class DecisionAgentApp:
             }
         return {
             "state": "demo",
-            "label": "데모 판정기로만 점검했습니다. 실제 검사가 아닙니다.",
+            "label": "시연용 모드, 실제 검사가 아닙니다.",
             "detail": f"파일 {files}개, 결정 {topics}건 / {latest}",
         }
 

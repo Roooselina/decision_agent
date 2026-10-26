@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from decision_agent.agent.interfaces import UserInterface
 from decision_agent.clarification import generate_questions, select_question
 from decision_agent.config import DEFAULT_SETTINGS, Settings
+from decision_agent.consistency import prepare_check
 from decision_agent.impact import predict_affected_for_topic
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import (
@@ -16,7 +17,7 @@ from decision_agent.models import (
 )
 from decision_agent.resolver import resolve_effective_decision
 from decision_agent.storage import SQLiteStore
-from decision_agent.uncertainty import estimate_uncertainty
+from decision_agent.uncertainty import estimate_many, estimate_uncertainty
 
 
 def describe_scope(artifact: Artifact) -> str:
@@ -130,19 +131,17 @@ class AnalysisContext:
     def judge(self, ids: list[str]) -> str:
         """Judge the given affected artifacts with sampling-based uncertainty."""
         by_id = self._by_id()
-        for artifact_id in ids:
-            artifact = by_id.get(artifact_id)
-            if artifact is None:
-                continue
-            self.results[artifact_id] = estimate_uncertainty(
-                self.store,
-                self.topic,
-                artifact,
-                self.as_of_date,
-                self.provider,
-                self.settings,
-                extra_evidence=self.shared_evidence,
+        targets = [by_id[i] for i in ids if i in by_id]
+        prepared = [
+            prepare_check(
+                self.store, self.topic, artifact, self.as_of_date, self.shared_evidence
             )
+            for artifact in targets
+        ]
+        for artifact, result in zip(
+            targets, estimate_many(prepared, self.provider, self.settings), strict=True
+        ):
+            self.results[artifact.id] = result
         counts = Counter(self.results[i].label.value for i in ids if i in self.results)
         summary = ", ".join(f"{label}={n}" for label, n in sorted(counts.items()))
         return f"{len(ids)}건 판단: {summary or '없음'}"

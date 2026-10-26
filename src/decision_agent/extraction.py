@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import re
+import threading
+from collections.abc import Callable
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from decision_agent.config import DEFAULT_SETTINGS
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import (
     Decision,
@@ -13,6 +17,7 @@ from decision_agent.models import (
     ProjectConfig,
     ScopeKind,
 )
+from decision_agent.parallel import run_parallel
 from decision_agent.scope import DIMENSIONS, normalize_scope
 
 EXTRACTION_SYSTEM = """TASK:DECISION_EXTRACT
@@ -73,26 +78,144 @@ def _normalize_payload_scope(
     return normalized
 
 
+EXTRACTION_BATCH_SYSTEM = "TASK:DECISION_EXTRACT_BATCH\n" + EXTRACTION_SYSTEM.split("\n", 1)[1].replace(
+    "출력 JSON 스키마:",
+    "ITEMS의 각 항목을 서로 독립적으로 판단한다. 모든 번호(index)에 대해 결과를 하나씩 낸다.\n"
+    "결정이 아닌 항목도 is_decision=false로 결과에 포함한다. 번호를 빼거나 만들지 않는다.\n\n"
+    "출력 JSON 스키마 (항목 하나의 형식. 전체는 {\"items\": [...]} 로 낸다. 각 항목에 index를 추가한다):",
+)
+
+
+class ExtractionBatchItem(BaseModel):
+    index: int
+    is_decision: bool = True
+    text: str = ""
+    topic: str = "misc"
+    scope: DecisionScope = Field(default_factory=lambda: DecisionScope(scope_kind=ScopeKind.GLOBAL))
+    reason: str | None = None
+    due_date: str | None = None
+
+
+class ExtractionBatchPayload(BaseModel):
+    items: list[ExtractionBatchItem]
+
+
+_SPACES = re.compile(r"\s+")
+
+
+def _normalize_text(text: str) -> str:
+    return _SPACES.sub(" ", text).strip().rstrip(".。!").lower()
+
+
+def _single_user(item: MeetingItem, header: str) -> str:
+    return (
+        f"DATE={item.date}\n"
+        f"{header}"
+        f"TEXT={item.text}"
+    )
+
+
+def _extract_batch(
+    group: list[MeetingItem], header: str, provider: LLMProvider
+) -> dict[int, ExtractionPayload]:
+    """Extract one group of items with a single call; items the model skipped are done singly."""
+    done: dict[int, ExtractionPayload] = {}
+    if len(group) > 1:
+        lines = [f"[{n}] DATE={item.date} | TEXT={_SPACES.sub(' ', item.text)}" for n, item in enumerate(group, 1)]
+        user = f"{header}ITEMS:\n" + "\n".join(lines)
+        try:
+            payload = provider.complete_json(EXTRACTION_BATCH_SYSTEM, user, ExtractionBatchPayload, 0.0)
+        except Exception:  # noqa: BLE001 - fall back to one call per item
+            payload = None
+        if payload is not None:
+            for row in payload.items:
+                if 1 <= row.index <= len(group) and row.index - 1 not in done:
+                    done[row.index - 1] = ExtractionPayload(
+                        text=row.text or group[row.index - 1].text,
+                        topic=row.topic,
+                        scope=row.scope,
+                        reason=row.reason,
+                        due_date=row.due_date,
+                        is_decision=row.is_decision,
+                    )
+    for number, item in enumerate(group):
+        if number not in done:
+            done[number] = provider.complete_json(
+                EXTRACTION_SYSTEM, _single_user(item, header), ExtractionPayload, 0.0
+            )
+    return done
+
+
 def extract_decisions(
     items: list[MeetingItem],
     provider: LLMProvider,
     config: ProjectConfig | None = None,
     aliases: dict[str, Any] | None = None,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> list[Decision]:
-    """Extract decisions from meeting items and normalize their scopes with the alias table."""
-    decisions: list[Decision] = []
-    counter = 1
+    """Extract decisions from meeting items and normalize their scopes with the alias table.
+
+    Identical items (same date and text, for example a decision in the minutes and again in a
+    mail) are judged once. Items of the same document go to the model together in groups of
+    DEFAULT_SETTINGS.extract_batch, and groups run in parallel. A decision that merely restates
+    the previous decision of its topic word for word is dropped.
+    """
     allowed = json.dumps(_allowed_values(aliases), ensure_ascii=False)
     current_release = config.current_release if config else None
+    header = f"PROJECT_CURRENT_RELEASE={current_release or '-'}\nALLOWED_SCOPE_VALUES={allowed}\n"
+
+    unique: dict[tuple[str, str], MeetingItem] = {}
     for item in items:
-        user = (
-            f"DATE={item.date}\n"
-            f"PROJECT_CURRENT_RELEASE={current_release or '-'}\n"
-            f"ALLOWED_SCOPE_VALUES={allowed}\n"
-            f"TEXT={item.text}"
-        )
-        payload = provider.complete_json(EXTRACTION_SYSTEM, user, ExtractionPayload, 0.0)
-        if not payload.is_decision:
+        unique.setdefault((item.date, item.text), item)
+    pending = list(unique.values())
+    size = max(1, DEFAULT_SETTINGS.extract_batch)
+    groups: list[list[MeetingItem]] = []
+    by_doc: dict[str, list[MeetingItem]] = {}
+    for item in pending:
+        by_doc.setdefault(item.source_doc, []).append(item)
+    for doc_items in by_doc.values():
+        for start in range(0, len(doc_items), size):
+            groups.append(doc_items[start : start + size])
+
+    progress = {"done": 0}
+    progress_lock = threading.Lock()
+
+    def run(group: list[MeetingItem]) -> dict[int, ExtractionPayload]:
+        result = _extract_batch(group, header, provider)
+        if on_progress is not None:
+            with progress_lock:
+                progress["done"] += len(group)
+                on_progress(progress["done"], len(pending))
+        return result
+
+    outputs = run_parallel(run, groups)
+    payloads: dict[tuple[str, str], ExtractionPayload] = {}
+    for group, output in zip(groups, outputs, strict=True):
+        for number, item in enumerate(group):
+            payloads[(item.date, item.text)] = output[number]
+
+    candidates: list[tuple[MeetingItem, ExtractionPayload]] = []
+    for item in items:
+        payload = payloads[(item.date, item.text)]
+        if payload.is_decision:
+            candidates.append((item, payload))
+
+    # Drop word-for-word restatements of the previous decision of the same topic.
+    skip: set[int] = set()
+    last_text: dict[str, str] = {}
+    order = sorted(range(len(candidates)), key=lambda i: (candidates[i][1].topic, candidates[i][0].date, i))
+    for i in order:
+        item, payload = candidates[i]
+        normalized = _normalize_text(payload.text)
+        if last_text.get(payload.topic) == normalized:
+            skip.add(i)
+            continue
+        last_text[payload.topic] = normalized
+
+    decisions: list[Decision] = []
+    counter = 1
+    for i, (item, payload) in enumerate(candidates):
+        if i in skip:
             continue
         decisions.append(
             Decision(

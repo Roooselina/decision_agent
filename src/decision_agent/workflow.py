@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ def ingest_items(
     config: ProjectConfig,
     aliases: dict[str, Any],
     provider: LLMProvider,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> IngestedProject:
     """Extract decisions, classify relations, and store everything in a fresh store.
 
@@ -38,7 +40,7 @@ def ingest_items(
     them comes from orchestration after ingestion.
     """
     store = SQLiteStore()
-    decisions = extract_decisions(meetings, provider, config, aliases)
+    decisions = extract_decisions(meetings, provider, config, aliases, on_progress=on_progress)
     for decision in decisions:
         store.save_decision(decision)
     for artifact in artifacts:

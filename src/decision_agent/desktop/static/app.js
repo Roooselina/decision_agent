@@ -208,8 +208,10 @@
           action: button("폴더 추가", {variant: "primary", onClick: () => startAddFolder()}),
         })));
       }
+      const partial = agentState(st) === "partial"
+        ? callout("warning", "alert", st.overall.label, st.overall.detail || "") : null;
       return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))],
-        agentCard(st),
+        partial, agentCard(st),
         h("div", {class: "home-grid"}, calendarCard(week, st), todoCard(st, findings, questions)),
         recentCard(st, activity));
     },
@@ -245,16 +247,19 @@
     if (el.dataset.rel) el.textContent = relTime(el.dataset.rel);
   }), 30000);
 
-  // Running numbers for the thin bar: files while reading, decisions while checking.
+  // Running numbers for the thin bar: files while reading, meeting items while extracting
+  // decisions ("결정 추출 n/m"), decisions while judging ("판정 n/m").
   function runningProgress(st) {
     let done = 0, total = 0, text = "";
     for (const f of st.folders) {
       const p = f.progress;
-      if (p.phase === "checking" && p.topics_total) { done += p.topics_done; total += p.topics_total; text = "결정"; }
+      if (p.phase === "checking" && p.topics_total) { done += p.topics_done; total += p.topics_total; text = "판정"; }
+      else if (p.phase === "extracting" && p.extract_total) { done += p.extract_done; total += p.extract_total; text = text === "판정" ? text : "결정 추출"; }
       else if (p.files_total) { done += p.files_done; total += p.files_total; text = text || "문서"; }
     }
     if (!total) return {pct: 0, text: "문서를 확인하고 있습니다."};
-    return {pct: Math.round(done * 100 / total), text: text === "결정" ? "결정 " + total + "건 중 " + done + "건 확인" : "문서 " + total + "개 중 " + done + "개 확인"};
+    const label = text === "문서" ? "문서 " + total + "개 중 " + done + "개 확인" : text + " " + done + "/" + total;
+    return {pct: Math.round(done * 100 / total), text: label};
   }
 
   // The "문서 확인 AI AGENT" card (Figma 15:44 and the 문서 확인 상태 카드 variants).
@@ -264,7 +269,7 @@
     const watch = st.watch || {};
     const demo = state === "demo";
     const ICON = {verified: ["shield-check", "ok"], running: ["loader", "busy"], paused: ["pause-bars", "paused"],
-      failed: ["alert-circle", "error"], demo: ["shield-check", "demo"], retrying: ["alert-circle", "attention"],
+      failed: ["alert-circle", "error"], demo: ["shield-check", "demo"], retrying: ["alert-circle", "attention"], partial: ["alert-circle", "attention"],
       stale: ["alert-circle", "attention"], incomplete: ["clock", "busy"]};
     const [iconName, tone] = ICON[state] || ICON.incomplete;
     const mainIcon = icon(iconName, "agent-icon " + tone + (state === "running" ? " spin" : ""));
@@ -297,7 +302,7 @@
       const sends = st.provider.sends_externally;
       right = h("div", {class: "agent-right"},
         r && state === "verified" ? h("span", {class: "agent-note"}, "검사 완료 · 문서 " + r.files + "개, 결정 " + r.topics + "건 확인") : null,
-        state === "retrying" || state === "stale" ? h("span", {class: "agent-note warn", title: info.detail || ""}, info.label) : null,
+        state === "retrying" || state === "stale" || state === "partial" ? h("span", {class: "agent-note warn", title: info.detail || ""}, info.label) : null,
         state === "incomplete" ? h("span", {class: "agent-note"}, "첫 확인을 준비하고 있습니다.") : null,
         h("span", {class: "agent-note" + (sends ? " info" : "")}, sends ? "문서 처리: 외부 AI로 전송 중 (" + st.provider.id + ")" : "문서 처리: 내 컴퓨터 · 외부 전송 안 함"));
     }
@@ -1274,7 +1279,7 @@
       return card(folderName(f.root), f.root, null, h("div", {class: "stack-sm"},
         c ? (c.verified
           ? callout("success", "check-circle", "실제 모델로 끝까지 점검했습니다", fmtTime(c.at) + " · " + c.provider_id + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건")
-          : callout("warning", "alert", "데모 판정기로만 점검했습니다. 실제 검사가 아닙니다.", fmtTime(c.at) + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건"))
+          : callout("warning", "alert", "시연용 모드, 실제 검사가 아닙니다.", fmtTime(c.at) + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건"))
           : callout("neutral", "clock", "아직 완료된 점검이 없습니다", null),
         judges ? h("p", {class: "small muted"}, "판정기별 결정 수: " + judges) : null,
         f.scan_stats ? h("p", {class: "small muted"}, "폴더 안 파일 " + f.scan_stats.seen + "개 확인" + (skipped ? " · 건너뜀: " + skipped : "")) : null,
@@ -1581,6 +1586,8 @@
     autoSw.input.disabled = !auto.supported;
     const running = h("section", {class: "card set-card"}, h("h2", {}, "실행"),
       setRow("Windows 시작 시 자동 실행", autoSw, auto.supported ? null : h("span", {class: "small muted"}, "Windows에서만 지원합니다.")),
+      setRow("빠른 점검(묶음 판정)", switchCtl(s.batch_size > 1, (v) => saveSettings({batch_size: v ? 8 : 1}, v ? "여러 항목을 한 번에 판정합니다." : "항목을 한 건씩 판정합니다."), "빠른 점검(묶음 판정)")),
+      h("p", {class: "set-help"}, "켜면 같은 결정에 대한 항목을 묶어서 한 번에 판정해 호출 수가 줄어듭니다. 결과가 의심되면 끄고 다시 점검해 비교하세요."),
       setRow("바탕화면 도우미 버튼", switchCtl(s.helper_enabled, (v) => saveSettings({helper_enabled: v}, v ? "도우미 버튼을 표시합니다." : "도우미 버튼을 숨겼습니다. 트레이에서 계속 확인합니다."), "도우미 버튼")),
       setRow("메일과 일정 가져오기", interval),
       h("p", {class: "set-help"}, "창을 닫아도 도우미 버튼과 트레이에서 계속 확인합니다. 완전히 끄려면 트레이 메뉴의 '종료'를 누르세요."));

@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from decision_agent.config import DEFAULT_SETTINGS, Settings
 from decision_agent.desktop.paths import app_home, settings_path
 
 DEFAULT_EXCLUDES = [
@@ -55,7 +56,12 @@ class AppSettings(BaseModel):
     current_release: str | None = None
     scope_aliases: dict[str, dict[str, list[str]]] | None = None
     kind_overrides: dict[str, str] = Field(default_factory=dict)
-    max_llm_calls_per_cycle: int = Field(default=400, ge=1, le=100000)
+    max_llm_calls_per_cycle: int = Field(default=3000, ge=1, le=100000)
+    # Speed of one check. batch_size 1 turns batching off; adaptive_sampling stops sampling a
+    # judgement early when the first samples agree. Environment variables override these.
+    llm_concurrency: int = Field(default=8, ge=1, le=32)
+    batch_size: int = Field(default=8, ge=1, le=32)
+    adaptive_sampling: bool = True
     connectors: dict[str, ConnectorSettings] = Field(default_factory=dict)
     connector_target: str | None = None
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)
@@ -145,6 +151,47 @@ class AppSettings(BaseModel):
             if root_key(key) == wanted:
                 return list(items)
         return []
+
+
+# Analysis settings field -> environment variable that overrides the app setting.
+SPEED_ENV = {
+    "concurrency": "DECISION_AGENT_CONCURRENCY",
+    "extract_batch": "DECISION_AGENT_EXTRACT_BATCH",
+    "judge_batch": "DECISION_AGENT_JUDGE_BATCH",
+    "adaptive_min_samples": "DECISION_AGENT_ADAPTIVE_MIN",
+}
+
+
+def speed_values(settings: AppSettings) -> dict[str, int]:
+    return {
+        "concurrency": settings.llm_concurrency,
+        "extract_batch": settings.batch_size,
+        "judge_batch": settings.batch_size,
+        "adaptive_min_samples": 2 if settings.adaptive_sampling else 0,
+    }
+
+
+def apply_speed_settings(
+    settings: AppSettings,
+    target: Settings | None = None,
+    environ: dict[str, str] | None = None,
+) -> dict[str, int]:
+    """Copy the speed settings into the analysis settings. A set environment variable wins.
+
+    Returns the values now in effect.
+    """
+    target = target if target is not None else DEFAULT_SETTINGS
+    environ = environ if environ is not None else dict(os.environ)
+    for name, value in speed_values(settings).items():
+        raw = environ.get(SPEED_ENV[name], "").strip()
+        try:
+            override = int(raw) if raw else None
+        except ValueError:
+            override = None
+        if override is not None:
+            value = max(0, override) if name == "adaptive_min_samples" else max(1, override)
+        setattr(target, name, value)
+    return {name: getattr(target, name) for name in SPEED_ENV}
 
 
 def root_key(path: Path | str) -> str:

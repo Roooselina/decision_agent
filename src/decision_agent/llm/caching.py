@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from collections import defaultdict
 
 from decision_agent.llm.base import LLMProvider
@@ -18,6 +19,7 @@ class CachingProvider(LLMProvider):
         self._recorded: dict[tuple[str, str, float], list[str]] = defaultdict(list)
         self._cursor: dict[tuple[str, str, float], int] = defaultdict(int)
         self.live_calls = 0
+        self._lock = threading.Lock()
 
     def begin_run(self) -> None:
         """Reset replay positions at the start of every analysis run."""
@@ -31,11 +33,13 @@ class CachingProvider(LLMProvider):
         json_schema: dict | None = None,
     ) -> str:
         key = (system, user, temperature)
-        position = self._cursor[key]
-        self._cursor[key] += 1
-        if position < len(self._recorded[key]):
-            return self._recorded[key][position]
-        self.live_calls += 1
+        with self._lock:
+            position = self._cursor[key]
+            self._cursor[key] += 1
+            if position < len(self._recorded[key]):
+                return self._recorded[key][position]
+            self.live_calls += 1
         raw = self.inner.complete(system, user, temperature, json_schema)
-        self._recorded[key].append(raw)
+        with self._lock:
+            self._recorded[key].append(raw)
         return raw

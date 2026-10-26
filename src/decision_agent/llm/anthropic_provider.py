@@ -14,7 +14,8 @@ class AnthropicProvider(LLMProvider):
         api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise RuntimeError("ANTHROPIC_API_KEY가 필요합니다.")
-        self.client = Anthropic(api_key=api_key)
+        # The SDK retries rate limits and overloads with backoff; many parallel calls make that matter.
+        self.client = Anthropic(api_key=api_key, max_retries=6, timeout=90.0)
         self.send_temperature = True
         self.model = model or os.getenv("DECISION_AGENT_MODEL") or DEFAULT_SETTINGS.model_name
         if not self.model:

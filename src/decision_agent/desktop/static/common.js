@@ -458,6 +458,7 @@ const DA = (() => {
     demo: {kind: "warning", cls: "demo", icon: "alert-circle", short: "시연용 모드"},
     failed: {kind: "danger", cls: "error", icon: "alert-circle", short: "오류"},
     retrying: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
+    partial: {kind: "warning", cls: "attention", icon: "alert-circle", short: "일부만 점검"},
     running: {kind: "info", cls: "busy", icon: "loader", short: "확인 중"},
     stale: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
     incomplete: {kind: "info", cls: "busy", icon: "clock", short: "확인 대기"},

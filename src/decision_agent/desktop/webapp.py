@@ -42,7 +42,7 @@ EDITABLE_FIELDS = {
     "connector_target", "connector_interval_minutes", "hotkey_enabled", "hotkey",
     "digest_enabled", "digest_time", "display_name", "profile_color", "theme", "language",
     "onboarding_done", "debounce_max_seconds", "helper_enabled", "quiet_hours_enabled", "quiet_start",
-    "quiet_end", "meeting_reminder_enabled", "meeting_reminder_minutes",
+    "quiet_end", "meeting_reminder_enabled", "meeting_reminder_minutes", "batch_size",
 }
 PURGE_CONFIRM = "삭제"
 PAGE_HASH = re.compile(r"^#/[a-z-]{0,30}$")

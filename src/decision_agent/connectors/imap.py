@@ -52,7 +52,7 @@ class ImapMail(Connector):
         OptionSpec("username", "계정", required=True),
         OptionSpec("folder", "읽을 폴더 이름", help="예: 회의록 또는 INBOX", required=True),
         OptionSpec("days_back", "과거 일수", "number", 14),
-        OptionSpec("max_messages", "최대 메일 수", "number", 50),
+        OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
     secrets = (SecretSpec("password", "비밀번호 또는 앱 비밀번호"),)
 
@@ -60,7 +60,7 @@ class ImapMail(Connector):
         host = self.text_option("host")
         port = self.int_option("port", 993, 1, 65535)
         days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 50, 1, 200)
+        limit = self.int_option("max_messages", 200, 1, 1000)
         since = (today - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
         docs = {}
         try:

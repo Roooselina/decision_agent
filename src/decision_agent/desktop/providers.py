@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import threading
 import urllib.parse
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -81,16 +82,19 @@ class CountingProvider(LLMProvider):
         self.inner = inner
         self.budget = budget
         self.calls = 0
+        self._lock = threading.Lock()
 
     def reset(self) -> None:
-        self.calls = 0
+        with self._lock:
+            self.calls = 0
 
     def complete(
         self, system: str, user: str, temperature: float = 0.0, json_schema: dict | None = None
     ) -> str:
-        if self.calls >= self.budget:
-            raise BudgetExceeded(f"한 번의 점검에서 사용할 LLM 호출 한도({self.budget}회)에 도달했습니다.")
-        self.calls += 1
+        with self._lock:
+            if self.calls >= self.budget:
+                raise BudgetExceeded(f"한 번의 점검에서 사용할 LLM 호출 한도({self.budget}회)에 도달했습니다.")
+            self.calls += 1
         return self.inner.complete(system, user, temperature, json_schema)
 
 
