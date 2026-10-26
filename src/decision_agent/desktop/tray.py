@@ -220,7 +220,12 @@ class TrayApp:
             "decision-agent", make_icon_image(state), tray_title(status), self._build_menu()
         )
         self.controller.listeners.append(self.refresh)
-        self.icon.run()
+
+        def setup(icon) -> None:
+            icon.visible = True
+            log.info("tray icon registered")
+
+        self.icon.run(setup=setup)
 
     def stop(self) -> None:
         if self.icon is not None:

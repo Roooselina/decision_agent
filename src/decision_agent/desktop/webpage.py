@@ -1,4 +1,4 @@
-"""The dashboard and quick-check pages, loaded from the bundled static folder.
+"""The dashboard, quick-check and desktop helper pages, loaded from the bundled static folder.
 
 The HTML holds two placeholders that the server fills per request: __NONCE__ (the CSP nonce
 for script tags) and __TOKEN__ (the API token, JSON encoded). Everything else is static.
@@ -17,6 +17,8 @@ ASSET_TYPES = {
     "app.js": "text/javascript; charset=utf-8",
     "quick.js": "text/javascript; charset=utf-8",
     "common.js": "text/javascript; charset=utf-8",
+    "helper.js": "text/javascript; charset=utf-8",
+    "helper.css": "text/css; charset=utf-8",
     "icon.svg": "image/svg+xml",
 }
 
@@ -27,6 +29,7 @@ def _read(name: str) -> str:
 
 PAGE = _read("index.html")
 QUICK_PAGE = _read("quick.html")
+HELPER_PAGE = _read("helper.html")
 
 
 @lru_cache(maxsize=1)
@@ -36,5 +39,5 @@ def static_assets() -> dict[str, tuple[bytes, str]]:
 
 def all_sources() -> dict[str, str]:
     """Every page and script, for the tests that forbid HTML injection APIs."""
-    names = ["index.html", "quick.html"] + [n for n in ASSET_TYPES if n.endswith((".js", ".css"))]
+    names = ["index.html", "quick.html", "helper.html"] + [n for n in ASSET_TYPES if n.endswith((".js", ".css"))]
     return {name: _read(name) for name in names}

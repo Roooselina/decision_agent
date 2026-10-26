@@ -1573,7 +1573,7 @@
           }}, x.split("+").map(k => k.length <= 3 ? k.toUpperCase() : k[0].toUpperCase() + k.slice(1)).join(" + ")))) : null) : null,
       setRow("방해 금지 시간", switchCtl(s.quiet_hours_enabled, async (v) => { await saveSettings({quiet_hours_enabled: v}); quietStart.disabled = quietEnd.disabled = !v; }, "방해 금지 시간"),
         quietStart, h("span", {class: "muted"}, "–"), quietEnd),
-      h("p", {class: "set-help"}, "방해 금지 시간에 생긴 알림은 모아 두었다가 끝난 뒤 한 번에 보냅니다. 같은 오류는 반복해서 알리지 않습니다."),
+      h("p", {class: "set-help"}, "방해 금지 시간에는 알림을 띄우지 않고 도우미 버튼도 흔들리지 않습니다. 생긴 일은 받은 알림 목록과 배지 숫자에 남습니다. 같은 오류는 반복해서 알리지 않습니다."),
       setRow("회의 전 알림", switchCtl(s.meeting_reminder_enabled, async (v) => { await saveSettings({meeting_reminder_enabled: v}); reminder.disabled = !v; }, "회의 전 알림"), reminder),
       h("p", {class: "set-help"}, "곧 시작할 회의와 연결된 반영 안 됨 항목이 있으면 알려 줍니다. 캘린더 연결이 필요합니다."));
 

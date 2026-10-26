@@ -62,6 +62,18 @@ class Debouncer:
         with self._cond:
             return len(self._pending)
 
+    def pending_info(self) -> dict | None:
+        """Waiting changes: how many, the newest path, and seconds until they are handed over."""
+        now = self.clock()
+        with self._cond:
+            if not self._pending:
+                return None
+            newest = max(self._pending, key=self._pending.get)
+            seconds = self.delay - (now - self._last)
+            if self._first is not None:
+                seconds = min(seconds, self.max_wait - (now - self._first))
+            return {"count": len(self._pending), "path": newest, "seconds": max(0.0, seconds)}
+
     def is_alive(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 

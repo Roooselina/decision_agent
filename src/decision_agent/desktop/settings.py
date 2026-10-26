@@ -78,6 +78,9 @@ class AppSettings(BaseModel):
     onboarding_done: bool = False
     # Desktop helper button (always on top, bottom right) and notification behaviour.
     helper_enabled: bool = True
+    # Where the user dragged the helper button (logical pixels); None means the default spot.
+    helper_x: int | None = Field(default=None, ge=-20000, le=20000)
+    helper_y: int | None = Field(default=None, ge=-20000, le=20000)
     quiet_hours_enabled: bool = False
     quiet_start: str = "22:00"
     quiet_end: str = "08:00"

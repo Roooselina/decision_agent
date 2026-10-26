@@ -20,6 +20,7 @@ from decision_agent.desktop import secrets as secret_store
 from decision_agent.desktop.app import DecisionAgentApp
 from decision_agent.desktop.autostart import Autostart
 from decision_agent.desktop.engine import ProjectEngine
+from decision_agent.desktop.helper import HelperActions, HelperWindow
 from decision_agent.desktop.hotkey import HotkeyListener, hotkey_status
 from decision_agent.desktop.notify import CallbackNotifier, ChainNotifier, make_notifier
 from decision_agent.desktop.paths import activity_path, app_home, log_path, state_db_path
@@ -197,8 +198,8 @@ def _run_desktop(args: argparse.Namespace, settings: AppSettings, port: int) -> 
 
         def first_hide() -> None:
             tray_notify(
-                "계속 백그라운드에서 감시합니다",
-                "창을 닫아도 폴더 감시는 계속됩니다. 트레이 아이콘에서 다시 열거나 종료할 수 있습니다.",
+                "백그라운드에서 계속 확인합니다",
+                "창을 닫아도 폴더 확인은 계속됩니다. 바탕화면 도우미나 트레이 아이콘에서 다시 열거나 종료할 수 있습니다.",
             )
 
         shell = DesktopShell(
@@ -246,14 +247,24 @@ def _run_desktop(args: argparse.Namespace, settings: AppSettings, port: int) -> 
     print(f"대시보드: http://127.0.0.1:{port}/")
 
     stop_event = threading.Event()
+    helper: HelperWindow | None = None
 
     def shutdown() -> None:
         stop_event.set()
         tray = holder["tray"]
         if tray is not None:
             tray.stop()
+        if helper is not None:
+            helper.destroy()
         if shell is not None:
             shell.quit()
+
+    if shell is not None:
+        # The main window must be pywebview's first (master) window, so create it before the helper.
+        if first_run:
+            shell.background = False
+        shell.create_main()
+        helper = _make_helper(shell, controller, ui_url(port, token, "/helper"), shutdown, tray_notify)
 
     tray = TrayApp(
         controller,
@@ -294,12 +305,59 @@ def _run_desktop(args: argparse.Namespace, settings: AppSettings, port: int) -> 
     return 0
 
 
+def _make_helper(shell, controller, url, shutdown, tray_notify) -> HelperWindow:
+    """The always-on-top helper button; shown at start (also with --background) when enabled."""
+
+    def toggle_pause() -> None:
+        if controller.paused:
+            controller.resume()
+        else:
+            controller.pause()
+
+    def hide_helper() -> None:
+        controller.update_settings_light({"helper_enabled": False})
+        tray_notify(
+            "도우미를 숨겼습니다",
+            "설정의 '알림 및 데이터' 탭에서 다시 켤 수 있습니다. 트레이 아이콘은 그대로 있습니다.",
+        )
+
+    actions = HelperActions(
+        open_app=shell.show_main,
+        open_quick=shell.show_quick,
+        rescan=controller.rescan,
+        toggle_pause=toggle_pause,
+        hide_helper=hide_helper,
+        quit_app=shutdown,
+        open_page=shell.show_main,
+    )
+    helper = HelperWindow(
+        shell.webview,
+        url,
+        controller,
+        actions,
+        save_position=lambda x, y: controller.update_settings_light(
+            {"helper_x": x, "helper_y": y}, announce=False
+        ),
+    )
+
+    def apply_helper(current: AppSettings) -> None:
+        if current.helper_enabled:
+            helper.show()
+        else:
+            helper.hide()
+
+    if controller.settings.helper_enabled:
+        helper.create()
+    controller.settings_hooks.append(apply_helper)
+    return helper
+
+
 def _run_tray(tray) -> bool:
     try:
         tray.run()
         return True
     except Exception as exc:  # noqa: BLE001 - no display or no tray backend
-        logging.getLogger(__name__).warning("tray unavailable: %s", exc)
+        logging.getLogger(__name__).warning("tray icon not registered: %s", exc)
         tray.icon = None
         return False
 

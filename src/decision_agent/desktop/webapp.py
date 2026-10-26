@@ -27,10 +27,10 @@ from pydantic import BaseModel, Field
 from decision_agent import __version__
 from decision_agent.connectors.base import ConnectorError
 from decision_agent.desktop import secrets as secret_store
-from decision_agent.desktop.app import DecisionAgentApp
+from decision_agent.desktop.app import LIGHT_FIELDS, DecisionAgentApp
 from decision_agent.desktop.errors import UserError
 from decision_agent.desktop.settings import FolderNeedsMerge, FolderRejected
-from decision_agent.desktop.webpage import PAGE, QUICK_PAGE, static_assets
+from decision_agent.desktop.webpage import HELPER_PAGE, PAGE, QUICK_PAGE, static_assets
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ CSP = (
     "form-action 'none'; frame-ancestors 'none'"
 )
 MAX_IMPORT_CHARS = 40 * 1024 * 1024
-NEXT_PAGES = {"/", "/quick"}
+NEXT_PAGES = {"/", "/quick", "/helper"}
 
 
 class FindingStatusBody(BaseModel):
@@ -235,6 +235,10 @@ def create_web_app(
     @app.get("/quick", response_class=HTMLResponse)
     async def quick_page(request: Request):
         return page_response(request, QUICK_PAGE)
+
+    @app.get("/helper", response_class=HTMLResponse)
+    async def helper_page(request: Request):
+        return page_response(request, HELPER_PAGE)
 
     @app.get("/oauth/callback", response_class=HTMLResponse)
     def oauth_callback(code: str = "", state: str = "", error: str = ""):
@@ -471,7 +475,10 @@ def create_web_app(
             new = type(controller.settings).model_validate(merged)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="설정 값이 올바르지 않습니다.") from exc
-        controller.reconfigure(new)
+        if payload and set(payload) <= LIGHT_FIELDS:
+            controller.update_settings_light({k: getattr(new, k) for k in payload})
+        else:
+            controller.reconfigure(new)
         return {"ok": True}
 
     @app.get("/api/folders", dependencies=auth)

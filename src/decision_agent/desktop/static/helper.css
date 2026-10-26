@@ -1,0 +1,102 @@
+/* Desktop helper window. The window itself is transparent; only the round button or the
+   panel card is painted. */
+:root {
+  --h-text: #111827;
+  --h-muted: #6b7280;
+  --h-line: #e5e7eb;
+  --h-card: #ffffff;
+  --h-primary: #2563eb;
+  --h-bad: #dc2626;
+  --h-warn: #ea580c;
+  --h-ok: #059669;
+  font-family: "Pretendard", "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --h-text: #f3f4f6; --h-muted: #9ca3af; --h-line: #374151; --h-card: #1f2937; }
+}
+/* The window is cut to a circle or a rounded card by a window region; the corners outside it
+   are not drawn. */
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: transparent; overflow: hidden; user-select: none;
+}
+.helper { width: 100%; height: 100%; box-sizing: border-box; }
+.helper.mode-icon { display: flex; align-items: center; justify-content: center; }
+
+/* round button */
+.orb {
+  position: relative; width: 56px; height: 56px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.85);
+  background: #2563eb; color: #fff; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.orb:focus-visible { outline: 3px solid #93c5fd; outline-offset: 0; }
+.orb .glyph { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.orb .ring {
+  position: absolute; inset: -1px; border-radius: 50%; pointer-events: none;
+  border: 3px solid rgba(255, 255, 255, 0.35); border-top-color: #fff;
+  animation: h-spin 1s linear infinite;
+}
+.orb .badge {
+  /* Lies inside the window region's badge circle (top right, 20px). */
+  position: absolute; top: 0; right: 0; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
+  border-radius: 10px; background: #111827; color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center;
+  pointer-events: none;
+}
+.orb.shake { animation: h-shake 0.5s ease-in-out 4; }
+@keyframes h-spin { to { transform: rotate(360deg); } }
+@keyframes h-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb .ring { animation-duration: 3s; }
+  .orb.shake { animation: none; outline: 3px solid #fdba74; }
+}
+
+/* panel */
+.panel, .menu {
+  box-sizing: border-box; width: 100%; height: 100%; background: var(--h-card); color: var(--h-text);
+  border: 1px solid var(--h-line); border-radius: 14px; font-size: 13px;
+}
+.panel { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.p-head { display: flex; align-items: center; gap: 8px; }
+.p-title { font-size: 14px; flex: 1; }
+.p-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--h-primary); }
+.p-dot.attention { background: var(--h-warn); }
+.p-dot.error { background: var(--h-bad); }
+.p-dot.paused { background: var(--h-muted); }
+.p-state { font-size: 12px; color: var(--h-muted); }
+.p-state.attention { color: var(--h-warn); }
+.p-state.error { color: var(--h-bad); }
+.p-close { border: 0; background: none; color: var(--h-muted); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+.p-meta { display: flex; gap: 10px; align-items: center; font-size: 12px; }
+.p-beat.ok { color: var(--h-ok); font-weight: 600; }
+.p-beat.bad { color: var(--h-bad); font-weight: 600; }
+.p-muted { color: var(--h-muted); }
+.p-doing { margin: 0; padding: 8px 10px; border-radius: 8px; background: rgba(37, 99, 235, 0.08); }
+.p-demo { margin: 0; font-size: 12px; color: var(--h-warn); }
+.p-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.p-link { border: 0; background: none; color: var(--h-primary); cursor: pointer; font-size: 12px; padding: 0; }
+.p-todos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; overflow: hidden; }
+.p-todo { display: flex; flex-direction: column; padding: 6px 8px; border-left: 3px solid var(--h-warn); background: rgba(234, 88, 12, 0.06); border-radius: 4px; }
+.p-todo.bad { border-left-color: var(--h-bad); background: rgba(220, 38, 38, 0.06); }
+.p-todo-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-todo-sub { font-size: 11px; color: var(--h-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-empty { flex: 1; margin: 0; }
+.p-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.p-btn {
+  border: 1px solid var(--h-line); background: transparent; color: var(--h-text); border-radius: 8px;
+  padding: 8px 0; cursor: pointer; font: inherit;
+}
+.p-btn.primary { background: var(--h-primary); border-color: var(--h-primary); color: #fff; }
+.p-btn:focus-visible, .m-item:focus-visible, .p-link:focus-visible, .p-close:focus-visible { outline: 2px solid #93c5fd; }
+
+/* right-click menu */
+.menu { display: flex; flex-direction: column; padding: 6px; }
+.menu hr { border: 0; border-top: 1px solid var(--h-line); margin: 4px 0; width: 100%; }
+.m-item { border: 0; background: none; color: var(--h-text); text-align: left; padding: 8px 10px; border-radius: 6px; cursor: pointer; font: inherit; }
+.m-item:hover { background: rgba(37, 99, 235, 0.08); }
+.m-item.danger { color: var(--h-bad); }

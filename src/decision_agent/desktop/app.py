@@ -10,6 +10,7 @@ import queue
 import shutil
 import sys
 import threading
+import time
 import uuid
 from collections import Counter
 from collections.abc import Callable
@@ -30,6 +31,7 @@ from decision_agent.desktop.connector_manager import ConnectorManager
 from decision_agent.desktop.drafts import latest_decision, make_draft
 from decision_agent.desktop.engine import EXTERNAL_PREFIX, CycleReport, ProjectEngine
 from decision_agent.desktop.errors import UserError
+from decision_agent.desktop.helper import quiet_now
 from decision_agent.desktop.hotkey import hotkey_status
 from decision_agent.desktop.notify import LogNotifier, Notifier
 from decision_agent.desktop.paths import app_home, log_path, state_db_path
@@ -74,6 +76,9 @@ MAX_FOLLOWUPS = 6
 LOG_TAIL_LINES = 200
 SUPERVISE_SECONDS = 30.0
 PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다시 점검하세요."
+# Settings that only change how the program shows itself. Saving them does not restart the
+# watchers or check the folders again.
+LIGHT_FIELDS = frozenset({"helper_enabled", "helper_x", "helper_y", "quiet_hours_enabled", "quiet_start", "quiet_end"})
 
 
 @dataclass
@@ -148,6 +153,8 @@ class DecisionAgentApp:
         self.idle = threading.Event()
         self.idle.set()
         self._running = False
+        # Heartbeat for the helper: the last time the supervisor or the worker reported in.
+        self.last_tick: float | None = None
         # Hooks set by the launcher; all optional so the controller also runs headless.
         self.ui_mode = "browser"
         self.ui_reason = ""
@@ -163,6 +170,7 @@ class DecisionAgentApp:
     def start(self, initial_scan: bool = True) -> None:
         with self._lock:
             self._running = True
+            self.last_tick = time.time()
             self._build_runtimes()
             self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
             self._worker.start()
@@ -268,6 +276,7 @@ class DecisionAgentApp:
         with self._lock:
             if not self._running:
                 return restarted
+            self.last_tick = time.time()
             if self._worker is not None and not self._worker.is_alive():
                 self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
                 self._worker.start()
@@ -296,8 +305,48 @@ class DecisionAgentApp:
             log.warning("restarted %s", item)
         if restarted:
             self.activity.add("폴더 감시를 다시 시작했습니다. (" + ", ".join(restarted) + ")", "attention")
-            self._changed()
+        # Every round reports in, so the helper can tell a quiet program from a stuck one.
+        self._changed()
         return restarted
+
+    def pending_changes(self) -> list[dict]:
+        """Changes the watchers saw that are still waiting for the quiet period, per folder."""
+        items = []
+        for _, runtime in self._each():
+            info = runtime.debouncer.pending_info() if runtime.debouncer else None
+            if info:
+                items.append(
+                    {"name": Path(info["path"]).name, "count": info["count"], "seconds": info["seconds"]}
+                )
+        return sorted(items, key=lambda i: i["seconds"])
+
+    def update_settings_light(self, changes: dict, announce: bool = True) -> AppSettings:
+        """Save settings from LIGHT_FIELDS without restarting watchers or checking again.
+
+        announce=False skips the settings hooks and listeners (used for the helper position,
+        which changes while the user drags it).
+        """
+        unknown = set(changes) - LIGHT_FIELDS
+        if unknown:
+            raise ValueError(f"not a light setting: {sorted(unknown)}")
+        with self._lock:
+            merged = self.settings.model_dump(mode="json")
+            merged.update(changes)
+            checked = type(self.settings).model_validate(merged)
+            # Change the shared object in place: the engines keep a reference to it.
+            for name in changes:
+                setattr(self.settings, name, getattr(checked, name))
+            if self.settings_file is not None:
+                save_settings(self.settings, self.settings_file)
+        if not announce:
+            return self.settings
+        for hook in list(self.settings_hooks):
+            try:
+                hook(self.settings)
+            except Exception:
+                log.exception("settings hook failed")
+        self._changed()
+        return self.settings
 
     def _stop_runtimes(self) -> None:
         for runtime in self.runtimes.values():
@@ -383,6 +432,7 @@ class DecisionAgentApp:
                 self.last_error = f"점검 중 오류: {exc}"
             finally:
                 self.busy = False
+                self.last_tick = time.time()
                 self.last_cycle = now_iso()
                 if self.jobs.empty():
                     self.idle.set()
@@ -813,7 +863,10 @@ class DecisionAgentApp:
             self.inbox.add(f"{title}: {body}", "attention")
         if report.error and report.error != self._last_error_notified:
             self.inbox.add(f"점검 중 문제가 발생했습니다: {report.error[:200]}", "error")
-        if self.settings.notify:
+        if self.settings.notify and quiet_now(self.settings, self.clock()):
+            # Do not disturb: the inbox above keeps everything, no toast is shown.
+            log.info("quiet hours: %d notifications kept in the inbox only", len(messages))
+        elif self.settings.notify:
             if summary is not None:
                 messages = [summary] + [m for m in messages if m[0] == "확인이 필요합니다"][:1]
             for title, body in messages[:MAX_TOASTS_PER_CYCLE]:
