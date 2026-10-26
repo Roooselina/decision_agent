@@ -78,7 +78,9 @@ SUPERVISE_SECONDS = 30.0
 PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다시 점검하세요."
 # Settings that only change how the program shows itself. Saving them does not restart the
 # watchers or check the folders again.
-LIGHT_FIELDS = frozenset({"helper_enabled", "helper_x", "helper_y", "quiet_hours_enabled", "quiet_start", "quiet_end"})
+LIGHT_FIELDS = frozenset(
+    {"helper_enabled", "helper_x", "helper_y", "quiet_hours_enabled", "quiet_start", "quiet_end", "confirm_over_calls"}
+)
 
 
 @dataclass
@@ -338,6 +340,11 @@ class DecisionAgentApp:
                 setattr(self.settings, name, getattr(checked, name))
             if self.settings_file is not None:
                 save_settings(self.settings, self.settings_file)
+        if "confirm_over_calls" in changes:
+            # A new limit decides again for checks that are waiting; reading is cached, so this is cheap.
+            for key, runtime in self._each():
+                if runtime.engine.pending_confirm() is not None:
+                    self.enqueue(Job("reanalyze", key))
         if not announce:
             return self.settings
         for hook in list(self.settings_hooks):
@@ -869,12 +876,18 @@ class DecisionAgentApp:
             self.inbox.add(f"{title}: {body}", "attention")
         if report.error and report.error != self._last_error_notified:
             self.inbox.add(f"점검 중 문제가 발생했습니다: {report.error[:200]}", "error")
+        waiting = self._new_confirm_wait(runtime)
+        if waiting is not None:
+            messages.append(waiting)
+            self.inbox.add(f"{waiting[0]}: {waiting[1]}", "attention")
         if self.settings.notify and quiet_now(self.settings, self.clock()):
             # Do not disturb: the inbox above keeps everything, no toast is shown.
             log.info("quiet hours: %d notifications kept in the inbox only", len(messages))
         elif self.settings.notify:
             if summary is not None:
                 messages = [summary] + [m for m in messages if m[0] == "확인이 필요합니다"][:1]
+            elif waiting is not None:
+                messages = [waiting] + [m for m in messages if m is not waiting]
             for title, body in messages[:MAX_TOASTS_PER_CYCLE]:
                 self.notifier.notify(title, body)
             extra = len(messages) - MAX_TOASTS_PER_CYCLE
@@ -885,6 +898,24 @@ class DecisionAgentApp:
                 self.notifier.notify("점검 중 문제가 발생했습니다", report.error[:200])
             if not report.error:
                 self._last_error_notified = None
+
+    def _new_confirm_wait(self, runtime: _RootRuntime) -> tuple[str, str] | None:
+        """The toast for a check that has just started waiting for confirmation, once per wait.
+
+        A periodic or file-change check that stops at the same gate again adds nothing; the mark
+        is cleared when the folder is no longer waiting.
+        """
+        waiting = runtime.engine.pending_confirm()
+        if waiting is None:
+            runtime.db.meta_delete("confirm_notified")
+            return None
+        if runtime.db.meta_get("confirm_notified"):
+            return None
+        runtime.db.meta_put("confirm_notified", "1")
+        return (
+            "점검 확인이 필요합니다",
+            f"예상 호출 약 {waiting['estimated_calls']}회. 앱을 열어 계속할지 선택해 주세요.",
+        )
 
     # data for the UI and the tray
 
@@ -1023,7 +1054,7 @@ class DecisionAgentApp:
             if waiting:
                 return {
                     "state": "awaiting_confirm",
-                    "label": "모델 호출이 많아 확인을 기다립니다.",
+                    "label": "확인 대기",
                     "detail": f"예상 약 {waiting['estimated_calls']}회 호출 (기준 {waiting['limit']}회)",
                 }
         records = [f["completion"] for f in folders]

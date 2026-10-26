@@ -102,7 +102,10 @@
     const meta = el("div", {class: "p-meta"},
       el("span", {class: "p-beat " + (beat ? "ok" : "bad")}, beat ? "작동 중" : "응답 없음"),
       el("span", {class: "p-muted"}, "마지막 확인 " + clock(d.last_checked)));
-    const doing = el("p", {class: "p-doing"}, d.doing || "");
+    // While a costly check waits for the user's answer, the line opens the home screen with the banner.
+    const doing = d.awaiting_confirm
+      ? el("button", {type: "button", class: "p-doing p-confirm", title: "앱 홈에서 계속할지 선택합니다", onclick: () => act("home")}, d.doing || "확인 대기")
+      : el("p", {class: "p-doing"}, d.doing || "");
     const demo = d.demo ? el("p", {class: "p-demo"}, "시연용 모드, 실제 검사가 아닙니다.") : null;
     const todoHead = el("div", {class: "p-row"}, el("strong", {}, "내가 할 일" + (d.badge ? " " + d.badge + "건" : "")),
       el("button", {type: "button", class: "p-link", onclick: () => act("details")}, "자세히"));

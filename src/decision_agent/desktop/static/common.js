@@ -461,7 +461,8 @@ const DA = (() => {
     partial: {kind: "warning", cls: "attention", icon: "alert-circle", short: "일부만 점검"},
     running: {kind: "info", cls: "busy", icon: "loader", short: "확인 중"},
     stale: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
-    incomplete: {kind: "info", cls: "busy", icon: "clock", short: "확인 대기"},
+    incomplete: {kind: "info", cls: "busy", icon: "clock", short: "점검 준비"},
+    awaiting_confirm: {kind: "warning", cls: "attention", icon: "clock", short: "확인 대기"},
     no_folders: {kind: "neutral", cls: "paused", icon: "folder", short: "폴더 없음"},
     paused: {kind: "neutral", cls: "paused", icon: "pause-bars", short: "일시 중지"},
   };

@@ -212,11 +212,37 @@
       const partial = agentState(st) === "partial"
         ? callout("warning", "alert", st.overall.label, st.overall.detail || "") : null;
       return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))],
-        partial, agentCard(st),
+        partial, ...confirmBanners(st), agentCard(st),
         h("div", {class: "home-grid"}, calendarCard(week, st), todoCard(st, findings, questions)),
         recentCard(st, activity));
     },
   };
+
+  // Folders whose costly judging stage waits for the user. "나중에" only folds the card for this
+  // wait (keyed by its numbers); nothing runs until "계속 점검" is pressed.
+  const CONFIRM_HIDDEN = new Set();
+  function confirmKey(f) { const w = f.pending_confirm; return f.root + "|" + w.estimated_calls + "|" + w.calls_so_far + "|" + w.topics; }
+  function confirmBanners(st) {
+    if (st.paused) return [];
+    const many = st.folders.length > 1;
+    return st.folders.filter(f => f.pending_confirm && !CONFIRM_HIDDEN.has(confirmKey(f))).map(f => {
+      const w = f.pending_confirm;
+      const go_ = button("계속 점검", {variant: "primary", onClick: (e) => busy(e.currentTarget, async () => {
+        await api("/api/confirm", "POST", {root: f.root});
+        toast("점검을 이어서 진행합니다.", "info");
+        await refreshAll();
+      })});
+      // Remove the card itself: the home data did not change, so a re-render would be skipped.
+      const later = button("나중에", {onClick: (e) => { CONFIRM_HIDDEN.add(confirmKey(f)); e.currentTarget.closest(".confirm-banner").remove(); }});
+      const lower = h("button", {type: "button", class: "link", onclick: () => go("settings", {tab: "connect", section: "cost"})}, "설정에서 정밀도 낮추기");
+      const body = h("div", {},
+        many ? h("p", {class: "small muted"}, folderName(f.root)) : null,
+        h("p", {}, "이번 점검에 약 " + w.estimated_calls + "회 호출이 예상됩니다 (기준 " + w.limit + "회). 결정 추출은 이미 끝났고, 이어서 " + w.topics + "개 결정을 점검합니다."));
+      const node = callout("warning", "alert", "모델 호출이 많이 예상됩니다", body, [go_, later, lower]);
+      node.classList.add("confirm-banner");
+      return node;
+    });
+  }
 
   // week and day are what the user picked with the arrows; null means "the week of today, on
   // today". They are reset whenever home is opened again or the window comes back, so a window
@@ -268,9 +294,10 @@
       else if (p.phase === "extracting" && p.extract_total) { done += p.extract_done; total += p.extract_total; text = text === "판정" ? text : "결정 추출"; }
       else if (p.files_total) { done += p.files_done; total += p.files_total; text = text || "문서"; }
     }
-    if (!total) return {pct: 0, text: "문서를 확인하고 있습니다."};
+    const waiting = st.folders.some(f => f.progress.phase === "awaiting_confirm" || f.pending_confirm) ? " · 확인 대기" : "";
+    if (!total) return {pct: 0, text: "문서를 확인하고 있습니다." + waiting};
     const label = text === "문서" ? "문서 " + total + "개 중 " + done + "개 확인" : text + " " + done + "/" + total;
-    return {pct: Math.round(done * 100 / total), text: label};
+    return {pct: Math.round(done * 100 / total), text: label + waiting};
   }
 
   // The "문서 확인 AI AGENT" card (Figma 15:44 and the 문서 확인 상태 카드 variants).
@@ -281,7 +308,7 @@
     const demo = state === "demo";
     const ICON = {verified: ["shield-check", "ok"], running: ["loader", "busy"], paused: ["pause-bars", "paused"],
       failed: ["alert-circle", "error"], demo: ["shield-check", "demo"], retrying: ["alert-circle", "attention"], partial: ["alert-circle", "attention"],
-      stale: ["alert-circle", "attention"], incomplete: ["clock", "busy"]};
+      stale: ["alert-circle", "attention"], incomplete: ["clock", "busy"], awaiting_confirm: ["clock", "attention"]};
     const [iconName, tone] = ICON[state] || ICON.incomplete;
     const mainIcon = icon(iconName, "agent-icon " + tone + (state === "running" ? " spin" : ""));
     const rescan = h("button", {type: "button", class: "btn ghost icon-only sm", title: "지금 확인하기", "aria-label": "지금 확인하기",
@@ -314,6 +341,7 @@
       right = h("div", {class: "agent-right"},
         r && state === "verified" ? h("span", {class: "agent-note"}, "검사 완료 · 문서 " + r.files + "개, 결정 " + r.topics + "건 확인") : null,
         state === "retrying" || state === "stale" || state === "partial" ? h("span", {class: "agent-note warn", title: info.detail || ""}, info.label) : null,
+        state === "awaiting_confirm" ? h("span", {class: "agent-note warn", title: info.detail || ""}, "확인 대기 · " + (info.detail || "")) : null,
         state === "incomplete" ? h("span", {class: "agent-note"}, "첫 확인을 준비하고 있습니다.") : null,
         h("span", {class: "agent-note" + (sends ? " info" : "")}, sends ? "문서 처리: 외부 AI로 전송 중 (" + st.provider.id + ")" : "문서 처리: 내 컴퓨터 · 외부 전송 안 함"));
     }
@@ -323,8 +351,35 @@
         metaBlock("마지막 확인", stamp(watch.last_checked), watch.last_checked ? relSpan(watch.last_checked, "agent-rel") : null),
         metaBlock("확인 중인 폴더", folders),
         h("div", {class: "agent-side"}, right));
+    const usage = state === "running" ? null : usageBlock(st);
     return h("section", {class: "card agent-card " + tone + (demo ? " demo" : ""), "aria-label": "문서 확인 상태"},
-      head, sub, metas, action ? h("div", {class: "agent-action"}, action) : null, bar);
+      head, sub, metas, usage, action ? h("div", {class: "agent-action"}, action) : null, bar);
+  }
+
+  // Model calls of the last finished check, per folder, with the calls by kind of work folded away.
+  const TASK_NAMES = {DECISION_EXTRACT: "결정 추출", DECISION_EXTRACT_BATCH: "결정 추출", RELATION_CLASSIFY: "관계 분류",
+    IMPACT_SELECT: "영향 대상 선택", CONSISTENCY: "일치 판정", CONSISTENCY_BATCH: "일치 판정", QUESTION_GENERATE: "확인 질문",
+    QUESTION_GAIN: "확인 질문", QUESTION_GAIN_BATCH: "확인 질문", TOOL_SELECT: "도구 선택"};
+  function taskRows(byTask) {
+    const sums = new Map();
+    for (const [task, n] of Object.entries(byTask || {})) {
+      const name = TASK_NAMES[task] || "기타";
+      sums.set(name, (sums.get(name) || 0) + Number(n || 0));
+    }
+    return [...sums.entries()].sort((a, b) => b[1] - a[1]);
+  }
+  function usageBlock(st) {
+    const done = st.folders.filter(f => f.completion && typeof f.completion.llm_calls === "number" && providerKind(f.completion.provider_id) !== "demo");
+    if (!done.length) return null;
+    const many = st.folders.length > 1;
+    return h("div", {class: "agent-usage"}, ...done.map(f => {
+      const c = f.completion;
+      const rows = taskRows(c.calls_by_task);
+      return h("div", {class: "usage-folder"},
+        h("p", {class: "usage-line"}, (many ? folderName(f.root) + " · " : "") + "이번 점검: 모델 호출 " + c.llm_calls + "회, AI 없이 확인한 줄 " + (c.local_answers || 0) + "건"),
+        rows.length ? h("details", {class: "usage-details"}, h("summary", {}, "호출 내역", icon("chevron-right", "sm")),
+          h("ul", {class: "usage-list"}, ...rows.map(([name, n]) => h("li", {}, h("span", {}, name), h("span", {class: "usage-n"}, n + "회"))))) : null);
+    }));
   }
 
   function aiErrorText(detail) {
@@ -683,7 +738,8 @@
           "aria-pressed": String(key === RS.selected), onclick: () => select(key)},
         icon(r.label === "CONSISTENT" ? "check" : "alert-circle", "result-icon " + labelTone(r.label)),
         h("span", {class: "result-row-main"}, h("span", {class: "result-row-title truncate", title: r.text}, r.text),
-          h("span", {class: "result-row-sub truncate"}, baseName(r.source_doc) + (effectiveStatus(r) !== "open" ? " · " + HIDDEN[effectiveStatus(r)] : ""))),
+          h("span", {class: "result-row-sub truncate"}, baseName(r.source_doc) + (effectiveStatus(r) !== "open" ? " · " + HIDDEN[effectiveStatus(r)] : ""),
+            isLocal(r) ? localBadge() : null)),
         h("span", {class: "result-row-label " + labelTone(r.label)}, DA.LABELS[r.label]));
       }
 
@@ -721,6 +777,12 @@
   }
 
   // The right-hand panel (Figma 15:216, 16:850, 19:1320, 19:1392).
+  // Lines the local pre-filter answered without a model call. It only ever answers CONSISTENT.
+  function isLocal(f) { return f.label === "CONSISTENT" && String(f.evidence || "").includes("AI 확인 없이"); }
+  function localBadge() {
+    return h("span", {class: "badge neutral local-badge", title: "새 결정의 값이 이미 들어 있고 이전 값은 없어 AI 확인 없이 일치로 분류했습니다."}, "로컬 확인");
+  }
+
   function detailPanel(f, rows) {
     const status = effectiveStatus(f);
     const related = f.date ? f : rows.find(r => r.root === f.root && r.topic === f.topic && r.date);
@@ -770,8 +832,10 @@
         link("다시 열기", () => setStatus("open"))];
     const confidence = typeof f.confidence === "number" && f.label !== "UNCERTAIN" ? Math.round(f.confidence * 100) + "%" : "-";
     return [
-      h("span", {class: "badge state " + {INCONSISTENT: "bad", UNCERTAIN: "attention", CONSISTENT: "ok"}[f.label]},
-        icon(f.label === "CONSISTENT" ? "check" : "alert-circle"), DA.LABELS[f.label]),
+      h("div", {class: "detail-badges"},
+        h("span", {class: "badge state " + {INCONSISTENT: "bad", UNCERTAIN: "attention", CONSISTENT: "ok"}[f.label]},
+          icon(f.label === "CONSISTENT" ? "check" : "alert-circle"), DA.LABELS[f.label]),
+        isLocal(f) ? localBadge() : null),
       h("h2", {class: "detail-title"}, resultTitle(f)),
       h("p", {class: "detail-caption"}, "변경된 결정"),
       h("p", {class: "detail-decision"}, f.decision_text),
@@ -1428,7 +1492,7 @@
     const intro = h("div", {class: "set-note"}, icon("shield-check", "sm"),
       h("span", {}, "모든 연결은 읽기 전용입니다. 보내기, 삭제, 읽음 표시, 만들기 기능이 없고, 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
       targetName ? h("span", {class: "set-target", title: targetName}, "함께 분석할 폴더: " + folderName(targetName)) : null);
-    return [intro, ...cal.map(serviceCard), aiCard(s, st), privacyCard(s, st),
+    return [intro, ...cal.map(serviceCard), aiCard(s, st), costCard(s), privacyCard(s, st),
       h("h2", {class: "set-section"}, "다른 연결"), ...others.map(serviceCard)];
   }
 
@@ -1563,6 +1627,52 @@
         toast("API 키를 저장했습니다.", "success");
         renderRoute(true);
       }}, {label: "취소"}]});
+  }
+
+  // "AI 사용량 절약": how carefully to judge, an optional cheaper model, and the confirmation limit.
+  // Nothing is saved until "저장": each saved profile or model change starts a full re-check,
+  // so clicking through the options must not spend calls.
+  const COST_OPTIONS = [
+    ["precise", "정밀", "모든 줄을 두 번 이상 확인합니다. 호출이 가장 많습니다."],
+    ["balanced", "균형 (기본)", "일치로 보이는 줄은 한 번만 확인하고, 에이전트의 도구 선택은 AI에게 묻지 않습니다."],
+    ["saver", "절약", "모든 줄을 한 번만 확인합니다. 호출이 가장 적지만 놓치거나 잘못 잡는 경우가 늘 수 있습니다."],
+  ];
+  function costCard(s) {
+    let profile = s.cost_profile;
+    const nodes = COST_OPTIONS.map(([v, label, help]) => {
+      const radio = h("input", {type: "radio", name: "cost-profile", value: v, checked: v === profile});
+      const n = h("label", {class: "choice" + (v === profile ? " selected" : "")}, radio, h("span", {class: "choice-title"}, label), h("span", {class: "small muted"}, help));
+      radio.addEventListener("change", () => { profile = v; nodes.forEach(x => x.classList.toggle("selected", x === n)); drawHint(); });
+      return n;
+    });
+    const choices = h("div", {class: "choice-grid", role: "radiogroup", "aria-label": "점검 정밀도"}, ...nodes);
+    const cheap = input({value: s.cheap_model_name || "", placeholder: "예: claude-haiku-5-5"});
+    const limit = input({type: "number", min: "0", step: "1", value: String(s.confirm_over_calls)});
+    const hint = h("p", {class: "warn-text small cost-hint", role: "status"});
+    const drawHint = () => {
+      const rebuild = profile !== s.cost_profile || cheap.value.trim() !== (s.cheap_model_name || "");
+      set(hint, rebuild ? "다음 점검 때 전체를 다시 점검합니다" : null);
+    };
+    cheap.addEventListener("input", drawHint);
+    const save = button("저장", {variant: "primary", size: "sm"});
+    save.addEventListener("click", () => busy(save, async () => {
+      const n = Number(limit.value);
+      if (!Number.isInteger(n) || n < 0) { toast("확인 기준 호출 수는 0 이상의 정수로 입력하세요.", "danger"); return; }
+      const payload = {};
+      if (profile !== s.cost_profile) payload.cost_profile = profile;
+      if (cheap.value.trim() !== (s.cheap_model_name || "")) payload.cheap_model_name = cheap.value.trim();
+      if (n !== s.confirm_over_calls) payload.confirm_over_calls = n;
+      if (!Object.keys(payload).length) { toast("바뀐 설정이 없습니다.", "info"); return; }
+      await saveSettings(payload, "AI 사용량 설정을 저장했습니다.");
+      await refreshAll(); renderRoute(true);
+    }));
+    drawHint();
+    return h("section", {class: "card set-card", id: "set-cost"}, h("h2", {}, "AI 사용량 절약"),
+      h("div", {class: "stack"},
+        field("점검 정밀도", choices),
+        field("저가 모델 이름 (선택)", cheap, "비워 두면 위의 모델 하나로 전부 처리합니다. 값을 넣으면 읽기와 분류는 이 모델이, 일치 판정은 위의 모델이 처리합니다."),
+        field("확인 기준 호출 수", limit, "예상 호출 수가 이 값을 넘으면 점검 전에 확인을 받습니다. 0이면 묻지 않습니다."),
+        hint, h("div", {}, save)));
   }
 
   function textDialog(title, value, placeholder, save) {

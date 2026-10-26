@@ -115,7 +115,7 @@ def helper_state(status: dict) -> str:
         return "error"
     if overall == "running" or status.get("busy"):
         return "busy"
-    if badge_count(status) or overall in {"partial", "retrying", "stale"}:
+    if badge_count(status) or overall in {"partial", "retrying", "stale", "awaiting_confirm"}:
         return "attention"
     return "normal"
 
@@ -157,6 +157,10 @@ def doing_line(status: dict, pending: list[dict]) -> str:
     """One short sentence about what the program is doing right now."""
     if status.get("paused"):
         return "일시 중지되어 있습니다."
+    for folder in status.get("folders", []):
+        waiting = folder.get("pending_confirm")
+        if waiting and not status.get("busy"):
+            return f"확인 대기: 예상 호출 약 {waiting['estimated_calls']}회"
     for folder in status.get("folders", []):
         p = folder.get("progress") or {}
         if p.get("phase") == "checking" and p.get("topics_total"):
@@ -206,6 +210,8 @@ def snapshot(controller: Any, now: float | None = None) -> dict:
         label = "폴더 없음"
     elif overall.get("state") == "demo" and state == "normal":
         label = "시연용 모드"
+    elif overall.get("state") == "awaiting_confirm" and state == "attention":
+        label = "확인 대기"
     return {
         "state": state,
         "state_label": label,
@@ -218,6 +224,7 @@ def snapshot(controller: Any, now: float | None = None) -> dict:
         "doing": doing_line(status, pending),
         "summary": overall.get("label", ""),
         "demo": overall.get("state") == "demo",
+        "awaiting_confirm": overall.get("state") == "awaiting_confirm",
         "todos": todo_items(controller.findings(), controller.questions()),
         "quiet": quiet_now(controller.settings, controller.clock()),
         "quick_batch": controller.settings.batch_size > 1,
@@ -668,6 +675,7 @@ class HelperWindow:
             "hide_helper": actions.hide_helper,
             "quit": actions.quit_app,
             "details": (lambda: actions.open_page("#/results")) if actions.open_page else actions.open_app,
+            "home": (lambda: actions.open_page("#/home")) if actions.open_page else actions.open_app,
         }
         if name not in table:
             return False

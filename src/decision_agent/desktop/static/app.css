@@ -651,6 +651,20 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .q-option.selected { background: var(--primary-soft); border-color: var(--primary); }
 .modal.plain .input { height: 34px; font-size: 13px; }
 
+/* model calls of the last check, and the wait for confirmation */
+.agent-usage { margin: 12px 0 0 42px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-2); }
+.usage-line { margin: 0; }
+.usage-details summary { cursor: pointer; color: var(--text-3); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.usage-details[open] summary .icon { transform: rotate(90deg); }
+.usage-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: max-content max-content; gap: 2px 18px; font-size: 12px; }
+.usage-list li { display: contents; }
+.usage-n { font-variant-numeric: tabular-nums; text-align: right; }
+.confirm-banner .row { flex-wrap: wrap; align-items: center; gap: 8px; }
+.local-badge { font-size: 11px; padding: 0 6px; white-space: nowrap; }
+.result-row-sub .local-badge { margin-left: 8px; vertical-align: 1px; }
+.detail-badges { display: flex; align-items: center; gap: 8px; align-self: flex-start; }
+.cost-hint { margin: 4px 0 8px; min-height: 1em; }
+
 @media (max-width: 1180px) {
   .agent-metas { grid-template-columns: 150px 180px minmax(0, 1fr); }
   .agent-side { padding-right: 150px; }
