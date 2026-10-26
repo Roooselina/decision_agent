@@ -15,6 +15,7 @@ from decision_agent.models import (
     ConsistencyResult,
     ScopeKind,
 )
+from decision_agent.prefilter import PrefilterContext, local_verdict
 from decision_agent.resolver import resolve_effective_decision
 from decision_agent.storage import SQLiteStore
 from decision_agent.uncertainty import estimate_many, estimate_uncertainty
@@ -60,6 +61,7 @@ class AnalysisContext:
     questions_asked: int = 0
     question_blocked: bool = False
     rechecked_ids: list[str] = field(default_factory=list)
+    local_answers: int = 0
 
     def __post_init__(self) -> None:
         self.store.clear_evidence(self.topic)
@@ -138,6 +140,13 @@ class AnalysisContext:
             )
             for artifact in targets
         ]
+        if self.settings.prefilter:
+            context = PrefilterContext(self.topic_decisions())
+            for item in prepared:
+                verdict = local_verdict(item, context)
+                if verdict is not None:
+                    item.early = verdict
+                    self.local_answers += 1
         for artifact, result in zip(
             targets, estimate_many(prepared, self.provider, self.settings), strict=True
         ):

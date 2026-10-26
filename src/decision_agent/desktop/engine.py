@@ -13,8 +13,9 @@ from pathlib import Path
 from decision_agent.agent.agent import run_agent
 from decision_agent.agent.interfaces import NeedUserInput, ReplayUserInterface
 from decision_agent.agent.pipeline import run_pipeline
-from decision_agent.config import DEFAULT_SETTINGS
+from decision_agent.config import DEFAULT_SETTINGS, settings_for_profile
 from decision_agent.desktop.embeddings import OllamaEmbedder, make_extra_ranker
+from decision_agent.desktop.estimate import estimate_calls
 from decision_agent.desktop.policy import FolderPolicy
 from decision_agent.desktop.profile import load_profile
 from decision_agent.desktop.progress import ProgressTracker
@@ -74,6 +75,10 @@ class CycleReport:
     # True when the per-cycle call budget stopped the check before every topic was judged.
     partial: bool = False
     llm_calls: int = 0
+    calls_by_task: dict[str, int] = field(default_factory=dict)
+    local_answers: int = 0
+    # Set when the expensive part was held back until the user confirms it.
+    pending_confirm: dict | None = None
 
 
 def _sha(*parts: str) -> str:
@@ -149,6 +154,11 @@ class ProjectEngine:
             self.extra_ranker = make_extra_ranker(embedder)
         self.last_build: BuildResult | None = None
         self.profile_notes: list[str] = []
+
+    @property
+    def core(self):
+        """Core analysis settings for the current cost profile (read each time, so edits apply)."""
+        return settings_for_profile(self.settings.cost_profile)
 
     # file index
 
@@ -307,23 +317,26 @@ class ProjectEngine:
             provider.begin_run()
             if mode == "pipeline":
                 trace = run_pipeline(
-                    project.store, provider, topic, project.artifacts, AS_OF, clarify=True, ui=ui
+                    project.store, provider, topic, project.artifacts, AS_OF, clarify=True, ui=ui,
+                    settings=self.core,
                 )
             else:
                 trace = run_agent(
                     project.store, provider, topic, project.artifacts, AS_OF, ui=ui,
-                    allow_clarify=True,
+                    allow_clarify=True, settings=self.core,
                 )
             return trace, None
         except NeedUserInput as need:
             provider.begin_run()
             if mode == "pipeline":
                 trace = run_pipeline(
-                    project.store, provider, topic, project.artifacts, AS_OF, clarify=False
+                    project.store, provider, topic, project.artifacts, AS_OF, clarify=False,
+                    settings=self.core,
                 )
             else:
                 trace = run_agent(
-                    project.store, provider, topic, project.artifacts, AS_OF, allow_clarify=False
+                    project.store, provider, topic, project.artifacts, AS_OF, allow_clarify=False,
+                    settings=self.core,
                 )
             return trace, need.question
 
@@ -438,6 +451,9 @@ class ProjectEngine:
             "topics_rechecked": len(report.topics_checked),
             "judges": dict(judges),
             "llm_calls": report.llm_calls,
+            "cost_profile": self.settings.cost_profile,
+            "calls_by_task": report.calls_by_task,
+            "local_answers": report.local_answers,
         }
         self.db.meta_put("completion", json.dumps(record, ensure_ascii=False))
 
@@ -445,16 +461,20 @@ class ProjectEngine:
         raw = self.db.meta_get("completion")
         return json.loads(raw) if raw else None
 
+    def pending_confirm(self) -> dict | None:
+        raw = self.db.meta_get("pending_confirm")
+        return json.loads(raw) if raw else None
+
     def last_failure(self) -> dict | None:
         raw = self.db.meta_get("last_failure")
         return json.loads(raw) if raw else None
 
     def analyze(
-        self, force: bool = False, force_topics: set[str] | None = None
+        self, force: bool = False, force_topics: set[str] | None = None, confirm: bool = False
     ) -> CycleReport:
         self._start_if_idle()
         try:
-            report = self._analyze(force, force_topics)
+            report = self._analyze(force, force_topics, confirm)
         except Exception:
             self.progress.set_phase("error")
             raise
@@ -474,6 +494,8 @@ class ProjectEngine:
             )
             self.progress.activity.add(report.error, "error")
             self.progress.set_phase("error")
+        elif report.pending_confirm is not None:
+            self.progress.set_phase("awaiting_confirm")
         else:
             self.db.meta_delete("last_failure")
             self.progress.set_phase("done")
@@ -487,12 +509,13 @@ class ProjectEngine:
         report.llm_calls = self.counter.calls
 
     def _analyze(
-        self, force: bool = False, force_topics: set[str] | None = None
+        self, force: bool = False, force_topics: set[str] | None = None, confirm: bool = False
     ) -> CycleReport:
         report = CycleReport(root=str(self.root))
         force_topics = force_topics or set()
         with self.lock:
             self.counter.reset()
+            self.db.meta_delete("pending_confirm")
             self.progress.set_phase("extracting")
             rows = [r for r in self.db.list_files() if r["status"] == "ok"]
             docs = [ParsedDocument.model_validate_json(r["payload"]) for r in rows]
@@ -504,6 +527,7 @@ class ProjectEngine:
                 self.bundle.provider_id,
                 profile.fingerprint,
                 self.settings.analysis_mode,
+                self.settings.cost_profile,
                 self.settings.embedding_model,
                 json.dumps([m.model_dump() for m in built.meetings], ensure_ascii=False),
                 artifacts_fingerprint(built.artifacts),
@@ -540,6 +564,7 @@ class ProjectEngine:
             self.progress.set_topics(len(topics))
             self.progress.set_phase("checking")
             all_done = True
+            plans = []
             for topic in topics:
                 decisions, candidates = candidate_artifacts_for_topic(
                     project.store, topic, project.artifacts, AS_OF, DEFAULT_SETTINGS.k,
@@ -551,16 +576,39 @@ class ProjectEngine:
                     artifacts_fingerprint(candidates),
                     self.bundle.provider_id,
                     self.settings.analysis_mode,
+                    self.settings.cost_profile,
                 )
                 previous = self.db.topic_get(topic)
-                self.db.clear_stale_answers(topic, decision_fp)
-                answers = self.db.get_answers(topic, decision_fp)
                 unchanged = (
                     previous is not None
                     and previous["fingerprint"] == fingerprint
                     and previous["state"] in {"ok", "waiting_answer"}
+                    and topic not in force_topics
+                    and not force
                 )
-                if unchanged and topic not in force_topics and not force:
+                plans.append((topic, decisions, candidates, decision_fp, fingerprint, unchanged))
+            limit = self.settings.confirm_over_calls
+            if limit > 0 and not confirm and self.bundle.sends_externally:
+                counts = [len(c) for _, _, c, _, _, same in plans if not same and c]
+                estimated = estimate_calls(counts, self.core)
+                if self.counter.calls + estimated > limit:
+                    report.pending_confirm = {
+                        "estimated_calls": estimated,
+                        "calls_so_far": self.counter.calls,
+                        "topics": len(counts),
+                        "limit": limit,
+                    }
+                    self.db.meta_put("pending_confirm", json.dumps(report.pending_confirm))
+                    self.progress.activity.add(
+                        f"점검에 약 {estimated}회의 모델 호출이 예상되어 확인을 기다립니다."
+                    )
+                    report.calls_by_task = dict(self.counter.by_task)
+                    report.llm_calls = self.counter.calls
+                    return report
+            for topic, decisions, candidates, decision_fp, fingerprint, unchanged in plans:
+                self.db.clear_stale_answers(topic, decision_fp)
+                answers = self.db.get_answers(topic, decision_fp)
+                if unchanged:
                     self.progress.topic_done(topic, unchanged=True)
                     continue
                 latest = decisions[-1] if decisions else None
@@ -599,6 +647,7 @@ class ProjectEngine:
                     if report.fatal:
                         break
                     continue
+                report.local_answers += trace.local_answers
                 outcome = self._store_topic_results(topic, project, trace, question)
                 self.db.topic_put(topic, fingerprint, decision_fp, outcome.state, summary, judge)
                 report.topics_checked.append(topic)
@@ -611,6 +660,7 @@ class ProjectEngine:
                     + (", 확인 질문 1건" if outcome.pending_question else "")
                 )
             report.llm_calls = self.counter.calls
+            report.calls_by_task = dict(self.counter.by_task)
             if all_done:
                 self.db.meta_put("input_fp", input_fp)
                 self._record_completion(len(topics), report)

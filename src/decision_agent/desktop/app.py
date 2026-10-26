@@ -411,6 +411,10 @@ class DecisionAgentApp:
     def answer(self, root: str, topic: str, text: str) -> None:
         self.enqueue(Job("answer", root, topic=topic, text=text))
 
+    def confirm(self, root: str) -> None:
+        """Run the part of the check that was held back because of its estimated cost."""
+        self.enqueue(Job("confirm", root))
+
     # worker
 
     def _work(self) -> None:
@@ -445,6 +449,8 @@ class DecisionAgentApp:
             report = engine.process(job.paths)
         elif job.kind == "answer":
             report = engine.answer(job.topic, job.text)
+        elif job.kind == "confirm":
+            report = engine.analyze(confirm=True)
         elif job.kind == "connectors":
             report = self._connector_cycle(runtime, job.text)
         elif job.kind == "notes":
@@ -478,7 +484,7 @@ class DecisionAgentApp:
             else:
                 self.last_error = (report.error or "") + " 자동 재시도를 멈췄습니다. '지금 다시 점검'을 눌러 주세요."
         self._notify(runtime, report, first_run)
-        if report.rebuilt and not report.needs_followup:
+        if report.rebuilt and not report.needs_followup and report.pending_confirm is None:
             runtime.db.meta_put("initial_done", "1")
 
     # connectors, notes, imports
@@ -809,7 +815,7 @@ class DecisionAgentApp:
         and again when the judge changes (for example after the API key is added), and it says
         plainly whether the real model or only the demo judge was used.
         """
-        if not report.rebuilt or report.error or report.needs_followup:
+        if not report.rebuilt or report.error or report.needs_followup or report.pending_confirm:
             return None
         key = self.bundle.provider_id
         previous = runtime.db.meta_get("completed_notified")
@@ -921,6 +927,7 @@ class DecisionAgentApp:
                     "pending_events": runtime.debouncer.pending_count() if runtime.debouncer else 0,
                     "progress": runtime.engine.progress.snapshot(),
                     "completion": runtime.engine.completion(),
+                    "pending_confirm": runtime.engine.pending_confirm(),
                     "failure": runtime.engine.last_failure(),
                     "scan_stats": json.loads(runtime.db.meta_get("scan_stats") or "null"),
                     "last_checked": runtime.db.meta_get("last_checked"),
@@ -1011,19 +1018,31 @@ class DecisionAgentApp:
                     "label": "일부만 점검했고 자동으로 다시 시도합니다.",
                     "detail": folder["failure"]["message"],
                 }
+        for folder in folders:
+            waiting = folder.get("pending_confirm")
+            if waiting:
+                return {
+                    "state": "awaiting_confirm",
+                    "label": "모델 호출이 많아 확인을 기다립니다.",
+                    "detail": f"예상 약 {waiting['estimated_calls']}회 호출 (기준 {waiting['limit']}회)",
+                }
         records = [f["completion"] for f in folders]
         if any(r is None for r in records):
             return {"state": "incomplete", "label": "아직 점검을 끝내지 못했습니다.", "detail": ""}
-        if any(r["provider_id"] != self.bundle.provider_id for r in records):
+        if any(r["provider_id"] != self.bundle.provider_id for r in records) or any(
+            r.get("cost_profile", "precise") != self.settings.cost_profile for r in records
+        ):
             return {"state": "stale", "label": "판정 방식이 바뀌어 다시 점검해야 합니다.", "detail": ""}
         files = sum(r["files_ok"] for r in records)
         topics = sum(r["topics"] for r in records)
         latest = max(r["at"] for r in records)
+        local = sum(r.get("local_answers", 0) for r in records)
         if all(r["verified"] for r in records):
+            extra = f" / 로컬 선거름 {local}건" if local else ""
             return {
                 "state": "verified",
                 "label": "검사 완료",
-                "detail": f"{self.bundle.provider_id} / 파일 {files}개, 결정 {topics}건 / {latest}",
+                "detail": f"{self.bundle.provider_id} / 파일 {files}개, 결정 {topics}건{extra} / {latest}",
             }
         return {
             "state": "demo",

@@ -43,6 +43,53 @@ class ToolChoice(BaseModel):
     reason: str = ""
 
 
+VAGUE_MARKERS = (
+    "기존", "원래", "돌아", "되돌", "복원", "롤백", "이전 방식", "이전으로",
+    "revert", "rollback", "previous", "as before", "original",
+)
+
+
+def choose_by_rules(ctx: AnalysisContext) -> ToolChoice:
+    """Pick the next tool from the state without a model call.
+
+    The order is the one the model is told to follow in AGENT_SYSTEM: find the affected
+    artifacts, read the history when the latest decision points back at an earlier one, resolve
+    scopes when a scoped relation exists, judge what is left, ask one question when something
+    is uncertain, and finalize. Reading history and resolving scopes are local operations.
+    """
+    decisions = ctx.topic_decisions()
+    latest = decisions[-1].text if decisions else ""
+    lowered = latest.lower()
+    vague = len(decisions) > 1 and any(marker in lowered for marker in VAGUE_MARKERS)
+    can_ask = (
+        bool(ctx.uncertain_ids())
+        and ctx.allow_clarify
+        and ctx.questions_asked < ctx.settings.max_questions
+        and not ctx.question_blocked
+    )
+    if ctx.affected is None:
+        return ToolChoice(tool="predict_affected", reason="영향 대상을 아직 찾지 않았습니다.")
+    if vague and not ctx.history_seen:
+        return ToolChoice(
+            tool="get_decision_history", reason="최신 결정문이 이전 결정을 가리켜 이력이 필요합니다."
+        )
+    if ctx.has_scoped_relation() and ctx.affected_ids() and not ctx.scope_checked:
+        return ToolChoice(
+            tool="resolve_scope",
+            arguments={"artifact_ids": "all"},
+            reason="범위가 지정된 관계가 있어 산출물별 유효 결정을 확인합니다.",
+        )
+    if ctx.unjudged_ids():
+        return ToolChoice(
+            tool="check_consistency",
+            arguments={"artifact_ids": "unjudged"},
+            reason="아직 판단하지 않은 산출물이 있습니다.",
+        )
+    if can_ask:
+        return ToolChoice(tool="ask_user", reason="판단이 불확실한 항목을 해결할 정보가 부족합니다.")
+    return ToolChoice(tool="finalize", reason="추가로 확인할 정보가 없거나 더 얻을 수 없습니다.")
+
+
 def _state_text(ctx: AnalysisContext, step: int, max_steps: int) -> str:
     decisions = ctx.topic_decisions()
     latest = decisions[-1] if decisions else None
@@ -98,7 +145,10 @@ def run_agent(
     finished = False
     for step in range(1, settings.max_steps + 1):
         state = _state_text(ctx, step, settings.max_steps)
-        choice = provider.complete_json(AGENT_SYSTEM, state, ToolChoice, 0.0)
+        if settings.routing == "rules":
+            choice = choose_by_rules(ctx)
+        else:
+            choice = provider.complete_json(AGENT_SYSTEM, state, ToolChoice, 0.0)
         if choice.tool == "finalize":
             trace.steps.append(
                 AgentStep(
@@ -138,6 +188,7 @@ def run_agent(
     trace.affected_artifact_ids = ctx.affected_ids()
     trace.rechecked_artifact_ids = list(ctx.rechecked_ids)
     trace.final_results = ctx.final_results()
+    trace.local_answers = ctx.local_answers
     trace.tool_calls = len(trace.steps)
     trace.elapsed_seconds = time.perf_counter() - start
     return trace

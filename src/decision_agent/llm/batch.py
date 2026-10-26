@@ -12,9 +12,12 @@ from collections.abc import Callable
 
 CONSISTENCY = "TASK:CONSISTENCY_BATCH"
 EXTRACT = "TASK:DECISION_EXTRACT_BATCH"
+GAIN = "TASK:QUESTION_GAIN_BATCH"
 
 _CONSISTENCY_SINGLE = "TASK:CONSISTENCY\n"
 _EXTRACT_SINGLE = "TASK:DECISION_EXTRACT\n"
+_GAIN_SINGLE = "TASK:QUESTION_GAIN\n"
+_GAIN_ANSWERS = (("yes", "예"), ("no", "아니오"), ("partial", "일부만"))
 
 _ITEM = re.compile(
     r"^\[(\d+)\] ID=(.*?) \| KIND=(.*?) \| ARTIFACT=(.*) \| ARTIFACT_DATE=(.*?) \| ARTIFACT_STATUS=(.*?)"
@@ -24,7 +27,7 @@ _EXTRACT_ITEM = re.compile(r"^\[(\d+)\] DATE=(.*?) \| TEXT=(.*)$")
 
 
 def is_batch(system: str) -> bool:
-    return CONSISTENCY in system or EXTRACT in system
+    return CONSISTENCY in system or EXTRACT in system or GAIN in system
 
 
 def answer_batch(
@@ -35,6 +38,8 @@ def answer_batch(
 ) -> str:
     if EXTRACT in system:
         return _extract(single, user)
+    if GAIN in system:
+        return _gain(single, user)
     return _consistency(single, user, temperature)
 
 
@@ -75,3 +80,20 @@ def _extract(single, user: str) -> str:
         raw = single(_EXTRACT_SINGLE, one, 0.0, None)
         items.append({"index": int(index), **json.loads(raw)})
     return json.dumps({"items": items}, ensure_ascii=False)
+
+
+def _gain(single, user: str) -> str:
+    head, _, rest = user.partition("\nQUESTIONS:\n")
+    context = head.removeprefix("CONTEXT_BEGIN\n").removesuffix("\nCONTEXT_END")
+    rows = []
+    for line in rest.splitlines():
+        match = re.match(r"^\[(\d+)\] (.*)$", line)
+        if not match:
+            continue
+        number, question = match.groups()
+        row: dict = {"question": int(number)}
+        for key, answer in _GAIN_ANSWERS:
+            one = f"CONTEXT={context}\nQUESTION={question}\nASSUMED_ANSWER={answer}"
+            row[key] = float(json.loads(single(_GAIN_SINGLE, one, 0.0, None))["gain"])
+        rows.append(row)
+    return json.dumps({"gains": rows}, ensure_ascii=False)

@@ -49,6 +49,9 @@ class AppSettings(BaseModel):
     allow_external_send: bool = False
     provider: Literal["auto", "mock", "anthropic", "ollama"] = "auto"
     model_name: str = ""
+    cost_profile: Literal["precise", "balanced", "saver"] = "balanced"
+    cheap_model_name: str = ""
+    confirm_over_calls: int = Field(default=400, ge=0, le=100000)
     ollama_url: str = "http://127.0.0.1:11434"
     embedding_model: str = ""
     notify: bool = True

@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 COOKIE = "da_session"
 EDITABLE_FIELDS = {
     "allow_external_send", "provider", "model_name", "notify", "analysis_mode",
+    "cost_profile", "cheap_model_name", "confirm_over_calls",
     "debounce_seconds", "rescan_minutes", "current_release", "exclude_patterns",
     "max_file_mb", "max_llm_calls_per_cycle", "kind_overrides", "ollama_url", "embedding_model",
     "connector_target", "connector_interval_minutes", "hotkey_enabled", "hotkey",
@@ -107,6 +108,10 @@ class PauseBody(BaseModel):
 
 class RescanBody(BaseModel):
     root: str | None = None
+
+
+class ConfirmBody(BaseModel):
+    root: str
 
 
 class KeyBody(BaseModel):
@@ -300,6 +305,13 @@ def create_web_app(
         if body.root not in controller.runtimes:
             raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
         controller.answer(body.root, body.topic, body.text)
+        return {"ok": True}
+
+    @app.post("/api/confirm", dependencies=auth)
+    async def confirm(body: ConfirmBody):
+        if body.root not in controller.runtimes:
+            raise HTTPException(status_code=404, detail="폴더를 찾을 수 없습니다.")
+        controller.confirm(body.root)
         return {"ok": True}
 
     @app.post("/api/rescan", dependencies=auth)

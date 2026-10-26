@@ -25,6 +25,18 @@ class Settings:
     judge_batch: int = 8
     adaptive_min_samples: int = 2
     k_max: int = 30
+    # Cost settings. The defaults keep the original research behaviour; the desktop app picks
+    # a profile through settings_for_profile().
+    # routing: "llm" asks the model which tool to run next, "rules" decides locally (no calls).
+    # consistent_single: a first sample that says CONSISTENT is accepted without a second sample.
+    # clarify_gain: "full" scores every candidate question with 3 model calls per question,
+    #   "batch" scores all of them in one call, "none" skips scoring and asks the first question.
+    # prefilter: lines that already contain the new value and none of the old values are
+    #   answered locally as CONSISTENT without a model call.
+    routing: str = "llm"
+    consistent_single: bool = False
+    clarify_gain: str = "full"
+    prefilter: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -41,6 +53,30 @@ class Settings:
             judge_batch=max(1, number("DECISION_AGENT_JUDGE_BATCH", 8)),
             adaptive_min_samples=number("DECISION_AGENT_ADAPTIVE_MIN", 2),
         )
+
+
+COST_PROFILES = ("precise", "balanced", "saver")
+
+
+def settings_for_profile(profile: str, base: Settings | None = None) -> Settings:
+    """Core settings for a cost profile of the desktop app.
+
+    precise: the original behaviour (model chooses tools, every line sampled twice or more).
+    balanced: local tool routing, one sample for lines judged CONSISTENT, one call to score
+      clarification questions, and a local pre-filter for lines that already show the new value.
+    saver: balanced plus a single sample for every line and no question scoring.
+    """
+    from dataclasses import replace
+
+    root = base or DEFAULT_SETTINGS
+    if profile == "precise":
+        return replace(root, routing="llm", consistent_single=False, clarify_gain="full", prefilter=False)
+    balanced = replace(
+        root, routing="rules", consistent_single=True, clarify_gain="batch", prefilter=True
+    )
+    if profile == "saver":
+        return replace(balanced, adaptive_min_samples=1, clarify_gain="none")
+    return balanced
 
 
 def effective_k(k: int, artifact_count: int, k_max: int | None = None) -> int:

@@ -15,6 +15,7 @@ PHASE_LABELS = {
     "reading": "파일 읽는 중",
     "extracting": "결정 추출 중",
     "checking": "결정별 점검 중",
+    "awaiting_confirm": "확인 대기",
     "done": "완료",
     "error": "문제 발생",
 }

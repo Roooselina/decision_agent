@@ -66,6 +66,7 @@ def run_pipeline(
     trace.affected_artifact_ids = ctx.affected_ids()
     trace.rechecked_artifact_ids = list(ctx.rechecked_ids)
     trace.final_results = ctx.final_results()
+    trace.local_answers = ctx.local_answers
     trace.tool_calls = len(trace.steps)
     trace.elapsed_seconds = time.perf_counter() - start
     return trace

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import threading
 import urllib.parse
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -75,6 +77,37 @@ def check_provider(bundle: ProviderBundle) -> dict:
     return {"ok": True, "verified": True, "message": f"연결 확인: {bundle.provider_id}"}
 
 
+_TASK = re.compile(r"TASK:([A-Z_]+)")
+
+# Work that a smaller model does well: reading one sentence, naming a relation, picking from a
+# short list, routing, and scoring questions. The consistency judgement stays on the main model.
+CHEAP_TASKS = frozenset(
+    {
+        "DECISION_EXTRACT", "DECISION_EXTRACT_BATCH", "RELATION_CLASSIFY", "IMPACT_SELECT",
+        "QUESTION_GENERATE", "QUESTION_GAIN", "QUESTION_GAIN_BATCH", "TOOL_SELECT",
+    }
+)
+
+
+def task_of(system: str) -> str:
+    match = _TASK.search(system)
+    return match.group(1) if match else "OTHER"
+
+
+class TieredProvider(LLMProvider):
+    """Sends easy tasks to a cheaper model and the consistency judgement to the main model."""
+
+    def __init__(self, main: LLMProvider, cheap: LLMProvider) -> None:
+        self.main = main
+        self.cheap = cheap
+
+    def complete(
+        self, system: str, user: str, temperature: float = 0.0, json_schema: dict | None = None
+    ) -> str:
+        target = self.cheap if task_of(system) in CHEAP_TASKS else self.main
+        return target.complete(system, user, temperature, json_schema)
+
+
 class CountingProvider(LLMProvider):
     """Counts calls that actually reach the wrapped provider and enforces a per-cycle budget."""
 
@@ -82,11 +115,13 @@ class CountingProvider(LLMProvider):
         self.inner = inner
         self.budget = budget
         self.calls = 0
+        self.by_task: Counter[str] = Counter()
         self._lock = threading.Lock()
 
     def reset(self) -> None:
         with self._lock:
             self.calls = 0
+            self.by_task = Counter()
 
     def complete(
         self, system: str, user: str, temperature: float = 0.0, json_schema: dict | None = None
@@ -95,6 +130,7 @@ class CountingProvider(LLMProvider):
             if self.calls >= self.budget:
                 raise BudgetExceeded(f"한 번의 점검에서 사용할 LLM 호출 한도({self.budget}회)에 도달했습니다.")
             self.calls += 1
+            self.by_task[task_of(system)] += 1
         return self.inner.complete(system, user, temperature, json_schema)
 
 
@@ -158,7 +194,13 @@ def _build_ollama(
         "다른 컴퓨터의 Ollama 서버를 사용합니다." if remote
         else "이 컴퓨터의 Ollama 모델을 사용합니다. 문서가 컴퓨터 밖으로 나가지 않습니다."
     )
-    return ProviderBundle(factory(settings.ollama_url, model), f"ollama:{model}", False, reason, remote)
+    main = factory(settings.ollama_url, model)
+    provider_id = f"ollama:{model}"
+    cheap_name = settings.cheap_model_name.strip()
+    if cheap_name and cheap_name != model:
+        main = TieredProvider(main, factory(settings.ollama_url, cheap_name))
+        provider_id = f"{provider_id}+{cheap_name}"
+    return ProviderBundle(main, provider_id, False, reason, remote)
 
 
 def build_provider(
@@ -192,6 +234,10 @@ def build_provider(
         def anthropic_factory(api_key: str, model_name: str) -> LLMProvider:
             return AnthropicProvider(api_key=api_key, model=model_name)
 
-    return ProviderBundle(
-        anthropic_factory(key, model), f"anthropic:{model}", False, "외부 LLM을 사용합니다.", True
-    )
+    main = anthropic_factory(key, model)
+    provider_id = f"anthropic:{model}"
+    cheap_name = settings.cheap_model_name.strip()
+    if cheap_name and cheap_name != model:
+        main = TieredProvider(main, anthropic_factory(key, cheap_name))
+        provider_id = f"{provider_id}+{cheap_name}"
+    return ProviderBundle(main, provider_id, False, "외부 LLM을 사용합니다.", True)

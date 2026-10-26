@@ -126,6 +126,7 @@ class AgentTrace(BaseModel):
     final_results: list[ConsistencyResult] = Field(default_factory=list)
     affected_artifact_ids: list[str] = Field(default_factory=list)
     rechecked_artifact_ids: list[str] = Field(default_factory=list)
+    local_answers: int = 0
 
 
 class GuardWarning(BaseModel):

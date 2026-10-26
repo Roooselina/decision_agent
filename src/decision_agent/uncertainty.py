@@ -42,16 +42,31 @@ def _first_samples(settings: Settings) -> int:
     return max(1, min(settings.adaptive_min_samples, settings.n))
 
 
+def _accepts_first_sample(first: ConsistencyResult, settings: Settings) -> bool:
+    """A CONSISTENT first sample ends the sampling when consistent_single is on."""
+    return (
+        settings.consistent_single
+        and settings.adaptive_min_samples > 0
+        and first.label == ConsistencyLabel.CONSISTENT
+    )
+
+
 def sample_prepared(
-    prepared: PreparedCheck, provider: LLMProvider, settings: Settings
+    prepared: PreparedCheck, provider: LLMProvider, settings: Settings, strict: bool = False
 ) -> ConsistencyResult:
-    """Sample one prepared artifact. With adaptive sampling, stop once the first samples agree."""
+    """Sample one prepared artifact. With adaptive sampling, stop once the first samples agree.
+
+    strict is used after earlier samples disagreed: a CONSISTENT first sample is then not enough,
+    and at least two samples must agree before the sampling stops.
+    """
     if prepared.early is not None:
         return summarize_samples([prepared.early] * settings.n, settings)
-    first = _first_samples(settings)
+    first = max(2, _first_samples(settings)) if strict else _first_samples(settings)
     samples: list[ConsistencyResult] = []
     for number in range(settings.n):
         samples.append(judge_prepared(prepared, provider, settings.sample_temperature))
+        if number == 0 and not strict and _accepts_first_sample(samples[0], settings):
+            break
         if number + 1 == first and len({s.label for s in samples}) == 1:
             break
     return summarize_samples(samples, settings)
@@ -99,46 +114,75 @@ def estimate_many(
 
     size = max(1, settings.judge_batch)
     redo: list[int] = []
+    disagreed: set[int] = set()
     if size > 1 and len(representatives) > 1:
-        by_decision: dict[tuple, list[int]] = {}
-        for index in representatives:
-            by_decision.setdefault(prepared[index].group_key(), []).append(index)
-        chunks = [
-            indexes[start : start + size]
-            for indexes in by_decision.values()
-            for start in range(0, len(indexes), size)
-        ]
         first = _first_samples(settings)
-        tasks = [(chunk, number) for chunk in chunks for number in range(first)]
-
-        def run(task: tuple[list[int], int]) -> dict[str, ConsistencyResult]:
-            chunk, _ = task
-            try:
-                return judge_batch([prepared[i] for i in chunk], provider, settings.sample_temperature)
-            except Exception as exc:
-                if exc.__class__.__name__ == "BudgetExceeded":
-                    raise
-                return {}
-
-        answers = run_parallel(run, tasks)
         samples: dict[int, list[ConsistencyResult]] = {i: [] for i in representatives}
-        for (chunk, _), answer in zip(tasks, answers, strict=True):
-            for index in chunk:
-                got = answer.get(prepared[index].artifact.id)
-                if got is not None:
-                    samples[index].append(got)
-        for index in representatives:
-            taken = samples[index]
-            agreed = len(taken) == first and len({s.label for s in taken}) == 1
-            if len(taken) == first and (agreed or settings.adaptive_min_samples <= 0):
-                outcome[index] = summarize_samples(taken, settings)
-            else:
-                redo.append(index)
+
+        def run_round(indexes: list[int], count: int) -> None:
+            """Ask `count` independent batch samples for the given artifacts, in parallel."""
+            by_decision: dict[tuple, list[int]] = {}
+            for index in indexes:
+                by_decision.setdefault(prepared[index].group_key(), []).append(index)
+            chunks = [
+                members[start : start + size]
+                for members in by_decision.values()
+                for start in range(0, len(members), size)
+            ]
+            tasks = [chunk for chunk in chunks for _ in range(count)]
+
+            def run(chunk: list[int]) -> dict[str, ConsistencyResult]:
+                try:
+                    return judge_batch(
+                        [prepared[i] for i in chunk], provider, settings.sample_temperature
+                    )
+                except Exception as exc:
+                    if exc.__class__.__name__ == "BudgetExceeded":
+                        raise
+                    return {}
+
+            answers = run_parallel(run, tasks)
+            for chunk, answer in zip(tasks, answers, strict=True):
+                for index in chunk:
+                    got = answer.get(prepared[index].artifact.id)
+                    if got is not None:
+                        samples[index].append(got)
+
+        if settings.adaptive_min_samples <= 0:
+            # Every sample is taken in one parallel wave and summarized as is.
+            run_round(representatives, first)
+            for index in representatives:
+                taken = samples[index]
+                if len(taken) == first:
+                    outcome[index] = summarize_samples(taken, settings)
+                else:
+                    redo.append(index)
+        else:
+            pending = list(representatives)
+            for number in range(first):
+                if not pending:
+                    break
+                run_round(pending, 1)
+                carried: list[int] = []
+                for index in pending:
+                    taken = samples[index]
+                    if len(taken) != number + 1:
+                        redo.append(index)
+                    elif len({s.label for s in taken}) > 1:
+                        redo.append(index)
+                        disagreed.add(index)
+                    elif number == 0 and _accepts_first_sample(taken[0], settings) or number + 1 == first:
+                        outcome[index] = summarize_samples(taken, settings)
+                    else:
+                        carried.append(index)
+                pending = carried
     else:
         redo = list(representatives)
 
     if redo:
-        redone = run_parallel(lambda i: sample_prepared(prepared[i], provider, settings), redo)
+        redone = run_parallel(
+            lambda i: sample_prepared(prepared[i], provider, settings, strict=i in disagreed), redo
+        )
         outcome.update(zip(redo, redone, strict=True))
 
     for indexes in groups.values():
