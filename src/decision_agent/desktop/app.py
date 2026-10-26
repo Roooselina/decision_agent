@@ -72,6 +72,7 @@ FOLLOWUP_SECONDS = 300.0
 MAX_LOCK_RETRIES = 4
 MAX_FOLLOWUPS = 6
 LOG_TAIL_LINES = 200
+SUPERVISE_SECONDS = 30.0
 
 
 @dataclass
@@ -117,6 +118,7 @@ class DecisionAgentApp:
         self.hotkey_state: dict = hotkey_status(settings.hotkey, False, False, "")
         self.settings_hooks: list[Callable[[AppSettings], None]] = []
         self._digest_timer: PeriodicTimer | None = None
+        self._supervisor: PeriodicTimer | None = None
         self.settings = settings
         self.settings_file = settings_file
         self.notifier = notifier or LogNotifier()
@@ -166,6 +168,8 @@ class DecisionAgentApp:
             self._start_connector_timer()
             self._digest_timer = PeriodicTimer(60.0, self.digest_tick)
             self._digest_timer.start()
+            self._supervisor = PeriodicTimer(SUPERVISE_SECONDS, self.supervise)
+            self._supervisor.start()
             if initial_scan:
                 for root in self.runtimes:
                     self.enqueue(Job("sync", root))
@@ -190,6 +194,9 @@ class DecisionAgentApp:
             if self._digest_timer is not None:
                 self._digest_timer.stop()
                 self._digest_timer = None
+            if self._supervisor is not None:
+                self._supervisor.stop()
+                self._supervisor = None
             for timer in self._timers:
                 timer.cancel()
             self._timers.clear()
@@ -222,20 +229,74 @@ class DecisionAgentApp:
             engine = ProjectEngine(root, self.settings, db, self.bundle, progress=progress)
             runtime = _RootRuntime(engine=engine, db=db)
             if self.start_watchers:
-                policy = FolderPolicy.for_root(root, self.settings)
-                debouncer = Debouncer(
-                    self.settings.debounce_seconds,
-                    lambda paths, k=key: self.enqueue(Job("sync", k, set(paths))),
-                )
-                debouncer.start()
-                watcher = FolderWatcher(policy, debouncer.add)
-                watcher.start()
-                timer = PeriodicTimer(
-                    self.settings.rescan_minutes * 60.0, lambda k=key: self.enqueue(Job("sync", k))
-                )
-                timer.start()
-                runtime.debouncer, runtime.watcher, runtime.timer = debouncer, watcher, timer
+                self._start_debouncer(key, runtime)
+                self._start_watcher(key, runtime)
+                self._start_timer(key, runtime)
             self.runtimes[key] = runtime
+
+    def _start_debouncer(self, key: str, runtime: _RootRuntime) -> None:
+        debouncer = Debouncer(
+            self.settings.debounce_seconds,
+            lambda paths, k=key: self.enqueue(Job("sync", k, set(paths))),
+            max_wait=max(self.settings.debounce_max_seconds, self.settings.debounce_seconds),
+        )
+        debouncer.start()
+        runtime.debouncer = debouncer
+
+    def _start_watcher(self, key: str, runtime: _RootRuntime) -> None:
+        policy = FolderPolicy.for_root(Path(key), self.settings)
+        watcher = FolderWatcher(policy, lambda path: runtime.debouncer.add(path))
+        watcher.start()
+        runtime.watcher = watcher
+
+    def _start_timer(self, key: str, runtime: _RootRuntime) -> None:
+        # The heartbeat: a full look at the folder every rescan_minutes. Unchanged files are
+        # skipped by size and time and unchanged topics by fingerprint, so no LLM call is made.
+        timer = PeriodicTimer(
+            self.settings.rescan_minutes * 60.0, lambda k=key: self.enqueue(Job("sync", k))
+        )
+        timer.start()
+        runtime.timer = timer
+
+    def supervise(self) -> list[str]:
+        """Restart watcher parts that died (called every SUPERVISE_SECONDS). Returns what restarted.
+
+        A missing folder is not restarted; the folder screen shows it as missing instead.
+        """
+        restarted: list[str] = []
+        with self._lock:
+            if not self._running:
+                return restarted
+            if self._worker is not None and not self._worker.is_alive():
+                self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
+                self._worker.start()
+                restarted.append("analysis")
+            for key, runtime in list(self.runtimes.items()):
+                if not self.start_watchers or not Path(key).is_dir():
+                    continue
+                name = Path(key).name or key
+                parts = (
+                    ("debouncer", runtime.debouncer, self._start_debouncer),
+                    ("watcher", runtime.watcher, self._start_watcher),
+                    ("timer", runtime.timer, self._start_timer),
+                )
+                for label, part, starter in parts:
+                    if part is not None and part.is_alive():
+                        continue
+                    try:
+                        if part is not None:
+                            part.stop()
+                        starter(key, runtime)
+                    except Exception:  # try again on the next round
+                        log.exception("could not restart %s for %s", label, key)
+                        continue
+                    restarted.append(f"{label}:{name}")
+        for item in restarted:
+            log.warning("restarted %s", item)
+        if restarted:
+            self.activity.add("폴더 감시를 다시 시작했습니다. (" + ", ".join(restarted) + ")", "attention")
+            self._changed()
+        return restarted
 
     def _stop_runtimes(self) -> None:
         for runtime in self.runtimes.values():
@@ -801,6 +862,10 @@ class DecisionAgentApp:
                     "topics": len(topic_rows),
                     "topics_by_judge": dict(Counter(r["judge"] or "?" for r in topic_rows)),
                     "watcher": runtime.watcher.mode if runtime.watcher else "off",
+                    "watch_alive": all(
+                        part.is_alive() for part in (runtime.watcher, runtime.debouncer, runtime.timer)
+                        if part is not None
+                    ),
                     "pending_events": runtime.debouncer.pending_count() if runtime.debouncer else 0,
                     "progress": runtime.engine.progress.snapshot(),
                     "completion": runtime.engine.completion(),
@@ -846,8 +911,10 @@ class DecisionAgentApp:
         checked = [f["last_checked"] for f in folders if f.get("last_checked")]
         analyzed = [f["last_analyzed"] for f in folders if f.get("last_analyzed")]
         modes = {f["watcher"] for f in folders}
+        alive = all(f.get("watch_alive", True) for f in folders)
         return {
             "mode": "realtime" if modes & {"native", "polling"} else "periodic",
+            "alive": alive and (self._worker is None or self._worker.is_alive()),
             "rescan_minutes": self.settings.rescan_minutes,
             "last_checked": max(checked) if checked else None,
             "last_analyzed": max(analyzed) if analyzed else None,

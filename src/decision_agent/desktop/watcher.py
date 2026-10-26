@@ -62,6 +62,9 @@ class Debouncer:
         with self._cond:
             return len(self._pending)
 
+    def is_alive(self) -> bool:
+        return self._thread is not None and self._thread.is_alive()
+
     def flush(self) -> None:
         """Fire immediately with whatever is pending."""
         with self._cond:
@@ -172,6 +175,9 @@ class FolderWatcher:
             self.observer.join(timeout=5)
             self.observer = None
 
+    def is_alive(self) -> bool:
+        return self.observer is not None and self.observer.is_alive()
+
 
 class PeriodicTimer:
     """Calls a function every interval seconds until stopped; used for the safety rescan."""
@@ -193,6 +199,10 @@ class PeriodicTimer:
         self._event.set()
         if self._thread is not None:
             self._thread.join(timeout=5)
+
+    def is_alive(self) -> bool:
+        """A disabled timer (interval 0) counts as healthy."""
+        return self.interval <= 0 or (self._thread is not None and self._thread.is_alive())
 
     def _loop(self) -> None:
         while not self._event.wait(self.interval):

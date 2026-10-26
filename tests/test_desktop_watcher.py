@@ -134,3 +134,42 @@ def test_periodic_timer_runs_and_stops():
     off = PeriodicTimer(0, lambda: count.append(1))
     off.start()
     off.stop()
+
+
+def test_supervisor_restarts_a_dead_watcher_and_records_it(tmp_path):
+    import desktop_helpers as dh
+
+    from decision_agent.desktop.app import DecisionAgentApp
+    from decision_agent.desktop.state import StateDB
+
+    root = dh.make_watch_dir(tmp_path)
+    controller = DecisionAgentApp(dh.make_settings(root, rescan_minutes=10), db_factory=lambda r: StateDB(":memory:"))
+    controller.start()
+    try:
+        assert controller.wait_idle(60)
+        assert controller.status()["watch"]["alive"] is True
+        assert controller.supervise() == []
+        runtime = next(iter(controller.runtimes.values()))
+        runtime.watcher.stop()
+        runtime.timer.stop()
+        assert controller.status()["watch"]["alive"] is False
+        restarted = controller.supervise()
+        assert any(r.startswith("watcher:") for r in restarted) and any(r.startswith("timer:") for r in restarted)
+        assert controller.status()["watch"]["alive"] is True
+        assert "다시 시작" in controller.activity.recent(1)[0]["text"]
+    finally:
+        controller.stop()
+    assert controller.supervise() == []
+
+
+def test_debouncer_uses_the_configured_maximum_wait():
+    from decision_agent.desktop.app import DecisionAgentApp
+    from decision_agent.desktop.settings import AppSettings
+
+    controller = DecisionAgentApp(AppSettings(debounce_seconds=10, debounce_max_seconds=90), start_watchers=False)
+    runtime = type("R", (), {"debouncer": None})()
+    controller._start_debouncer("x", runtime)
+    try:
+        assert runtime.debouncer.delay == 10 and runtime.debouncer.max_wait == 90
+    finally:
+        runtime.debouncer.stop()
