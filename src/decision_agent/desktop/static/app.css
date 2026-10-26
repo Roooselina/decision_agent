@@ -572,6 +572,8 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .home-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
 .home-card-head h2 { font-size: 18px; }
 .cal-nav { display: flex; align-items: center; gap: 4px; }
+.cal-today { margin-left: 4px; }
+.cal-today:disabled { opacity: 0.5; cursor: default; }
 .cal-view { margin-left: 8px; background: var(--surface-2); border-radius: 6px; height: 28px; padding: 0 12px;
   display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; }
 .cal-range { font-size: 13px; color: var(--text-3); }
@@ -855,3 +857,14 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .set-advanced[open] > summary .icon { transform: rotate(90deg); }
 .set-advanced-body { padding: 0 19px 20px; }
 .set-advanced-body h3 { font-size: 14px; margin-top: 8px; }
+
+/* Results: decision groups fold from their heading; long lists come in pages. */
+.result-group-head { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.result-group-head:focus-visible { outline: 2px solid var(--primary, #2563eb); outline-offset: 2px; border-radius: 4px; }
+.result-group-title { display: flex; flex-direction: column; min-width: 0; }
+.result-group-title .result-decision-sub { margin: 4px 0 0; }
+.result-fold { flex: none; margin-top: 4px; }
+.result-group.folded { gap: 0; }
+.result-more-rows { align-self: center; }
+.result-count { margin: 0; text-align: center; }

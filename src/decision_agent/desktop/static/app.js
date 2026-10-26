@@ -191,7 +191,8 @@
   ROUTES.home = {
     title: "홈", auto: true,
     async load(params) {
-      if (params.has("week")) HS.week = params.get("week");
+      if (calendarIsStale()) resetCalendar();
+      if (params.has("week")) { HS.week = params.get("week"); touchCalendar(); }
       const [findings, questions, activity, week] = await Promise.all([
         api("/api/findings"), api("/api/questions"), api("/api/activity"),
         api("/api/calendar" + (HS.week ? "?start=" + encodeURIComponent(HS.week) : "")),
@@ -217,7 +218,17 @@
     },
   };
 
-  const HS = {week: null, day: null, flash: null};
+  // week and day are what the user picked with the arrows; null means "the week of today, on
+  // today". They are reset whenever home is opened again or the window comes back, so a window
+  // left open for days never starts on an old week.
+  const HS = {week: null, day: null, flash: null, touched: 0};
+  const CALENDAR_IDLE_MS = 30 * 60 * 1000;
+  function resetCalendar() { HS.week = null; HS.day = null; HS.touched = 0; }
+  function touchCalendar() { HS.touched = Date.now(); }
+  function calendarIsStale() { return (HS.week !== null || HS.day !== null) && Date.now() - HS.touched > CALENDAR_IDLE_MS; }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && parseHash().name === "home") { resetCalendar(); renderRoute(false); }
+  });
   const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
   function toDate(iso) {
@@ -345,24 +356,28 @@
     const s = toDate(start), e = toDate(week.end);
     const range = s.getFullYear() + "년 " + (s.getMonth() + 1) + "월 " + s.getDate() + "일–" +
       (e.getMonth() !== s.getMonth() ? (e.getMonth() + 1) + "월 " : "") + e.getDate() + "일";
-    const move = (n) => { HS.week = addDays(start, 7 * n); HS.day = null; renderRoute(false); };
+    const move = (n) => { HS.week = addDays(start, 7 * n); HS.day = null; touchCalendar(); renderRoute(false); };
+    const isThisWeek = days.includes(week.today);
+    const back = () => { resetCalendar(); renderRoute(false); };
+    const todayBtn = h("button", {type: "button", class: "btn ghost sm cal-today", title: "오늘이 있는 주로 돌아가기", onclick: back}, "오늘");
     const list = h("div", {class: "cal-list"});
     const strip = h("div", {class: "cal-strip", role: "tablist", "aria-label": "요일"});
     const drawDay = () => {
+      todayBtn.disabled = isThisWeek && HS.day === week.today;
       set(strip, ...days.map(d => {
         const date = toDate(d);
         return h("button", {type: "button", class: "cal-day" + (d === HS.day ? " selected" : "") + (d === week.today ? " today" : ""),
           role: "tab", "aria-selected": String(d === HS.day), "aria-label": longDate(date) + " 일정 " + byDay.get(d).length + "건",
-          onclick: () => { HS.day = d; drawDay(); }},
+          onclick: () => { HS.day = d; touchCalendar(); drawDay(); }},
         h("span", {class: "cal-wd"}, WEEKDAYS[date.getDay()]), h("span", {class: "cal-dn"}, String(date.getDate())),
         byDay.get(d).length ? h("span", {class: "cal-dot", "aria-hidden": "true"}) : null);
       }));
       const items = byDay.get(HS.day);
       if (items.length) {
         set(list, ...items.map(eventRow));
-      } else if (week.events.length === 0 && week.nearest_week) {
-        set(list, h("div", {class: "cal-none"}, h("span", {}, "이번 주에는 일정이 없습니다."),
-          h("button", {type: "button", class: "link", onclick: () => { HS.week = week.nearest_week; HS.day = null; renderRoute(false); }}, "일정이 있는 주로 이동")));
+      } else if (week.events.length === 0) {
+        set(list, h("div", {class: "cal-none"}, h("span", {}, "이 주에는 일정이 없습니다."),
+          week.nearest_week ? h("button", {type: "button", class: "link", onclick: () => { HS.week = week.nearest_week; HS.day = null; touchCalendar(); renderRoute(false); }}, "일정이 있는 주로 이동") : null));
       } else {
         set(list, h("div", {class: "cal-none"}, h("span", {}, "이 날에는 일정이 없습니다.")));
       }
@@ -373,6 +388,7 @@
         h("div", {class: "cal-nav"},
           h("button", {type: "button", class: "icon-btn", "aria-label": "이전 주", title: "이전 주", onclick: () => move(-1)}, icon("chevron-left")),
           h("button", {type: "button", class: "icon-btn", "aria-label": "다음 주", title: "다음 주", onclick: () => move(1)}, icon("chevron-right")),
+          todayBtn,
           h("span", {class: "cal-view"}, "주간"))),
       h("p", {class: "cal-range"}, range),
       strip, list);
@@ -528,7 +544,11 @@
   // ---------------------------------------------------------------- results
 
   // Figma 15:137: filter tabs, decisions on the left, the selected item on the right.
-  const RS = {q: "", label: "INCONSISTENT", folder: "all", owner: "all", status: "open", sort: "severity", selected: null, draft: {}};
+  // limit: how many result rows are drawn (whole decision groups, PAGE_ROWS more per "더 보기");
+  // collapsed: decision groups the user folded, by root|topic.
+  const RS = {q: "", label: "INCONSISTENT", folder: "all", owner: "all", status: "open", sort: "severity", selected: null, draft: {},
+    limit: 0, collapsed: new Set()};
+  const PAGE_ROWS = 50;
   const HIDDEN = {dismissed: "확인 완료", false_positive: "잘못된 탐지", snoozed: "내일 다시 알림"};
   const TAB_LABELS = [["INCONSISTENT", "반영 안 됨"], ["UNCERTAIN", "확인 필요"], ["CONSISTENT", "문제없음"]];
 
@@ -575,11 +595,15 @@
       const owners = [...new Set(rows.map(r => r.owner).filter(Boolean))].sort();
       const more = h("details", {class: "result-more"}, h("summary", {}, icon("filter", "sm"), "추가 필터"),
         h("div", {class: "result-more-body"},
-          selectControl([["open", "열린 항목"], ["dismissed", "확인 완료"], ["false_positive", "잘못된 탐지"], ["snoozed", "내일 다시 알림"], ["all", "모든 상태"]], RS.status, "상태", (v) => { RS.status = v; draw(); }),
-          folders.length > 1 ? selectControl([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, "폴더", (v) => { RS.folder = v; draw(); }) : null,
-          owners.length ? selectControl([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, "담당자", (v) => { RS.owner = v; draw(); }) : null,
-          selectControl([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, "정렬", (v) => { RS.sort = v; draw(); })));
-      search.addEventListener("input", () => { RS.q = search.value; draw(); });
+          selectControl([["open", "열린 항목"], ["dismissed", "확인 완료"], ["false_positive", "잘못된 탐지"], ["snoozed", "내일 다시 알림"], ["all", "모든 상태"]], RS.status, "상태", (v) => { RS.status = v; redraw(); }),
+          folders.length > 1 ? selectControl([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, "폴더", (v) => { RS.folder = v; redraw(); }) : null,
+          owners.length ? selectControl([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, "담당자", (v) => { RS.owner = v; redraw(); }) : null,
+          selectControl([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, "정렬", (v) => { RS.sort = v; redraw(); })));
+      search.addEventListener("input", () => { RS.q = search.value; redraw(); });
+      // A new filter starts again from the first page.
+      function redraw() { RS.limit = PAGE_ROWS; listCard.scrollTop = 0; draw(); }
+      if (!RS.limit) RS.limit = PAGE_ROWS;
+      let shownRows = [];
 
       function visible() {
         const terms = RS.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -595,7 +619,7 @@
         set(tabs, ...TAB_LABELS.map(([v, label]) => {
           const n = base.filter(r => r.label === v).length;
           return h("button", {type: "button", class: "result-tab", role: "tab", "aria-selected": String(RS.label === v), title: label + " " + n + "건",
-            onclick: () => { RS.label = v; RS.selected = null; draw(); }}, label, n ? h("span", {class: "result-tab-n"}, String(n)) : null);
+            onclick: () => { RS.label = v; RS.selected = null; redraw(); }}, label, n ? h("span", {class: "result-tab-n"}, String(n)) : null);
         }));
         const shown = base.filter(r => r.label === RS.label);
         const groups = new Map();
@@ -610,6 +634,7 @@
         else if (RS.sort === "name") list.sort((a, b) => a.first.decision_text.localeCompare(b.first.decision_text, "ko"));
         else list.sort((a, b) => b.items.length - a.items.length);
         if (!RS.selected || !shown.some(r => keyOf(r) === RS.selected)) RS.selected = shown.length ? keyOf(list[0].items[0]) : null;
+        shownRows = shown;
         if (rows.length === 0) {
           set(listCard, emptyState({icon: "results", title: "아직 점검 결과가 없습니다",
             text: S.status && S.status.registered_folders ? "점검이 끝나면 결정별 결과가 여기에 표시됩니다." : "먼저 확인할 폴더를 추가하세요.", neutral: true}));
@@ -617,17 +642,64 @@
           set(listCard, h("p", {class: "result-none"}, RS.q ? "검색어에 맞는 항목이 없습니다." :
             ({INCONSISTENT: "반영 안 된 항목이 없습니다.", UNCERTAIN: "확인이 필요한 항목이 없습니다.", CONSISTENT: "문제없음으로 확인된 항목이 없습니다."}[RS.label])));
         } else {
-          set(listCard, ...list.map(g => h("div", {class: "result-group"},
-            h("h2", {class: "result-decision"}, g.first.decision_text),
-            h("p", {class: "result-decision-sub"}, [baseName(g.first.decision_source), shortDate(g.first.decision_date)].filter(Boolean).join(" · ") || "결정"),
-            ...g.items.map(r => h("button", {type: "button", class: "result-row" + (keyOf(r) === RS.selected ? " selected" : ""),
-              "aria-pressed": String(keyOf(r) === RS.selected), onclick: () => { RS.selected = keyOf(r); draw(); }},
-            icon(r.label === "CONSISTENT" ? "check" : "alert-circle", "result-icon " + labelTone(r.label)),
-            h("span", {class: "result-row-main"}, h("span", {class: "result-row-title truncate", title: r.text}, r.text),
-              h("span", {class: "result-row-sub truncate"}, baseName(r.source_doc) + (effectiveStatus(r) !== "open" ? " · " + HIDDEN[effectiveStatus(r)] : ""))),
-            h("span", {class: "result-row-label " + labelTone(r.label)}, DA.LABELS[r.label]))))));
+          // Make sure a row opened from elsewhere (home, search) lies on a drawn page.
+          let upto = 0;
+          for (const g of list) {
+            upto += g.items.length;
+            if (g.items.some(r => keyOf(r) === RS.selected)) { RS.limit = Math.max(RS.limit, upto); break; }
+          }
+          const page = [];
+          let rowsDrawn = 0;
+          for (const g of list) {
+            if (page.length && rowsDrawn >= RS.limit) break;
+            page.push(g);
+            rowsDrawn += g.items.length;
+          }
+          const remaining = shown.length - rowsDrawn;
+          set(listCard, ...page.map(groupNode),
+            remaining > 0 ? h("button", {type: "button", class: "btn ghost result-more-rows", onclick: () => { RS.limit += PAGE_ROWS; draw(); }},
+              "더 보기 (" + remaining + "건 남음)") : null,
+            h("p", {class: "result-count small muted"}, "결정 " + list.length + "개, 항목 " + shown.length + "건 중 " + Math.min(rowsDrawn, shown.length) + "건 표시"));
         }
-        const selected = shown.find(r => keyOf(r) === RS.selected);
+        drawDetail();
+      }
+
+      // One decision with its rows. The heading folds the group; folding keeps the rows out of the DOM.
+      function groupNode(g) {
+        const key = g.first.root + "|" + g.first.topic;
+        const folded = RS.collapsed.has(key);
+        const head = h("button", {type: "button", class: "result-group-head", "aria-expanded": String(!folded),
+          onclick: () => { if (folded) RS.collapsed.delete(key); else RS.collapsed.add(key); draw(); }},
+        icon(folded ? "chevron-right" : "chevron-down", "sm result-fold"),
+        h("span", {class: "result-group-title"},
+          h("span", {class: "result-decision"}, g.first.decision_text),
+          h("span", {class: "result-decision-sub"}, [baseName(g.first.decision_source), shortDate(g.first.decision_date), g.items.length + "건"].filter(Boolean).join(" · "))));
+        return h("div", {class: "result-group" + (folded ? " folded" : "")}, head, ...(folded ? [] : g.items.map(rowNode)));
+      }
+
+      function rowNode(r) {
+        const key = keyOf(r);
+        return h("button", {type: "button", class: "result-row" + (key === RS.selected ? " selected" : ""), "data-key": key,
+          "aria-pressed": String(key === RS.selected), onclick: () => select(key)},
+        icon(r.label === "CONSISTENT" ? "check" : "alert-circle", "result-icon " + labelTone(r.label)),
+        h("span", {class: "result-row-main"}, h("span", {class: "result-row-title truncate", title: r.text}, r.text),
+          h("span", {class: "result-row-sub truncate"}, baseName(r.source_doc) + (effectiveStatus(r) !== "open" ? " · " + HIDDEN[effectiveStatus(r)] : ""))),
+        h("span", {class: "result-row-label " + labelTone(r.label)}, DA.LABELS[r.label]));
+      }
+
+      // Selecting a row only moves the highlight and redraws the detail panel, not the list.
+      function select(key) {
+        RS.selected = key;
+        for (const node of listCard.querySelectorAll(".result-row")) {
+          const on = node.dataset.key === key;
+          node.classList.toggle("selected", on);
+          node.setAttribute("aria-pressed", String(on));
+        }
+        drawDetail();
+      }
+
+      function drawDetail() {
+        const selected = shownRows.find(r => keyOf(r) === RS.selected);
         set(detail, ...(selected ? detailPanel(selected, rows) : [h("p", {class: "result-none"}, "왼쪽에서 항목을 고르면 근거와 수정 문장을 볼 수 있습니다.")]));
       }
       draw();
@@ -1858,7 +1930,9 @@
     }
     await tick();
     await renderRoute(true);
-    window.addEventListener("hashchange", () => { closePopover(); renderRoute(true); document.getElementById("view").focus({preventScroll: true}); });
+    window.addEventListener("hashchange", () => {
+      if (parseHash().name === "home") resetCalendar();
+      closePopover(); renderRoute(true); document.getElementById("view").focus({preventScroll: true}); });
     setInterval(loop, REFRESH_MS);
   }
 

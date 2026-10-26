@@ -898,10 +898,8 @@ class DecisionAgentApp:
         inconsistent = uncertain = 0
         questions = 0
         for key, runtime in self._each():
-            files = runtime.db.list_files()
             counts = {"ok": 0, "error": 0, "unsupported": 0}
-            for row in files:
-                counts[row["status"]] = counts.get(row["status"], 0) + 1
+            counts.update(runtime.db.file_status_counts())
             for finding in runtime.db.list_findings():
                 if finding["label"] == "INCONSISTENT":
                     inconsistent += 1
@@ -1266,10 +1264,7 @@ class DecisionAgentApp:
             counts: Counter[str] = Counter()
             completion = scan = None
             if runtime is not None:
-                counts = Counter(
-                    r["status"] for r in runtime.db.list_files()
-                    if not r["path"].startswith(EXTERNAL_PREFIX)
-                )
+                counts = Counter(runtime.db.file_status_counts(include_external=False))
                 completion = runtime.engine.completion()
                 scan = json.loads(runtime.db.meta_get("scan_stats") or "null")
             if not exists:

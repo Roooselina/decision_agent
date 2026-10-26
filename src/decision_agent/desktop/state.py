@@ -127,6 +127,18 @@ class StateDB:
         with self.lock:
             return self.conn.execute("SELECT * FROM files ORDER BY path").fetchall()
 
+    def file_status_counts(self, include_external: bool = True) -> dict[str, int]:
+        """Files per status, counted in SQL so document payloads are never loaded.
+
+        External documents (connectors, notes, imports) have paths starting with "@".
+        """
+        query = "SELECT status, COUNT(*) AS n FROM files"
+        if not include_external:
+            query += " WHERE substr(path, 1, 1) != '@'"
+        with self.lock:
+            rows = self.conn.execute(query + " GROUP BY status").fetchall()
+        return {row["status"]: row["n"] for row in rows}
+
     def delete_files(self, paths: Iterable[str]) -> int:
         count = 0
         with self.lock:

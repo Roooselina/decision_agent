@@ -1,24 +1,32 @@
 """Week view for the home calendar, built from what the analysis already read.
 
 Events come from dated schedule items: connected calendars (Google, Outlook), imported .ics
-files, and schedule documents in the watched folders (schedule.csv and the like). Each event
-carries its linked decision when a finding exists for it. Nothing here reads new files or calls
-a service, and no message or event body is returned beyond a short title.
+files, and schedule documents in the watched folders (schedule.csv and the like). Other items
+with a date column (tasks, tests) are not calendar events. Each event carries its linked
+decision when a finding exists for it. Nothing here reads new files or calls a service, and no
+message or event body is returned beyond a short title. Items whose date cannot be read are
+left out and logged once (source and raw date only, never the text).
 """
 
 from __future__ import annotations
 
 import datetime
+import logging
 import re
 from collections.abc import Iterable
 from pathlib import PurePosixPath
 
-from decision_agent.models import Artifact
+from decision_agent.models import Artifact, ArtifactKind
+from decision_agent.sources.dates import parse_date
 from decision_agent.sources.model import ParsedDocument
+
+log = logging.getLogger(__name__)
 
 CALENDAR_SOURCES = {"google_calendar": "Google 캘린더", "outlook_calendar": "Outlook 캘린더"}
 TITLE_LIMIT = 120
 _TIME = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+_LOGGED: set[str] = set()
+_LOGGED_LIMIT = 5000
 
 
 def week_start(day: datetime.date) -> datetime.date:
@@ -66,6 +74,37 @@ def event_times(docs: Iterable[ParsedDocument]) -> dict[tuple[str, str, str], st
     return found
 
 
+def is_calendar_item(artifact: Artifact, source_kind: str) -> bool:
+    """Schedule items and anything that came from a calendar (connected or imported .ics)."""
+    return artifact.kind == ArtifactKind.SCHEDULE or source_kind in {"calendar", "ics"}
+
+
+def event_day(raw: str) -> datetime.date | None:
+    """The date of a schedule item, or None when it cannot be read."""
+    text = raw.strip()
+    if not text:
+        return None
+    try:
+        return datetime.date.fromisoformat(text[:10])
+    except ValueError:
+        pass
+    parsed = parse_date(text)
+    return datetime.date.fromisoformat(parsed) if parsed else None
+
+
+def _log_unreadable(artifact: Artifact, raw: str) -> None:
+    key = f"{artifact.source_doc}|{artifact.id}|{raw}"
+    if key in _LOGGED:
+        return
+    if len(_LOGGED) >= _LOGGED_LIMIT:
+        _LOGGED.clear()
+    _LOGGED.add(key)
+    log.info(
+        "calendar: left out a schedule item with no readable date (source %s, location %s, date %r)",
+        source_of(artifact.source_doc)[1], artifact.location, raw[:40],
+    )
+
+
 def _finding_index(findings: Iterable[dict]) -> dict[str, dict]:
     """The most serious finding per artifact id (반영 안 됨 before 확인 필요 before 문제없음)."""
     order = {"INCONSISTENT": 0, "UNCERTAIN": 1, "CONSISTENT": 2}
@@ -94,12 +133,14 @@ def build_week(
     all_dates: list[datetime.date] = []
     sources: set[str] = set()
     for root, artifact in artifacts:
-        raw = str(artifact.metadata.get("date") or "")
-        try:
-            day = datetime.date.fromisoformat(raw[:10])
-        except ValueError:
-            continue
         kind, name = source_of(artifact.source_doc)
+        if not is_calendar_item(artifact, kind):
+            continue
+        raw = str(artifact.metadata.get("date") or "")
+        day = event_day(raw)
+        if day is None:
+            _log_unreadable(artifact, raw)
+            continue
         sources.add(kind)
         all_dates.append(day)
         if not start <= day <= end:
@@ -147,4 +188,4 @@ def build_week(
     }
 
 
-__all__ = ["build_week", "event_times", "parse_day", "source_of", "week_start"]
+__all__ = ["build_week", "event_day", "event_times", "is_calendar_item", "parse_day", "source_of", "week_start"]
