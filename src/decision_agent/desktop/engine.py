@@ -7,6 +7,7 @@ import logging
 import threading
 from collections import Counter
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -143,7 +144,13 @@ class ProjectEngine:
         self.bundle = bundle
         self.policy = FolderPolicy.for_root(self.root, settings)
         apply_speed_settings(settings)
-        self.counter = CountingProvider(bundle.provider, settings.max_llm_calls_per_cycle)
+        # Set by cancel(): the app is stopping or this folder was removed. Never cleared, because
+        # a cancelled engine is not used again.
+        self.cancelled = threading.Event()
+        self.counter = CountingProvider(
+            bundle.provider, settings.max_llm_calls_per_cycle, settings.max_parallel_calls,
+            self.cancelled,
+        )
         self.persistent = PersistentCachingProvider(self.counter, db, bundle.provider_id)
         self.lock = threading.RLock()
         self.extra_ranker = None
@@ -479,6 +486,9 @@ class ProjectEngine:
             self.progress.set_phase("error")
             raise
         self.progress.set_llm_calls(report.llm_calls)
+        if self.cancelled.is_set():
+            # Stopped on purpose: no failure record, the next start checks again.
+            return report
         if report.error:
             self.db.meta_put(
                 "last_failure",
@@ -500,6 +510,10 @@ class ProjectEngine:
             self.db.meta_delete("last_failure")
             self.progress.set_phase("done")
         return report
+
+    def cancel(self) -> None:
+        """Stop the running check soon: no new model calls, no further results stored."""
+        self.cancelled.set()
 
     def _fail(self, report: CycleReport, exc: Exception, prefix: str) -> None:
         message, fatal = describe_llm_error(exc)
@@ -605,6 +619,7 @@ class ProjectEngine:
                     report.calls_by_task = dict(self.counter.by_task)
                     report.llm_calls = self.counter.calls
                     return report
+            runnable = []
             for topic, decisions, candidates, decision_fp, fingerprint, unchanged in plans:
                 self.db.clear_stale_answers(topic, decision_fp)
                 answers = self.db.get_answers(topic, decision_fp)
@@ -620,16 +635,54 @@ class ProjectEngine:
                     },
                     ensure_ascii=False,
                 )
-                judge = self.bundle.provider_id
                 if not candidates:
                     self.db.replace_findings(topic, [])
                     self.db.clear_question(topic)
-                    self.db.topic_put(topic, fingerprint, decision_fp, "ok", summary, judge)
+                    self.db.topic_put(
+                        topic, fingerprint, decision_fp, "ok", summary, self.bundle.provider_id
+                    )
                     report.topics_checked.append(topic)
                     self.progress.topic_done(topic)
                     continue
+                label = short_label(latest.text if latest else topic)
+                runnable.append((topic, decision_fp, fingerprint, answers, summary, label))
+            all_done = self._check_topics(project, runnable, report)
+            report.llm_calls = self.counter.calls
+            report.calls_by_task = dict(self.counter.by_task)
+            if all_done:
+                self.db.meta_put("input_fp", input_fp)
+                self._record_completion(len(topics), report)
+        return report
+
+    def _check_topics(self, project, runnable: list, report: CycleReport) -> bool:
+        """Analyse the topics that need it, several at a time, and store results in order.
+
+        The model work of different topics is independent, so up to settings.topic_workers topics
+        run at once (the call semaphore keeps the total requests in flight bounded). Results are
+        stored here, on the calling thread and in topic order, so the database, the report and the
+        progress counters are never touched from two threads. Returns False when the cycle stopped
+        early (budget, or a fatal error).
+        """
+        if not runnable:
+            return True
+        judge = self.bundle.provider_id
+        workers = max(1, min(self.settings.topic_workers, len(runnable)))
+        executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="topic")
+        futures = [
+            executor.submit(self._run_topic, topic, project, answers)
+            for topic, _, _, answers, _, _ in runnable
+        ]
+        all_done = True
+        try:
+            for (topic, decision_fp, fingerprint, _answers, summary, label), future in zip(
+                runnable, futures, strict=True
+            ):
+                if self.cancelled.is_set():
+                    report.partial = True
+                    all_done = False
+                    break
                 try:
-                    trace, question = self._run_topic(topic, project, answers)
+                    trace, question = future.result()
                 except BudgetExceeded as exc:
                     self.db.topic_put(topic, "", decision_fp, "deferred", summary, judge)
                     report.error = str(exc)
@@ -647,6 +700,12 @@ class ProjectEngine:
                     if report.fatal:
                         break
                     continue
+                if self.cancelled.is_set():
+                    # Some steps swallow single call errors; a result finished after the cancel
+                    # may be missing parts, so it is not stored.
+                    report.partial = True
+                    all_done = False
+                    break
                 report.local_answers += trace.local_answers
                 outcome = self._store_topic_results(topic, project, trace, question)
                 self.db.topic_put(topic, fingerprint, decision_fp, outcome.state, summary, judge)
@@ -655,16 +714,15 @@ class ProjectEngine:
                 self.progress.set_llm_calls(self.counter.calls)
                 self.progress.topic_done(topic)
                 self.progress.activity.add(
-                    f"'{short_label(latest.text if latest else topic)}' 결정을 점검했습니다. "
+                    f"'{label}' 결정을 점검했습니다. "
                     f"반영 안 됨 {outcome.inconsistent_total}건"
                     + (", 확인 질문 1건" if outcome.pending_question else "")
                 )
-            report.llm_calls = self.counter.calls
-            report.calls_by_task = dict(self.counter.by_task)
-            if all_done:
-                self.db.meta_put("input_fp", input_fp)
-                self._record_completion(len(topics), report)
-        return report
+        finally:
+            for future in futures:
+                future.cancel()
+            executor.shutdown(wait=True)
+        return all_done
 
     def process(self, paths: Iterable[Path] | None = None) -> CycleReport:
         self.progress.begin()

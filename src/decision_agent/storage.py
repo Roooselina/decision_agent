@@ -1,17 +1,34 @@
 from __future__ import annotations
 
+import functools
 import json
 import sqlite3
+import threading
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from decision_agent.models import Artifact, Decision, DecisionRelation, DecisionStatus
+
+
+def _locked(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Serialize access: topics are analysed on several threads that share one connection."""
+
+    @functools.wraps(method)
+    def wrapper(self: SQLiteStore, *args: Any, **kwargs: Any) -> Any:
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class SQLiteStore:
     """Small SQLite repository used by resolver and UI."""
 
     def __init__(self, path: str | Path = ":memory:") -> None:
-        # Streamlit reruns scripts on different threads, so the connection must be shareable.
+        # Streamlit reruns scripts and topic analysis run on different threads, so the
+        # connection must be shareable; every method takes the lock.
+        self._lock = threading.RLock()
         self.conn = sqlite3.connect(str(path), check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.create_schema()
@@ -35,6 +52,7 @@ class SQLiteStore:
         )
         self.conn.commit()
 
+    @_locked
     def save_decision(self, decision: Decision) -> None:
         self.conn.execute(
             "INSERT OR REPLACE INTO decisions(id,payload) VALUES(?,?)",
@@ -42,6 +60,7 @@ class SQLiteStore:
         )
         self.conn.commit()
 
+    @_locked
     def save_artifact(self, artifact: Artifact) -> None:
         self.conn.execute(
             "INSERT OR REPLACE INTO artifacts(id,payload) VALUES(?,?)",
@@ -49,6 +68,7 @@ class SQLiteStore:
         )
         self.conn.commit()
 
+    @_locked
     def save_relation(self, relation: DecisionRelation) -> None:
         self.conn.execute(
             "INSERT INTO relations(old_id,new_id,payload) VALUES(?,?,?)",
@@ -56,6 +76,7 @@ class SQLiteStore:
         )
         self.conn.commit()
 
+    @_locked
     def list_decisions(self, topic: str | None = None) -> list[Decision]:
         rows = self.conn.execute("SELECT payload FROM decisions").fetchall()
         items = [Decision.model_validate_json(r["payload"]) for r in rows]
@@ -63,6 +84,7 @@ class SQLiteStore:
             items = [d for d in items if d.topic == topic]
         return sorted(items, key=lambda d: (d.date, d.id))
 
+    @_locked
     def get_decision(self, decision_id: str) -> Decision:
         row = self.conn.execute(
             "SELECT payload FROM decisions WHERE id=?", (decision_id,)
@@ -71,11 +93,13 @@ class SQLiteStore:
             raise KeyError(decision_id)
         return Decision.model_validate_json(row["payload"])
 
+    @_locked
     def update_status(self, decision_id: str, status: DecisionStatus) -> None:
         d = self.get_decision(decision_id)
         d.status = status
         self.save_decision(d)
 
+    @_locked
     def list_relations(self, topic: str | None = None) -> list[DecisionRelation]:
         rows = self.conn.execute("SELECT payload FROM relations ORDER BY id").fetchall()
         rels = [DecisionRelation.model_validate_json(r["payload"]) for r in rows]
@@ -84,10 +108,12 @@ class SQLiteStore:
         ids = {d.id for d in self.list_decisions(topic)}
         return [r for r in rels if r.old_id in ids or r.new_id in ids]
 
+    @_locked
     def list_artifacts(self) -> list[Artifact]:
         rows = self.conn.execute("SELECT payload FROM artifacts").fetchall()
         return [Artifact.model_validate_json(r["payload"]) for r in rows]
 
+    @_locked
     def get_artifact(self, artifact_id: str) -> Artifact:
         row = self.conn.execute(
             "SELECT payload FROM artifacts WHERE id=?", (artifact_id,)
@@ -96,6 +122,7 @@ class SQLiteStore:
             raise KeyError(artifact_id)
         return Artifact.model_validate_json(row["payload"])
 
+    @_locked
     def add_evidence(self, topic: str, text: str, artifact_id: str | None = None) -> None:
         self.conn.execute(
             "INSERT INTO evidence(topic,artifact_id,text) VALUES(?,?,?)",
@@ -103,6 +130,7 @@ class SQLiteStore:
         )
         self.conn.commit()
 
+    @_locked
     def clear_evidence(self, topic: str | None = None) -> None:
         """Remove user-provided evidence so every analysis run starts clean."""
         if topic is None:
@@ -111,6 +139,7 @@ class SQLiteStore:
             self.conn.execute("DELETE FROM evidence WHERE topic=?", (topic,))
         self.conn.commit()
 
+    @_locked
     def list_evidence(self, topic: str, artifact_id: str | None = None) -> list[str]:
         if artifact_id is None:
             rows = self.conn.execute("SELECT text FROM evidence WHERE topic=?", (topic,)).fetchall()
@@ -121,6 +150,7 @@ class SQLiteStore:
             ).fetchall()
         return [r["text"] for r in rows]
 
+    @_locked
     def export_json(self) -> str:
         return json.dumps(
             {

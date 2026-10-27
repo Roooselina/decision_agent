@@ -20,6 +20,14 @@ class BudgetExceeded(RuntimeError):
     """Raised when one analysis cycle would exceed the configured number of live LLM calls."""
 
 
+class CheckCancelled(BudgetExceeded):
+    """Raised instead of a model call once the app is stopping or the folder was removed.
+
+    It is a BudgetExceeded so every place that already stops a cycle early on the budget also
+    stops on it, and no further calls are spent.
+    """
+
+
 @dataclass
 class ProviderBundle:
     """local_only is True only for the built-in demo judge, which is not a real check.
@@ -83,7 +91,7 @@ _TASK = re.compile(r"TASK:([A-Z_]+)")
 # short list, routing, and scoring questions. The consistency judgement stays on the main model.
 CHEAP_TASKS = frozenset(
     {
-        "DECISION_EXTRACT", "DECISION_EXTRACT_BATCH", "RELATION_CLASSIFY", "IMPACT_SELECT",
+        "DECISION_EXTRACT", "DECISION_EXTRACT_BATCH", "RELATION_CLASSIFY", "RELATION_CLASSIFY_BATCH", "IMPACT_SELECT",
         "QUESTION_GENERATE", "QUESTION_GAIN", "QUESTION_GAIN_BATCH", "TOOL_SELECT",
     }
 )
@@ -111,12 +119,22 @@ class TieredProvider(LLMProvider):
 class CountingProvider(LLMProvider):
     """Counts calls that actually reach the wrapped provider and enforces a per-cycle budget."""
 
-    def __init__(self, inner: LLMProvider, budget: int) -> None:
+    def __init__(
+        self,
+        inner: LLMProvider,
+        budget: int,
+        max_parallel: int = 0,
+        cancelled: threading.Event | None = None,
+    ) -> None:
         self.inner = inner
         self.budget = budget
+        self.cancelled = cancelled
         self.calls = 0
         self.by_task: Counter[str] = Counter()
         self._lock = threading.Lock()
+        # Several topics run at once, each with its own parallel calls. The semaphore keeps the
+        # total number of requests in flight at max_parallel so the account rate limit is not hit.
+        self._slots = threading.Semaphore(max_parallel) if max_parallel > 0 else None
 
     def reset(self) -> None:
         with self._lock:
@@ -126,12 +144,22 @@ class CountingProvider(LLMProvider):
     def complete(
         self, system: str, user: str, temperature: float = 0.0, json_schema: dict | None = None
     ) -> str:
+        self._check_cancelled()
         with self._lock:
             if self.calls >= self.budget:
                 raise BudgetExceeded(f"한 번의 점검에서 사용할 LLM 호출 한도({self.budget}회)에 도달했습니다.")
             self.calls += 1
             self.by_task[task_of(system)] += 1
-        return self.inner.complete(system, user, temperature, json_schema)
+        if self._slots is None:
+            return self.inner.complete(system, user, temperature, json_schema)
+        with self._slots:
+            # A call that waited for a free slot must not start after the check was cancelled.
+            self._check_cancelled()
+            return self.inner.complete(system, user, temperature, json_schema)
+
+    def _check_cancelled(self) -> None:
+        if self.cancelled is not None and self.cancelled.is_set():
+            raise CheckCancelled("점검을 중단했습니다.")
 
 
 class PersistentCachingProvider(LLMProvider):

@@ -146,6 +146,37 @@ def _extract_batch(
     return done
 
 
+def pack_documents(docs: list[list[MeetingItem]], size: int) -> list[list[MeetingItem]]:
+    """Fill groups of up to `size` items, keeping the items of one document together.
+
+    Small documents share a group, so a folder of many short meeting notes needs far fewer calls.
+    A document is only split when it alone exceeds `size`. Documents are packed in their given
+    order, so adding or changing one document changes its own group and, at most, the groups
+    after it; the earlier groups keep their exact prompts and stay cached.
+    """
+    groups: list[list[MeetingItem]] = []
+    current: list[MeetingItem] = []
+    for items in docs:
+        if len(items) > size:
+            if current:
+                groups.append(current)
+                current = []
+            for start in range(0, len(items), size):
+                chunk = items[start : start + size]
+                if len(chunk) == size:
+                    groups.append(chunk)
+                else:
+                    current = chunk
+            continue
+        if len(current) + len(items) > size:
+            groups.append(current)
+            current = []
+        current = current + items
+    if current:
+        groups.append(current)
+    return groups
+
+
 def extract_decisions(
     items: list[MeetingItem],
     provider: LLMProvider,
@@ -169,13 +200,10 @@ def extract_decisions(
         unique.setdefault((item.date, item.text), item)
     pending = list(unique.values())
     size = max(1, DEFAULT_SETTINGS.extract_batch)
-    groups: list[list[MeetingItem]] = []
     by_doc: dict[str, list[MeetingItem]] = {}
     for item in pending:
         by_doc.setdefault(item.source_doc, []).append(item)
-    for doc_items in by_doc.values():
-        for start in range(0, len(doc_items), size):
-            groups.append(doc_items[start : start + size])
+    groups = pack_documents(list(by_doc.values()), size)
 
     progress = {"done": 0}
     progress_lock = threading.Lock()

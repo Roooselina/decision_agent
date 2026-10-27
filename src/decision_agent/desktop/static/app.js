@@ -357,7 +357,7 @@
   }
 
   // Model calls of the last finished check, per folder, with the calls by kind of work folded away.
-  const TASK_NAMES = {DECISION_EXTRACT: "결정 추출", DECISION_EXTRACT_BATCH: "결정 추출", RELATION_CLASSIFY: "관계 분류",
+  const TASK_NAMES = {DECISION_EXTRACT: "결정 추출", DECISION_EXTRACT_BATCH: "결정 추출", RELATION_CLASSIFY: "관계 분류", RELATION_CLASSIFY_BATCH: "관계 분류",
     IMPACT_SELECT: "영향 대상 선택", CONSISTENCY: "일치 판정", CONSISTENCY_BATCH: "일치 판정", QUESTION_GENERATE: "확인 질문",
     QUESTION_GAIN: "확인 질문", QUESTION_GAIN_BATCH: "확인 질문", TOOL_SELECT: "도구 선택"};
   function taskRows(byTask) {

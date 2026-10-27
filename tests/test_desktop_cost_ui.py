@@ -136,3 +136,36 @@ def test_screens_draw_the_new_fields_as_text_only():
     assert "확인 대기" in sources["common.js"] and 'act("home")' in helper_js
     for name in ("app.js", "common.js", "helper.js"):
         assert not re.search(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write", sources[name]), name
+
+
+def test_batched_relation_calls_count_as_cheap_relation_work():
+    from decision_agent.desktop.providers import CHEAP_TASKS, TieredProvider
+
+    assert "RELATION_CLASSIFY_BATCH" in CHEAP_TASKS
+    seen = []
+
+    class Named:
+        def __init__(self, name):
+            self.name = name
+
+        def complete(self, system, user, temperature=0.0, json_schema=None):
+            seen.append(self.name)
+            return "{}"
+
+    TieredProvider(Named("main"), Named("cheap")).complete("TASK:RELATION_CLASSIFY_BATCH\nx", "u")
+    assert seen == ["cheap"]
+    assert 'RELATION_CLASSIFY_BATCH: "관계 분류"' in all_sources()["app.js"]
+
+
+def test_parallel_speed_settings_stay_out_of_the_web_api(tmp_path):
+    root = dh.make_watch_dir(tmp_path)
+    app, _ = make_external_app(root, confirm_over_calls=0)
+    app.start()
+    client = client_for(app)
+    try:
+        assert app.wait_idle(60)
+        for hidden in ({"topic_workers": 2}, {"max_parallel_calls": 4}):
+            assert client.post("/api/settings", headers=HEADERS, json=hidden).status_code == 400
+        assert (app.settings.topic_workers, app.settings.max_parallel_calls) == (4, 8)
+    finally:
+        app.stop()

@@ -212,6 +212,9 @@ class DecisionAgentApp:
                 timer.cancel()
             self._timers.clear()
             self._stop_runtimes()
+            # A running check stops at its next model call instead of running to the end.
+            for runtime in self.runtimes.values():
+                runtime.engine.cancel()
         self.jobs.put(None)
         if self._worker is not None:
             self._worker.join(timeout=10)
@@ -464,6 +467,8 @@ class DecisionAgentApp:
             report = self._notes_cycle(runtime)
         else:
             report = engine.analyze(force=False)
+        if engine.cancelled.is_set():
+            return
         stamp = now_iso()
         if job.kind == "sync":
             # The heartbeat: the folder was looked at, whether or not anything changed.
@@ -1251,6 +1256,10 @@ class DecisionAgentApp:
         new = self.settings.model_copy(deep=True)
         removed = remove_folder(new, path)
         if removed:
+            # Do not wait for (and pay for) the rest of a check of the folder being removed.
+            runtime = self.runtimes.get(str(Path(path).resolve()))
+            if runtime is not None:
+                runtime.engine.cancel()
             self.reconfigure(new)
             self._forget_state(Path(path))
             self.activity.add(f"폴더를 목록에서 제거했습니다: {path}")

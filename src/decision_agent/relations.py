@@ -46,6 +46,28 @@ class RelationPayload(BaseModel):
     evidence: str
 
 
+RELATION_BATCH_SYSTEM = (
+    "TASK:RELATION_CLASSIFY_BATCH\n"
+    + RELATION_SYSTEM.split("\n", 1)[1].split("출력 JSON:")[0]
+    + "PAIRS의 각 쌍을 서로 독립적으로 분류한다. 한 쌍의 판단이 다른 쌍에 영향을 주면 안 된다.\n"
+    "모든 번호(index)에 대해 결과를 하나씩 낸다. 번호를 빼거나 만들지 않는다.\n"
+    '출력 JSON: {"results": [{"index": 1, "relation_type": "...", "affected_scope": {"scope_kind": "GLOBAL|SCOPED|UNKNOWN", '
+    '"release": null, "module": null, "user_group": null, "environment": null, "unmapped_terms": []}, '
+    '"evidence": "근거 한 문장"}]}\n'
+)
+
+
+class RelationBatchItem(BaseModel):
+    index: int
+    relation_type: RelationType
+    affected_scope: DecisionScope
+    evidence: str = ""
+
+
+class RelationBatchPayload(BaseModel):
+    results: list[RelationBatchItem]
+
+
 def relation_candidates(decisions: list[Decision], new: Decision, top_k: int = 3) -> list[Decision]:
     """Earlier decisions of the same topic, or the most similar ones by character TF-IDF."""
     prior = [d for d in decisions if d.date <= new.date and d.id != new.id]
@@ -64,25 +86,66 @@ def relation_candidates(decisions: list[Decision], new: Decision, top_k: int = 3
     return [prior[i] for i in order if sims[i] >= 0.20]
 
 
-def classify_relation(old: Decision, new: Decision, provider: LLMProvider) -> DecisionRelation:
-    """Classify the relation; a GLOBAL scope on SCOPE_RESTRICT is invalid and becomes UNKNOWN."""
-    user = f"OLD={old.text}\nOLD_DATE={old.date}\nNEW={new.text}\nNEW_DATE={new.date}"
-    payload = provider.complete_json(RELATION_SYSTEM, user, RelationPayload, 0.0)
-    scope = payload.affected_scope
-    if (
-        payload.relation_type == RelationType.SCOPE_RESTRICT
-        and scope.scope_kind == ScopeKind.GLOBAL
-    ):
+def _make_relation(
+    old: Decision, new: Decision, relation_type: RelationType, scope: DecisionScope, evidence: str
+) -> DecisionRelation:
+    """A GLOBAL scope on SCOPE_RESTRICT is invalid and becomes UNKNOWN."""
+    if relation_type == RelationType.SCOPE_RESTRICT and scope.scope_kind == ScopeKind.GLOBAL:
         scope = DecisionScope(
             scope_kind=ScopeKind.UNKNOWN, unmapped_terms=["invalid_global_scope_restrict"]
         )
     return DecisionRelation(
         old_id=old.id,
         new_id=new.id,
-        relation_type=payload.relation_type,
+        relation_type=relation_type,
         affected_scope=scope,
-        evidence=payload.evidence,
+        evidence=evidence,
     )
+
+
+def classify_relation(old: Decision, new: Decision, provider: LLMProvider) -> DecisionRelation:
+    """Classify the relation; a GLOBAL scope on SCOPE_RESTRICT is invalid and becomes UNKNOWN."""
+    user = f"OLD={old.text}\nOLD_DATE={old.date}\nNEW={new.text}\nNEW_DATE={new.date}"
+    payload = provider.complete_json(RELATION_SYSTEM, user, RelationPayload, 0.0)
+    return _make_relation(old, new, payload.relation_type, payload.affected_scope, payload.evidence)
+
+
+def _flat(text: str) -> str:
+    """One line per pair in the prompt."""
+    return " ".join(text.split())
+
+
+def _pair_line(number: int, old: Decision, new: Decision) -> str:
+    return (
+        f"[{number}] OLD={_flat(old.text)} | OLD_DATE={old.date} | NEW={_flat(new.text)} | NEW_DATE={new.date}"
+    )
+
+
+def classify_chunk(
+    pairs: list[tuple[Decision, Decision]], provider: LLMProvider
+) -> list[DecisionRelation]:
+    """Classify several pairs with one call. Pairs the model skipped are classified singly."""
+    if len(pairs) == 1:
+        return [classify_relation(pairs[0][0], pairs[0][1], provider)]
+    done: dict[int, DecisionRelation] = {}
+    user = "PAIRS:\n" + "\n".join(_pair_line(n, old, new) for n, (old, new) in enumerate(pairs, 1))
+    try:
+        payload = provider.complete_json(RELATION_BATCH_SYSTEM, user, RelationBatchPayload, 0.0)
+    except Exception as exc:
+        if exc.__class__.__name__ == "BudgetExceeded":
+            raise
+        payload = None
+    if payload is not None:
+        for row in payload.results:
+            if 1 <= row.index <= len(pairs) and row.index - 1 not in done:
+                old, new = pairs[row.index - 1]
+                done[row.index - 1] = _make_relation(
+                    old, new, row.relation_type, row.affected_scope, row.evidence
+                )
+    return [
+        done[n] if n in done else classify_relation(old, new, provider)
+        for n, (old, new) in enumerate(pairs)
+    ]
 
 
 def apply_relation_status(store: SQLiteStore, relation: DecisionRelation) -> None:
@@ -103,14 +166,19 @@ def classify_and_store(
 ) -> list[DecisionRelation]:
     """Classify relations for every decision pair candidate and persist the non-NONE ones.
 
-    The model calls run in parallel. The results are applied in date order afterwards, because
+    Pairs go to the model in groups of DEFAULT_SETTINGS.relation_batch and the groups run in
+    parallel. The results are applied in date order afterwards, because
     the status cache depends on the order in which relations are applied.
     """
     pairs: list[tuple[Decision, Decision]] = []
     for new in sorted(decisions, key=lambda d: (d.date, d.id)):
         for old in relation_candidates(decisions, new):
             pairs.append((old, new))
-    classified = run_parallel(lambda pair: classify_relation(pair[0], pair[1], provider), pairs)
+    size = max(1, DEFAULT_SETTINGS.relation_batch)
+    chunks = [pairs[start : start + size] for start in range(0, len(pairs), size)]
+    classified = [
+        rel for chunk in run_parallel(lambda c: classify_chunk(c, provider), chunks) for rel in chunk
+    ]
     rels: list[DecisionRelation] = []
     for rel in classified:
         if rel.relation_type != RelationType.NONE:

@@ -23,6 +23,7 @@ class Settings:
     concurrency: int = 8
     extract_batch: int = 8
     judge_batch: int = 8
+    relation_batch: int = 8
     adaptive_min_samples: int = 2
     k_max: int = 30
     # Cost settings. The defaults keep the original research behaviour; the desktop app picks
@@ -51,6 +52,7 @@ class Settings:
             concurrency=max(1, number("DECISION_AGENT_CONCURRENCY", 8)),
             extract_batch=max(1, number("DECISION_AGENT_EXTRACT_BATCH", 8)),
             judge_batch=max(1, number("DECISION_AGENT_JUDGE_BATCH", 8)),
+            relation_batch=max(1, number("DECISION_AGENT_RELATION_BATCH", 8)),
             adaptive_min_samples=number("DECISION_AGENT_ADAPTIVE_MIN", 2),
         )
 

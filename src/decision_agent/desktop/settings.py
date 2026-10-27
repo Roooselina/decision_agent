@@ -52,6 +52,10 @@ class AppSettings(BaseModel):
     cost_profile: Literal["precise", "balanced", "saver"] = "balanced"
     cheap_model_name: str = ""
     confirm_over_calls: int = Field(default=400, ge=0, le=100000)
+    # Speed settings (advanced, kept in settings.json only). topic_workers topics are analysed at
+    # the same time; max_parallel_calls caps the model calls in flight across all of them.
+    topic_workers: int = Field(default=4, ge=1, le=16)
+    max_parallel_calls: int = Field(default=8, ge=1, le=64)
     ollama_url: str = "http://127.0.0.1:11434"
     embedding_model: str = ""
     notify: bool = True

@@ -13,10 +13,13 @@ from collections.abc import Callable
 CONSISTENCY = "TASK:CONSISTENCY_BATCH"
 EXTRACT = "TASK:DECISION_EXTRACT_BATCH"
 GAIN = "TASK:QUESTION_GAIN_BATCH"
+RELATION = "TASK:RELATION_CLASSIFY_BATCH"
 
 _CONSISTENCY_SINGLE = "TASK:CONSISTENCY\n"
 _EXTRACT_SINGLE = "TASK:DECISION_EXTRACT\n"
 _GAIN_SINGLE = "TASK:QUESTION_GAIN\n"
+_RELATION_SINGLE = "TASK:RELATION_CLASSIFY\n"
+_PAIR = re.compile(r"^\[(\d+)\] OLD=(.*?) \| OLD_DATE=(.*?) \| NEW=(.*) \| NEW_DATE=(.*)$")
 _GAIN_ANSWERS = (("yes", "예"), ("no", "아니오"), ("partial", "일부만"))
 
 _ITEM = re.compile(
@@ -27,7 +30,7 @@ _EXTRACT_ITEM = re.compile(r"^\[(\d+)\] DATE=(.*?) \| TEXT=(.*)$")
 
 
 def is_batch(system: str) -> bool:
-    return CONSISTENCY in system or EXTRACT in system or GAIN in system
+    return CONSISTENCY in system or EXTRACT in system or GAIN in system or RELATION in system
 
 
 def answer_batch(
@@ -40,6 +43,8 @@ def answer_batch(
         return _extract(single, user)
     if GAIN in system:
         return _gain(single, user)
+    if RELATION in system:
+        return _relation(single, user)
     return _consistency(single, user, temperature)
 
 
@@ -97,3 +102,15 @@ def _gain(single, user: str) -> str:
             row[key] = float(json.loads(single(_GAIN_SINGLE, one, 0.0, None))["gain"])
         rows.append(row)
     return json.dumps({"gains": rows}, ensure_ascii=False)
+
+
+def _relation(single, user: str) -> str:
+    rows = []
+    for line in user.partition("PAIRS:\n")[2].splitlines():
+        match = _PAIR.match(line)
+        if not match:
+            continue
+        index, old, old_date, new, new_date = match.groups()
+        one = f"OLD={old}\nOLD_DATE={old_date}\nNEW={new}\nNEW_DATE={new_date}"
+        rows.append({"index": int(index), **json.loads(single(_RELATION_SINGLE, one, 0.0, None))})
+    return json.dumps({"results": rows}, ensure_ascii=False)
