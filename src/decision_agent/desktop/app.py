@@ -84,7 +84,8 @@ PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다
 # Settings that only change how the program shows itself. Saving them does not restart the
 # watchers or check the folders again.
 LIGHT_FIELDS = frozenset(
-    {"helper_enabled", "helper_x", "helper_y", "quiet_hours_enabled", "quiet_start", "quiet_end", "confirm_over_calls"}
+    {"helper_enabled", "helper_x", "helper_y", "quiet_hours_enabled", "quiet_start", "quiet_end", "confirm_over_calls",
+     "mail_prefilter"}
 )
 
 
@@ -622,10 +623,15 @@ class DecisionAgentApp:
         return True
 
     def _apply_light(self, new: AppSettings) -> None:
-        """Save settings that need no folder restart (connector and source changes)."""
-        self.settings = new
-        if self.settings_file is not None:
-            save_settings(new, self.settings_file)
+        """Save settings that need no folder restart (connector and source changes).
+
+        The fields change in place: the engines keep a reference to the settings object.
+        """
+        with self._lock:
+            self.settings.mail_sources = new.mail_sources
+            self.settings.connectors = new.connectors
+            if self.settings_file is not None:
+                save_settings(self.settings, self.settings_file)
         self._start_connector_timer()
         self._changed()
 

@@ -157,10 +157,10 @@ class GoogleCalendar(_GoogleBase):
 class Gmail(_GoogleBase):
     id = "gmail"
     label = "Gmail"
-    description = "지정한 라벨의 메일 본문에서 결정 문장을 읽습니다."
+    description = "메일 소스에서 정한 라벨, 보낸 사람, 제목 키워드에 맞는 메일을 읽습니다."
     reads = (
-        "지정한 라벨이 붙은 최근 메일의 제목, 날짜, 본문 텍스트만 읽습니다. "
-        "Google의 읽기 권한은 메일 전체 범위이지만 이 프로그램은 지정한 라벨만 조회합니다. "
+        "메일 소스에서 정한 범위에 맞는 최근 메일의 제목, 날짜, 보낸 사람, 본문 텍스트만 읽습니다. "
+        "Google의 읽기 권한은 메일 전체 범위이지만 이 프로그램은 소스에서 정한 범위만 조회합니다. "
         "메일을 보내거나 지우거나 읽음 표시를 바꾸지 않습니다."
     )
     guide = GOOGLE_GUIDE

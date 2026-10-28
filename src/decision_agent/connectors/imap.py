@@ -40,9 +40,9 @@ def message_text(message: email.message.EmailMessage) -> str:
 class ImapMail(Connector):
     id = "imap_mail"
     label = "메일 (IMAP)"
-    description = "IMAP을 지원하는 모든 메일(네이버, 다음, 회사 메일 등)의 지정한 폴더를 읽습니다."
+    description = "IMAP을 지원하는 메일(네이버, 다음, 회사 메일 등)에서 메일 소스로 정한 폴더를 읽습니다."
     reads = (
-        "지정한 폴더를 읽기 전용으로 열어 최근 메일의 제목, 날짜, 본문 텍스트만 가져옵니다. "
+        "메일 소스에서 정한 폴더를 읽기 전용으로 열어 최근 메일의 제목, 날짜, 보낸 사람, 본문 텍스트만 가져옵니다. "
         "읽음 표시를 바꾸지 않고, 메일을 보내거나 지우지 않습니다. 앱 비밀번호 사용을 권장합니다."
     )
     guide = (

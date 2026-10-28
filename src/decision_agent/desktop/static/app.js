@@ -609,7 +609,7 @@
   // Figma 15:137: filter tabs, decisions on the left, the selected item on the right.
   // limit: how many result rows are drawn (whole decision groups, PAGE_ROWS more per "더 보기");
   // collapsed: decision groups the user folded, by root|topic.
-  const RS = {q: "", label: "INCONSISTENT", folder: "all", owner: "all", status: "open", sort: "severity", selected: null, draft: {},
+  const RS = {q: "", label: "INCONSISTENT", folder: "all", owner: "all", team: "all", source: "all", status: "open", sort: "severity", selected: null, draft: {},
     limit: 0, collapsed: new Set()};
   const PAGE_ROWS = 50;
   const HIDDEN = {dismissed: "확인 완료", false_positive: "잘못된 탐지", snoozed: "내일 다시 알림"};
@@ -656,11 +656,15 @@
       const detail = h("section", {class: "card result-detail", "aria-label": "점검 결과 상세"});
       const folders = [...new Set(rows.map(r => r.root))];
       const owners = [...new Set(rows.map(r => r.owner).filter(Boolean))].sort();
+      const teams = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
+      const sources = [...new Set(rows.map(r => r.mail_source).filter(Boolean))].sort();
       const more = h("details", {class: "result-more"}, h("summary", {}, icon("filter", "sm"), "추가 필터"),
         h("div", {class: "result-more-body"},
           selectControl([["open", "열린 항목"], ["dismissed", "확인 완료"], ["false_positive", "잘못된 탐지"], ["snoozed", "내일 다시 알림"], ["all", "모든 상태"]], RS.status, "상태", (v) => { RS.status = v; redraw(); }),
           folders.length > 1 ? selectControl([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, "폴더", (v) => { RS.folder = v; redraw(); }) : null,
           owners.length ? selectControl([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, "담당자", (v) => { RS.owner = v; redraw(); }) : null,
+          teams.length ? selectControl([["all", "모든 팀"], ...teams.map(t => [t, t])], RS.team, "팀", (v) => { RS.team = v; redraw(); }) : null,
+          sources.length ? selectControl([["all", "모든 출처"], ...sources.map(x => [x, x])], RS.source, "메일 소스", (v) => { RS.source = v; redraw(); }) : null,
           selectControl([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, "정렬", (v) => { RS.sort = v; redraw(); })));
       search.addEventListener("input", () => { RS.q = search.value; redraw(); });
       // A new filter starts again from the first page.
@@ -674,6 +678,8 @@
           (RS.status === "all" || effectiveStatus(r) === RS.status) &&
           (RS.folder === "all" || r.root === RS.folder) &&
           (RS.owner === "all" || r.owner === RS.owner) &&
+          (RS.team === "all" || r.team === RS.team) &&
+          (RS.source === "all" || r.mail_source === RS.source) &&
           terms.every(t => [r.text, r.evidence, r.source_doc, r.owner, r.topic_label, r.decision_text, r.action].join(" ").toLowerCase().includes(t)));
       }
 
@@ -797,6 +803,7 @@
     const left = [
       f.decision_source ? baseName(f.decision_source) + (f.decision_date ? " · " + shortDate(f.decision_date) + " 결정" : "") : null,
       baseName(f.source_doc) + (f.location ? " · " + (/^\d+$/.test(f.location) ? f.location + "행" : f.location) : ""),
+      f.mail_source ? "출처: " + f.mail_connector + ", " + f.mail_source + (f.team ? " · 팀 " + f.team : "") : null,
     ].filter(Boolean);
     const draftBox = h("div", {class: "draft-slot"});
     const drawDraft = (d) => {
@@ -1196,6 +1203,8 @@
     jira: ["kanban", "#0052cc"], slack: ["hash", "#611f69"],
   };
   const CREDENTIAL_OPTIONS = new Set(["client_id", "tenant", "host", "port", "username", "base_url", "email"]);
+  // Mail connectors read through mail sources; their old single-folder options are not shown.
+  const MAIL_SCOPE_OPTIONS = new Set(["label", "folder", "days_back", "max_messages"]);
   const NEVER = ["메일 보내기, 삭제, 읽음 표시 바꾸기", "일정, 이슈, 페이지 만들기나 고치기", "메시지 보내기", "비밀 값을 설정 파일이나 로그에 쓰기"];
 
   function connState(c) {
@@ -1226,6 +1235,7 @@
     const credFields = [];
     const scopeFields = [];
     for (const spec of c.options) {
+      if (MAIL_IDS.includes(c.id) && MAIL_SCOPE_OPTIONS.has(spec.name)) continue;
       const [control, read] = optionControl(spec, c.values[spec.name]);
       readers[spec.name] = read;
       const f = field(spec.label, control, spec.help, {required: spec.required});
@@ -1323,8 +1333,11 @@
         });
       } else if (name === "범위 선택") {
         const labels = (c.label_names || []).length ? h("p", {class: "small muted"}, "있는 라벨: " + c.label_names.join(", ")) : null;
+        const mailNote = MAIL_IDS.includes(c.id)
+          ? callout("info", "info", "읽을 범위는 메일 소스에서 정합니다", "연결을 마친 뒤 설정 화면의 '메일 소스'에서 '소스 추가'를 눌러 라벨, 폴더, 보낸 사람, 제목 키워드로 범위를 정하세요.")
+          : null;
         set(body, h("p", {class: "muted"}, "지정한 범위만 읽습니다. 범위를 좁힐수록 개인 정보가 덜 들어옵니다."),
-          ...scopeFields, labels, scopeFields.length ? null : callout("neutral", "info", null, "따로 고를 범위가 없습니다."), periodic);
+          ...scopeFields, labels, mailNote, scopeFields.length || mailNote ? null : callout("neutral", "info", null, "따로 고를 범위가 없습니다."), periodic);
         nav("저장하고 테스트", async () => { await saveConfig(periodic.input.checked); return true; });
       } else {
         const result = h("div", {}, callout("info", "loader", "가져오는 중입니다", "처음 연결은 시간이 조금 걸릴 수 있습니다."));
@@ -1442,7 +1455,7 @@
   // Headers of up to ten matching mails. Nothing is stored and nothing goes to the AI.
   function previewBlock(path) {
     const out = h("div", {class: "stack-sm"});
-    const run = button("미리보기", {icon: "search"});
+    const run = button("미리보기", {icon: "search", size: "sm"});
     run.addEventListener("click", () => busy(run, async () => {
       const r = await api(path, "POST", {});
       set(out,
@@ -1518,15 +1531,142 @@
     const intro = h("div", {class: "set-note"}, icon("shield-check", "sm"),
       h("span", {}, "모든 연결은 읽기 전용입니다. 보내기, 삭제, 읽음 표시, 만들기 기능이 없고, 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
       targetName ? h("span", {class: "set-target", title: targetName}, "함께 분석할 폴더: " + folderName(targetName)) : null);
-    return [intro, ...cal.map(serviceCard), aiCard(s, st), costCard(s), privacyCard(s, st),
-      h("h2", {class: "set-section"}, "다른 연결"), ...others.map(serviceCard)];
+    return [intro, ...cal.map(c => serviceCard(c, s)), aiCard(s, st), costCard(s), privacyCard(s, st),
+      h("h2", {class: "set-section"}, "다른 연결"), ...others.map(c => serviceCard(c, s))];
   }
 
   const SERVICE_ICON = {google_calendar: "calendar", outlook_calendar: "calendar", gmail: "mail", outlook_mail: "mail",
     imap_mail: "inbox", notion: "book", jira: "kanban", slack: "hash"};
 
   // Figma 15:386 (연결됨), 16:1104 (미연동), 18:1045 (서비스 연결 오류).
-  function serviceCard(c) {
+  function serviceCard(c, s) {
+    const card = serviceCardOnly(c);
+    return MAIL_IDS.includes(c.id) && s ? h("div", {class: "svc-group"}, card, mailSourcesCard(c, s)) : card;
+  }
+
+  // ---------------------------------------------------------------- mail sources
+
+  const PURPOSES = [["decision", "결정 근거"], ["task", "할 일 요청"], ["requirement", "요구사항 변경"], ["schedule", "일정"]];
+  const SOURCE_SENDING = "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다";
+
+  function sourceStatusLine(src) {
+    const st = src.status;
+    if (!st) return h("p", {class: "small muted"}, "아직 가져오지 않았습니다.");
+    return st.ok
+      ? h("p", {class: "small"}, "마지막 가져오기 " + stamp(st.at) + " · " + st.summary)
+      : h("p", {class: "small danger-text"}, "가져오지 못했습니다: " + st.message);
+  }
+
+  function mailSourcesCard(c, s) {
+    const rows = (c.sources || []).map(src => {
+      const preview = previewBlock("/api/mail-sources/" + encodeURIComponent(src.id) + "/preview");
+      const result = h("p", {class: "small muted", role: "status"});
+      const run = button("지금 가져오기", {size: "sm"});
+      run.addEventListener("click", () => busy(run, async () => {
+        const before = src.status ? src.status.at : null;
+        await api("/api/mail-sources/" + encodeURIComponent(src.id) + "/run", "POST", {});
+        result.textContent = "가져오는 중입니다.";
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const row = (await api("/api/connectors")).find(r => r.id === c.id);
+          const now = row && (row.sources || []).find(x => x.id === src.id);
+          if (now && now.status && now.status.at !== before) {
+            result.textContent = now.status.ok ? "가져오기 완료: " + now.status.summary : "가져오지 못했습니다: " + now.status.message;
+            return;
+          }
+        }
+        result.textContent = "응답이 늦습니다. 백그라운드에서 계속 시도합니다.";
+      }));
+      const edit = button("수정", {size: "sm", onClick: () => sourceForm(c, s, src)});
+      const remove = button("삭제", {size: "sm", variant: "danger-outline"});
+      remove.addEventListener("click", () => busy(remove, async () => {
+        const ok = await confirmDialog({title: "메일 소스 삭제", message: "'" + src.name + "' 소스와 이 소스에서 가져온 메일 사본을 지웁니다. 메일함의 메일은 그대로입니다.", confirmLabel: "삭제", danger: true});
+        if (!ok) return;
+        await api("/api/mail-sources/" + encodeURIComponent(src.id), "DELETE");
+        toast("메일 소스를 삭제했습니다.", "success");
+        renderRoute(true);
+      }));
+      return h("li", {class: "source-row"},
+        h("div", {class: "source-head"},
+          h("span", {class: "strong"}, src.name),
+          h("span", {class: "badge neutral"}, src.purpose_label),
+          src.team ? h("span", {class: "badge neutral"}, "팀 " + src.team) : null,
+          src.enabled ? null : h("span", {class: "badge state paused"}, "꺼짐")),
+        h("p", {class: "small muted"}, src.filter_summary),
+        sourceStatusLine(src),
+        h("div", {class: "row source-actions"}, preview.run, run, edit, remove),
+        result, preview.out);
+    });
+    const add = button("소스 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => sourceForm(c, s, null)});
+    return h("section", {class: "card set-card mail-sources", id: "sources-" + c.id},
+      h("div", {class: "source-top"}, h("h2", {}, "메일 소스"), add),
+      h("p", {class: "small muted"}, "메일함에서 무엇을 읽을지 소스별로 정합니다. 소스마다 용도, 팀, 프로젝트 폴더를 고를 수 있습니다."),
+      rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "아직 소스가 없습니다. '소스 추가'를 눌러 라벨이나 보낸 사람으로 읽을 범위를 정하세요."));
+  }
+
+  function linesOf(t) { return t.value.split("\n").map(x => x.trim()).filter(Boolean); }
+
+  function listArea(values, placeholder) {
+    const t = textarea({rows: "2", placeholder});
+    t.value = (values || []).join("\n");
+    return t;
+  }
+
+  function sourceForm(c, s, src) {
+    const isGmail = c.id === "gmail";
+    const v = src || {name: "", purpose: "decision", team: "", target: "", labels: [], senders: [], subject_keywords: [],
+      exclude_senders: [], exclude_subject_keywords: [], gmail_query: "", days_back: 90, enabled: true};
+    const name = input({value: v.name, maxlength: "40", placeholder: "예: 팀A 회의록"});
+    const purpose = select(PURPOSES, v.purpose, {"aria-label": "용도"});
+    const team = input({value: v.team, maxlength: "40", placeholder: "예: 팀A"});
+    const folders = [["", "기본 폴더"], ...(s.allowed_folders || []).map(f => [f, folderName(f)])];
+    const target = select(folders, v.target || "", {"aria-label": "프로젝트 폴더"});
+    const labels = listArea(v.labels, isGmail ? "한 줄에 하나. 예: 회의록" : "한 줄에 하나. 예: 회의록");
+    const pick = isGmail && (c.label_names || []).length
+      ? h("div", {class: "label-pick"}, h("span", {class: "small muted"}, "있는 라벨: "),
+          ...c.label_names.map(n => h("button", {type: "button", class: "chip-btn", onclick: () => {
+            const now = linesOf(labels);
+            if (!now.includes(n)) { now.push(n); labels.value = now.join("\n"); }
+          }}, n)))
+      : null;
+    const senders = listArea(v.senders, "한 줄에 하나. 주소 또는 @도메인");
+    const keywords = listArea(v.subject_keywords, "한 줄에 하나. 예: 회의 결과");
+    const exSenders = listArea(v.exclude_senders, "제외할 주소 또는 @도메인");
+    const exKeywords = listArea(v.exclude_subject_keywords, "제외할 제목 단어");
+    const query = input({value: v.gmail_query || "", maxlength: "100", placeholder: "예: has:attachment"});
+    const days = input({type: "number", min: "1", max: "365", value: String(v.days_back)});
+    const enabled = toggle("이 소스 사용", v.enabled, "끄면 이 소스에서 가져온 메일 사본을 분석에서 뺍니다.");
+    const sending = s.allow_external_send ? h("p", {class: "warn-text small"}, icon("alert-circle", "sm"), SOURCE_SENDING) : null;
+    const body = h("div", {class: "stack"},
+      field("이름", name, null, {required: true}),
+      field("용도", purpose, "메일을 어떤 자료로 볼지 고릅니다. 결정 근거는 회의록처럼, 나머지는 할 일, 요구사항, 일정 항목으로 읽습니다."),
+      field("팀", team, "선택. 결과 화면에서 팀으로 거를 수 있습니다."),
+      field("프로젝트 폴더", target, "이 소스의 메일을 함께 분석할 감시 폴더입니다."),
+      field(isGmail ? "라벨" : "폴더", labels, isGmail ? "이 중 하나라도 붙은 메일을 읽습니다." : "INBOX만 고르면 보낸 사람이나 제목 키워드도 정해야 합니다."), pick,
+      field("보낸 사람", senders, "이 중 한 사람이라도 보낸 메일만 읽습니다."),
+      field("제목 키워드", keywords, "제목에 이 중 하나라도 들어간 메일만 읽습니다."),
+      h("details", {class: "result-more"}, h("summary", {}, "제외 조건과 고급 설정"),
+        h("div", {class: "stack"}, field("제외할 보낸 사람", exSenders), field("제외할 제목 키워드", exKeywords),
+          isGmail ? field("Gmail 검색식 (고급)", query, "Gmail 검색창 문법입니다. 다른 조건과 함께 적용됩니다.") : null)),
+      field("과거 일수", days, "처음 가져올 때 며칠 전 메일까지 읽을지 정합니다. 이미 가져온 메일은 180일 동안 남겨 둡니다."),
+      enabled, sending);
+    modal({title: src ? "메일 소스 수정" : "메일 소스 추가", wide: true, plain: true, body,
+      actions: [{label: "취소"}, {label: "저장", variant: "primary", onClick: async () => {
+        const payload = {
+          name: name.value.trim(), connector: c.id, purpose: purpose.value, team: team.value.trim(), target: target.value,
+          labels: linesOf(labels), senders: linesOf(senders), subject_keywords: linesOf(keywords),
+          exclude_senders: linesOf(exSenders), exclude_subject_keywords: linesOf(exKeywords),
+          days_back: Number(days.value || 90), enabled: enabled.input.checked,
+        };
+        if (isGmail) payload.gmail_query = query.value.trim();
+        if (src) payload.id = src.id;
+        await api("/api/mail-sources", "POST", payload);
+        toast(src ? "메일 소스를 저장했습니다." : "메일 소스를 추가했습니다. '지금 가져오기'로 바로 읽을 수 있습니다.", "success");
+        renderRoute(true);
+      }}]});
+  }
+
+  function serviceCardOnly(c) {
     const st = c.status;
     const configured = c.problems.length === 0;
     const isCal = CALENDAR_IDS.includes(c.id);
@@ -1701,7 +1841,16 @@
         field("점검 정밀도", choices),
         field("저가 모델 이름 (선택)", cheap, "비워 두면 위의 모델 하나로 전부 처리합니다. 값을 넣으면 읽기와 분류는 이 모델이, 일치 판정은 위의 모델이 처리합니다."),
         field("확인 기준 호출 수", limit, "예상 호출 수가 이 값을 넘으면 점검 전에 확인을 받습니다. 0이면 묻지 않습니다."),
-        hint, h("div", {}, save)));
+        hint, h("div", {}, save), mailTriage(s)));
+  }
+
+  function mailTriage(s) {
+    const sw = switchCtl(s.mail_prefilter, async (want) => {
+      await saveSettings({mail_prefilter: want}, want ? "결정 표현이 없는 메일은 AI로 보내지 않습니다." : "결정 근거 소스의 메일을 모두 AI로 보냅니다.");
+      return true;
+    }, "메일 사전 분류");
+    return h("div", {class: "privacy-row"}, h("div", {class: "stack-sm"}, h("span", {class: "set-label"}, "메일 사전 분류"),
+      h("p", {class: "set-help"}, "용도가 결정 근거인 메일 중 결정, 확정, 변경, 취소 같은 표현이나 목록이 없는 메일은 AI로 보내지 않고 건너뜁니다. 건너뛴 수는 소스 상태에 표시됩니다.")), sw);
   }
 
   function textDialog(title, value, placeholder, save) {

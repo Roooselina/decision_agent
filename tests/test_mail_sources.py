@@ -442,3 +442,45 @@ def test_prefilter_applies_only_to_decision_sources_and_can_be_turned_off(mail_a
     run(controller, decision["id"])
     assert len(mail_paths(controller)) == 2
     assert AppSettings().mail_prefilter is True
+
+
+# Stage 3: settings and results screens
+
+
+def test_settings_and_results_screens_draw_sources_as_text_only():
+    import re
+
+    from decision_agent.desktop.webpage import all_sources
+
+    app_js = all_sources()["app.js"]
+    for text in ("메일 소스", "소스 추가", "미리보기", "지금 가져오기", "수정", "삭제", "결정 근거", "할 일 요청",
+                 "요구사항 변경", "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다", "/api/mail-sources",
+                 "모든 팀", "메일 소스", "출처: ", "메일 사전 분류"):
+        assert text in app_js, text
+    assert not re.search(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write", app_js)
+
+
+def test_findings_carry_the_mail_source_and_team(mail_app):
+    controller, gmail, _ = mail_app
+    gmail.add("m01", "할일", "요청", "- 대시보드는 Vue로 개발한다")
+    made = controller.save_mail_source(source(name="요청 메일", labels=["할일"], purpose="task", team="개발"))
+    run(controller, made["id"])
+    mail_rows = [r for r in controller.findings(include_hidden=True) if r["source_doc"].startswith("@gmail.")]
+    assert mail_rows and all(r["mail_source"] == "요청 메일" and r["team"] == "개발" for r in mail_rows)
+    assert all(r["mail_connector"] == "Gmail" for r in mail_rows)
+    other = [r for r in controller.findings(include_hidden=True) if not r["source_doc"].startswith("@")]
+    assert other and all(r["mail_source"] == "" and r["team"] == "" for r in other)
+
+
+def test_mail_prefilter_is_a_light_setting(mail_app):
+    from fastapi.testclient import TestClient
+
+    from decision_agent.desktop.webapp import create_web_app
+
+    controller, _, _ = mail_app
+    client = TestClient(create_web_app(controller, "t" * 32, 8765), base_url="http://127.0.0.1:8765")
+    headers = {"X-DA-Token": "t" * 32}
+    settings_before = controller.settings
+    assert client.post("/api/settings", headers=headers, json={"mail_prefilter": False}).json() == {"ok": True}
+    assert controller.settings is settings_before and controller.settings.mail_prefilter is False
+    assert client.post("/api/settings", headers=headers, json={"mail_sources": []}).status_code == 400

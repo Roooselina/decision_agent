@@ -884,3 +884,10 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .result-count { margin: 0; text-align: center; }
 .preview-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 14px; }
 .preview-list li { overflow-wrap: anywhere; }
+.svc-group { display: grid; gap: 8px; }
+.mail-sources .source-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.source-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.source-row { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.source-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.source-actions { flex-wrap: wrap; gap: 6px; }
+.label-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
