@@ -282,7 +282,9 @@ def _meeting_items_from_table(
     fallback_date: str | None,
     default_year: int | None,
     warnings: list[str],
+    heading_date: bool = False,
 ) -> list[MeetingItem]:
+    """heading_date: the fallback is the date of a dated heading above the table, not a guess."""
     lowered = [h.strip().lower() for h in table.headers]
     text_index = next((lowered.index(n) for n in _MEETING_TEXT_COLUMNS if n in lowered), None)
     if text_index is None:
@@ -317,7 +319,7 @@ def _meeting_items_from_table(
         )
     if undated:
         warnings.append(f"날짜를 알 수 없어 건너뛴 회의 표 행 {undated}건")
-    if used_fallback:
+    if used_fallback and not heading_date:
         warnings.append(
             f"날짜 칸이 없거나 비어 있는 회의 표 행 {used_fallback}건에 문서 날짜({fallback_date})를 사용했습니다."
         )
@@ -537,7 +539,8 @@ def build_inputs(
                 if kind == MEETING:
                     if table is not None:
                         items = _meeting_items_from_table(
-                            doc, table, carry or fallback, default_year, local_warnings
+                            doc, table, carry or fallback, default_year, local_warnings,
+                            heading_date=carry is not None,
                         )
                     else:
                         items, carry = _meeting_items_from_blocks(

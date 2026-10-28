@@ -308,8 +308,14 @@ def read_eml_file(path: Path, fmt: str) -> ParsedDocument:
         content = body_part.get_content()
         body = _html_to_text(content) if body_part.get_content_type() == "text/html" else content
     section = lines_to_section(body, name=subject or path.stem, markdown=False)
-    heading = Block(text=f"{date_value} {subject}".strip(), kind="heading", level=1, location="0")
-    section.blocks.insert(0, heading)
+    # The heading carries only the date: a decision word in the subject would otherwise make
+    # the whole mail a decision section and switch off sentence extraction (as for connectors).
+    head: list[Block] = []
+    if date_value:
+        head.append(Block(text=date_value, kind="heading", level=1, location="0"))
+    if subject:
+        head.append(Block(text=f"제목: {subject}", kind="para", location="subject"))
+    section.blocks[:0] = head
     meta = {"subject": subject}
     if date_value:
         meta["date"] = date_value
