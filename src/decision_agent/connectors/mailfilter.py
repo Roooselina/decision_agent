@@ -19,6 +19,8 @@ from decision_agent.sources.model import ParsedDocument
 # Purpose "decision" sends a mail to extraction only when a line carries one of these.
 DECISION_MARKERS = (
     "결정", "확정", "변경", "하기로", "취소", "연기", "제외", "추가", "합의", "정했", "바꾸", "되돌",
+    # Spoken forms: "그럼 Render로 하자", "계좌이체로 가는 걸로", "이미 바뀌었어", "서버를 옮긴다".
+    "로 하자", "걸로", "바뀌", "옮기", "옮긴",
 )
 # "A -> B" style replacements (ASCII arrows and the Unicode right arrow).
 _ARROW = re.compile(r"\S\s*(?:->|=>|→)\s*\S")
@@ -58,6 +60,8 @@ class MailQuery:
     since: str | None = None
     # At most this many bodies are read in one fetch; the rest wait for the next one.
     body_cap: int | None = None
+    # Also read the other messages of matching threads (my own replies in Sent).
+    include_sent: bool = False
 
     def listing_start(self, today: datetime.date) -> datetime.date:
         if self.since:

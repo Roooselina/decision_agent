@@ -5,6 +5,7 @@ import email
 import email.policy
 import email.utils
 import imaplib
+import re
 
 from decision_agent.connectors.base import (
     NO_SCOPE,
@@ -12,6 +13,7 @@ from decision_agent.connectors.base import (
     Connector,
     ConnectorError,
     FetchOutcome,
+    LoginExpired,
     MailMessage,
     OptionSpec,
     SecretSpec,
@@ -122,13 +124,21 @@ class ImapMail(Connector):
         date = (stamp.date() if stamp else today).isoformat()
         subject = str(message["Subject"] or NO_SUBJECT)
         name, _ = email.utils.parseaddr(str(message["From"] or ""))
+        header_id = str(message["Message-ID"] or "").strip()
+        if stamp is not None and stamp.tzinfo is not None:
+            stamp = stamp.astimezone()
         return MailMessage(
-            msg_id=str(message["Message-ID"] or f"{subject}{date}"),
+            msg_id=header_id or f"{subject}{date}",
             date=date,
             subject=subject,
             sender=str(message["From"] or ""),
             sender_name=name,
             body=message_text(message) if with_body else "",
+            time=stamp.strftime("%H:%M") if stamp else "",
+            to=str(message["To"] or ""),
+            header_id=header_id,
+            in_reply_to=str(message["In-Reply-To"] or "").strip(),
+            references=str(message["References"] or "").split(),
         )
 
     @staticmethod
@@ -139,7 +149,11 @@ class ImapMail(Connector):
         return parts[0][1]
 
     def fetch_source(
-        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+        self,
+        query: MailQuery,
+        today: datetime.date,
+        known: set[str] | None = None,
+        threads: set[str] | None = None,
     ) -> FetchOutcome:
         """Fetch one source. Headers come first; bodies only for mails not stored yet.
 
@@ -207,3 +221,32 @@ class ImapMail(Connector):
 
     def account_info(self) -> dict:
         return {"account": self.text_option("username")}
+
+    def poll_changes(self, query: MailQuery, state: dict) -> tuple[bool, dict, set[str]]:
+        """(changed, new state, thread ids): STATUS UIDNEXT and UIDVALIDITY of each folder.
+
+        Cheap and robust; IDLE is not used. A changed UIDNEXT means new mail arrived.
+        """
+        seen: dict[str, str] = {}
+        host = self.text_option("host")
+        port = self.int_option("port", 993, 1, 65535)
+        try:
+            conn = IMAP_FACTORY(host, port)
+            try:
+                conn.login(self.text_option("username"), self.secret("password"))
+                for folder in query.labels or ["INBOX"]:
+                    status, data = conn.status(f'"{folder}"', "(UIDNEXT UIDVALIDITY)")
+                    if status != "OK" or not data:
+                        raise ConnectorError(f"폴더 '{folder}'을(를) 열지 못했습니다.")
+                    raw = data[0].decode() if isinstance(data[0], bytes) else str(data[0])
+                    seen[folder] = " ".join(re.findall(r"UID(?:NEXT|VALIDITY) \d+", raw))
+            finally:
+                try:
+                    conn.logout()
+                except (imaplib.IMAP4.error, OSError):
+                    pass
+        except imaplib.IMAP4.error as exc:
+            raise LoginExpired("메일 서버가 로그인을 거절했습니다. 계정과 비밀번호를 확인하세요.") from exc
+        except (OSError, TimeoutError) as exc:
+            raise ConnectorError(f"메일 서버에 연결하지 못했습니다: {exc}") from exc
+        return seen != state.get("uids"), {"uids": seen}, set()

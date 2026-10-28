@@ -236,8 +236,8 @@ def _meeting_items_from_blocks(
             in_decision = bool(_DECISION_HEAD.search(block.text))
             skipping = bool(_SKIP_HEAD.search(block.text))
             continue
-        if skipping or block.location == "subject":
-            # The subject line of a mail document is context, not a decision of its own.
+        if skipping or block.location in ("subject", "sender"):
+            # The subject and sender lines of a mail document are context, not decisions.
             continue
         text = block.text.strip()
         if block.kind == "bullet":
@@ -353,6 +353,8 @@ def _artifacts_from_blocks(
         if block.kind == "heading" or block.location == "subject":
             # A mail subject is not an item, but its words still give the scope.
             heading = block.text
+            continue
+        if block.location == "sender":
             continue
         if has_bullets and block.kind != "bullet":
             continue

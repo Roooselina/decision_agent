@@ -165,11 +165,11 @@ class ConnectorManager:
         return self._run(connector_id, lambda connector: connector.fetch(self.today()))
 
     def fetch_source(
-        self, connector_id: str, query: MailQuery, known: set[str]
+        self, connector_id: str, query: MailQuery, known: set[str], threads: set[str] | None = None
     ) -> tuple[FetchOutcome | None, dict]:
         """Run one mail source on its connector's login."""
         return self._run(
-            connector_id, lambda connector: connector.fetch_source(query, self.today(), known)
+            connector_id, lambda connector: connector.fetch_source(query, self.today(), known, threads)
         )
 
     def preview_source(self, connector_id: str, query: MailQuery) -> dict:

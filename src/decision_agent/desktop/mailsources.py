@@ -95,6 +95,7 @@ def query_for(
         folder_word="라벨" if source.connector == "gmail" else "폴더",
         since=since,
         body_cap=settings.mail_cycle_cap,
+        include_sent=source.include_sent and source.connector == "gmail",
     )
 
 
@@ -229,12 +230,19 @@ def apply_fetch(
     query: MailQuery,
     settings: AppSettings,
     today: datetime.date,
+    accounts: list[str] | None = None,
+    unread: bool = False,
 ) -> dict[str, int]:
-    """Index one fetch, apply retention, rebuild the documents. Returns the counts for status."""
+    """Index one fetch, apply retention, rebuild the documents. Returns the counts for status.
+
+    Mail read through its thread (my own replies) is kept whatever the source's filter says.
+    accounts are the connected addresses, so my own mail is marked as sent; unread marks new
+    arrivals (after the first fetch) as not read in the mail view.
+    """
     rules = MailFilter.of(query)
-    matching = [m for m in outcome.messages if rules.matches(m)]
-    unmatched = [m.msg_id for m in outcome.messages if not rules.matches(m)]
-    maildb.upsert(source.id, matching)
+    matching = [m for m in outcome.messages if m.via_thread or rules.matches(m)]
+    unmatched = [m.msg_id for m in outcome.messages if not (m.via_thread or rules.matches(m))]
+    new = maildb.upsert(source.id, matching, accounts or [], unread)
     try:
         skipped = json.loads(maildb.meta_get(f"skipped:{source.id}") or "[]")
     except ValueError:
@@ -251,11 +259,12 @@ def apply_fetch(
     if not deferred:
         maildb.meta_put(f"last_fetch:{source.id}", today.isoformat())
     stats = {key: outcome.stats.get(key, 0) for key in ("matched", "known", "deferred")}
+    stats["new"] = new
     stats["skipped_filtered"] = len(unmatched)
     stats["skipped_empty"] = outcome.stats.get("skipped_empty", 0)
     fresh = {m.msg_id for m in matching}
     build_documents(source, [r for r in maildb.rows(source.id) if r["msg_id"] in fresh], settings, maildb, stats)
-    rebuild(engine, maildb, source, settings)
+    stats["docs_changed"] = int(rebuild(engine, maildb, source, settings))
     return stats
 
 

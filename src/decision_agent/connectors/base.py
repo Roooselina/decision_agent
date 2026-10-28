@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import email.utils
 import hashlib
 import html
 import json
@@ -14,6 +15,18 @@ from decision_agent.sources.model import Block, ParsedDocument, Section, Table
 
 class ConnectorError(RuntimeError):
     """A failure the user can understand and act on. The message is shown in the dashboard."""
+
+
+class RateLimited(ConnectorError):
+    """HTTP 429 after the connector's own short retries. retry_after is in seconds (0 = unknown)."""
+
+    def __init__(self, message: str, retry_after: float = 0.0) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class LoginExpired(ConnectorError):
+    """The stored login was revoked or expired; polling stops until the user logs in again."""
 
 
 class SecretStore(Protocol):
@@ -118,6 +131,16 @@ class MailMessage:
     thread_id: str = ""
     labels: list[str] = field(default_factory=list)
     sender_name: str = ""
+    # Local time of day (HH:MM), recipients, and the RFC 5322 ids that chain a conversation.
+    time: str = ""
+    to: str = ""
+    header_id: str = ""
+    in_reply_to: str = ""
+    references: list[str] = field(default_factory=list)
+    # "sent" when the connected account wrote it, "received" otherwise, "" when unknown.
+    direction: str = ""
+    # Read only because it belongs to the thread of a matching mail (for example my own reply).
+    via_thread: bool = False
 
 
 def mail_document(
@@ -140,6 +163,19 @@ def mail_document(
         return None
     doc = message_document(subject or NO_SUBJECT, message.date, message.sender, lines, kind)
     doc.meta["msg_id"] = message.msg_id
+    # Who wrote it, by name only (addresses never reach a model), so a decision in my own
+    # reply is attributed to me. The line is context, never an item.
+    name = message.sender_name or email.utils.parseaddr(message.sender)[0].strip()
+    if message.direction == "sent":
+        who = f"보낸 사람: {name or '나'} (내가 보낸 메일)"
+    else:
+        who = f"보낸 사람: {name}" if name else ""
+    if who:
+        doc.sections[0].blocks.insert(1, Block(text=who, kind="para", location=SENDER_LOCATION))
+    if message.thread_id:
+        doc.meta["thread_id"] = message.thread_id
+    if message.direction:
+        doc.meta["direction"] = message.direction
     return unique_name(f"{message.date} {subject}", message.msg_id), doc
 
 
@@ -209,6 +245,14 @@ class Connector:
         """Up to `limit` matching mails as headers only. Never stores anything or calls a model."""
         raise ConnectorError("이 연결은 미리보기를 지원하지 않습니다.")
 
+    def poll_changes(self, query, state: dict) -> tuple[bool, dict, set[str]]:
+        """(changed, new state, thread ids with new mail) for a background mail check.
+
+        The default always reports a change, so the caller lists the source again (cheaply:
+        stored mails are known and their bodies are not read again).
+        """
+        return True, state, set()
+
     def account_info(self) -> dict:
         """What the user needs to see which account is read (UI only, never logged)."""
         return {}
@@ -255,6 +299,8 @@ def check_response(response: HttpResponse, service: str) -> HttpResponse:
     """
     if response.ok:
         return response
+    if response.status == 401:
+        raise LoginExpired(f"{service}: 인증에 실패했거나 로그인이 만료되었습니다. 설정에서 다시 로그인하세요.")
     if response.status in {401, 403}:
         reason, message = error_reason(response)
         hint = GOOGLE_HINTS.get(reason.lower(), "")
@@ -267,7 +313,10 @@ def check_response(response: HttpResponse, service: str) -> HttpResponse:
     if response.status == 404:
         raise ConnectorError(f"{service}: 대상을 찾을 수 없습니다. 이름이나 주소를 확인하세요.")
     if response.status == 429:
-        raise ConnectorError(f"{service}: 요청이 너무 많습니다. 잠시 뒤 다시 시도합니다.")
+        retry = {k.lower(): v for k, v in response.headers.items()}.get("retry-after", "")
+        raise RateLimited(
+            f"{service}: 요청이 너무 많습니다. 잠시 뒤 다시 시도합니다.", float(retry) if retry.isdigit() else 0.0
+        )
     if response.status in {301, 302, 303, 307, 308}:
         raise ConnectorError(f"{service}: 주소가 다른 곳으로 이동했습니다. 주소를 확인하세요.")
     raise ConnectorError(f"{service}: 서비스 오류 ({response.status}).")
@@ -313,8 +362,43 @@ def clean_message_text(value: str, limit: int = 6000) -> list[str]:
     return out
 
 
+_QUOTE_HEAD = re.compile(r"^(on .+ wrote:|.+님이 작성:|-----\s*original message)", re.IGNORECASE)
+_REPLY_PREFIX = re.compile(r"^\s*(?:(?:re|fw|fwd|aw|답장|회신|전달)\s*(?:\[\d+\])?\s*[:：]\s*)+", re.IGNORECASE)
+
+
+def split_message(value: str, limit: int = 6000) -> tuple[str, str, str]:
+    """(own text, quoted text, signature) of a body, for showing a conversation.
+
+    The own text equals clean_message_text joined by newlines; quoted replies and the
+    signature are kept apart so a mail view can collapse or dim them.
+    """
+    own = "\n".join(clean_message_text(value, limit))
+    quoted: list[str] = []
+    signature: list[str] = []
+    part = "own"
+    for raw in value.replace("\r", "").split("\n"):
+        line = raw.rstrip()
+        stripped = line.strip()
+        if _QUOTE_HEAD.match(stripped):
+            part = "quoted"
+        elif part == "own" and stripped == "--":
+            part = "signature"
+            continue
+        if part == "quoted" or (part == "own" and stripped.startswith(">")):
+            quoted.append(line)
+        elif part == "signature" and stripped:
+            signature.append(stripped)
+    return own, "\n".join(quoted).strip()[:2000], "\n".join(signature)[:300]
+
+
+def normalize_subject(subject: str) -> str:
+    """The subject without reply and forward prefixes ("Re: Re: x" and "회신: x" become "x")."""
+    return " ".join(_REPLY_PREFIX.sub("", subject or "").split())
+
+
 SUBJECT_PREFIX = "제목: "
 SUBJECT_LOCATION = "subject"
+SENDER_LOCATION = "sender"
 
 
 def message_document(

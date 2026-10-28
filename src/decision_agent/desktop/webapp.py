@@ -44,6 +44,7 @@ EDITABLE_FIELDS = {
     "digest_enabled", "digest_time", "display_name", "profile_color", "theme", "language",
     "onboarding_done", "debounce_max_seconds", "helper_enabled", "quiet_hours_enabled", "quiet_start",
     "quiet_end", "meeting_reminder_enabled", "meeting_reminder_minutes", "batch_size", "mail_prefilter",
+    "mail_poll_enabled", "mail_poll_seconds",
 }
 PURGE_CONFIRM = "삭제"
 PAGE_HASH = re.compile(r"^#/[a-z-]{0,30}$")
@@ -158,6 +159,23 @@ class RelatedBody(BaseModel):
     limit: int = Field(default=5, ge=1, le=10)
     exclude: str = Field(default="", max_length=40)
     timeline: bool = False
+
+
+class LabelBody(BaseModel):
+    name: str = Field(min_length=1, max_length=30)
+    color: str = Field(default="blue", max_length=10)
+
+
+class LabelIdsBody(BaseModel):
+    ids: list[str] = Field(default_factory=list, max_length=50)
+
+
+class ReadBody(BaseModel):
+    read: bool = True
+
+
+class CheckBody(BaseModel):
+    source_id: str = Field(default="", max_length=40)
 
 
 class ContactsImportBody(BaseModel):
@@ -478,6 +496,81 @@ def create_web_app(
             "limit": max(1, min(50, limit)), "offset": max(0, offset),
         }
         return controller.mail_list(params)
+
+    # Conversations, local labels and the mail refresh state. Registered before /api/mail/{uid}.
+
+    @app.get("/api/mail/state", dependencies=auth)
+    def mail_state():
+        """Local state only (a change counter and the poller status); no network call."""
+        return controller.mail_state()
+
+    @app.post("/api/mail/check", dependencies=auth)
+    def mail_check(body: CheckBody):
+        if not controller.check_mail_now(body.source_id):
+            raise HTTPException(status_code=400, detail="메일 소스를 먼저 추가하세요.")
+        return {"ok": True}
+
+    @app.get("/api/mail/threads", dependencies=auth)
+    def thread_list(box: str = "all", label: str = "", q: str = "", since: str = "", sender: str = "",
+                    limit: int = 50, offset: int = 0):
+        if box not in {"all", "inbox", "sent"}:
+            raise HTTPException(status_code=400, detail="편지함 이름이 올바르지 않습니다.")
+        if since and not DATE_PARAM.match(since):
+            raise HTTPException(status_code=400, detail="날짜는 YYYY-MM-DD 형식이어야 합니다.")
+        return controller.thread_list({
+            "box": box, "label": label[:80], "q": q[:200], "since": since, "sender": sender[:100],
+            "limit": max(1, min(50, limit)), "offset": max(0, offset),
+        })
+
+    @app.get("/api/mail/threads/{tid}", dependencies=auth)
+    def thread_read(tid: str):
+        try:
+            return controller.thread_read(tid)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/api/mail/threads/{tid}/read", dependencies=auth)
+    def thread_mark(tid: str, body: ReadBody):
+        try:
+            controller.thread_mark_read(tid, body.read)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"ok": True}
+
+    @app.put("/api/mail/threads/{tid}/labels", dependencies=auth)
+    def thread_labels(tid: str, body: LabelIdsBody):
+        try:
+            controller.thread_labels_set(tid, body.ids)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"ok": True}
+
+    @app.get("/api/mail/labels", dependencies=auth)
+    def labels_list():
+        return controller.maildb.labels()
+
+    @app.post("/api/mail/labels", dependencies=auth)
+    def labels_create(body: LabelBody):
+        try:
+            return controller.label_create(body.name, body.color)
+        except UserError as exc:
+            raise _bad(exc) from exc
+
+    @app.delete("/api/mail/labels/{label_id}", dependencies=auth)
+    def labels_delete(label_id: str):
+        try:
+            controller.label_delete(label_id)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"ok": True}
+
+    @app.put("/api/mail-sources/{source_id}/labels", dependencies=auth)
+    def source_labels(source_id: str, body: LabelIdsBody):
+        try:
+            controller.source_labels_set(source_id, body.ids)
+        except UserError as exc:
+            raise _bad(exc) from exc
+        return {"ok": True}
 
     @app.post("/api/related", dependencies=auth)
     def related(body: RelatedBody):

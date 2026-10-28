@@ -252,3 +252,180 @@ def related_mail(
         }
         for i in picked
     ]
+
+
+# Conversations: one row per thread, newest first. Local only, no model is called.
+
+THREAD_PAGE = 50
+BOXES = ("all", "inbox", "sent")
+
+
+def _chips(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str, dict],
+           thread_links: dict[str, set[str]], source_links: dict[str, set[str]]) -> list[dict]:
+    """Label chips of a thread: team and purpose of its sources, Gmail label names, local labels."""
+    chips: list[dict] = []
+
+    def add(text: str, kind: str, color: str = "", key: str = "") -> None:
+        if text and not any(c["text"] == text and c["kind"] == kind for c in chips):
+            chips.append({"text": text, "kind": kind, "color": color, "key": key})
+
+    source_ids = json.loads(thread["source_ids"] or "[]")
+    for sid in source_ids:
+        source = sources.get(sid)
+        if source is not None:
+            add(source.team, "team", key=f"team:{source.team}")
+            add(PURPOSE_LABELS.get(source.purpose, ""), "purpose", key=f"purpose:{source.purpose}")
+    for name in json.loads(thread["labels"] or "[]"):
+        add(name, "gmail", key=f"gmail:{name}")
+    ids = set(thread_links.get(thread["thread_key"], set()))
+    for sid in source_ids:
+        ids |= source_links.get(sid, set())
+    for label_id in sorted(ids, key=lambda i: local.get(i, {}).get("name", "")):
+        label = local.get(label_id)
+        if label is not None:
+            add(label["name"], "local", label["color"], f"local:{label_id}")
+    return chips
+
+
+def _analysis_badge(source_ids: list[str], sources: dict[str, MailSource]) -> str:
+    known = [sources[s] for s in source_ids if s in sources]
+    if known and all(s.effective_analysis == "off" for s in known):
+        return "점검 안 함"
+    return "점검됨"
+
+
+def _thread_item(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str, dict],
+                 links: tuple[dict[str, set[str]], dict[str, set[str]]]) -> dict:
+    source_ids = json.loads(thread["source_ids"] or "[]")
+    return {
+        "id": thread["tid"],
+        "subject": thread["subject"],
+        "participants": json.loads(thread["participants"] or "[]"),
+        "count": thread["count"],
+        "unread": thread["unread"],
+        "has_sent": bool(thread["has_sent"]),
+        "date": thread["last_date"],
+        "time": thread["last_time"],
+        "snippet": thread["snippet"],
+        "chips": _chips(thread, sources, local, *links),
+        "analysis": _analysis_badge(source_ids, sources),
+    }
+
+
+def list_threads(maildb: MailDB, sources: list[MailSource], params: dict) -> dict:
+    """Threads for the mail page and the home card, with the counts of the label sidebar."""
+    by_id = {s.id: s for s in sources}
+    local = {label["id"]: label for label in maildb.labels()}
+    links = maildb.label_links()
+    rows = maildb.threads()
+    items = [_thread_item(r, by_id, local, links) for r in rows]
+    received = {r["tid"] for r in rows if r["count"] > 0 and _has_received(maildb, r)}
+    box = str(params.get("box") or "all")
+    label = str(params.get("label") or "")
+    q = str(params.get("q") or "").strip().casefold()
+    since = str(params.get("since") or "")
+    sender = str(params.get("sender") or "").strip().casefold()
+
+    def keep(item: dict) -> bool:
+        if box == "inbox" and item["id"] not in received:
+            return False
+        if box == "sent" and not item["has_sent"]:
+            return False
+        if label and not any(c["key"] == label for c in item["chips"]):
+            return False
+        if since and item["date"] < since:
+            return False
+        if sender and not any(sender in p.casefold() for p in item["participants"]):
+            return False
+        if q:
+            haystack = " ".join([item["subject"], item["snippet"], *item["participants"]]).casefold()
+            return q in haystack or _body_matches(maildb, item["id"], q)
+        return True
+
+    chosen = [i for i in items if keep(i)]
+    try:
+        limit = max(1, min(THREAD_PAGE, int(params.get("limit") or THREAD_PAGE)))
+        offset = max(0, int(params.get("offset") or 0))
+    except ValueError:
+        limit, offset = THREAD_PAGE, 0
+    counts: dict[str, list[int]] = {}
+
+    def count(key: str, item: dict) -> None:
+        slot = counts.setdefault(key, [0, 0])
+        slot[0] += 1
+        slot[1] += int(item["unread"] > 0)
+
+    for item in items:
+        count("box:all", item)
+        if item["id"] in received:
+            count("box:inbox", item)
+        if item["has_sent"]:
+            count("box:sent", item)
+        for chip in item["chips"]:
+            count(chip["key"], item)
+    groups = {"team": [], "purpose": [], "gmail": [], "local": []}
+    for key, (total, unread) in counts.items():
+        kind, _, value = key.partition(":")
+        if kind in groups:
+            name = local[value]["name"] if kind == "local" and value in local else (
+                PURPOSE_LABELS.get(value, value) if kind == "purpose" else value)
+            color = local[value]["color"] if kind == "local" and value in local else ""
+            groups[kind].append({"key": key, "name": name, "count": total, "unread": unread, "color": color})
+    for label_id, label in local.items():
+        if f"local:{label_id}" not in counts:
+            groups["local"].append({"key": f"local:{label_id}", "name": label["name"], "count": 0, "unread": 0,
+                                    "color": label["color"]})
+    for values in groups.values():
+        values.sort(key=lambda g: g["name"])
+    boxes = {b: {"count": counts.get(f"box:{b}", [0, 0])[0], "unread": counts.get(f"box:{b}", [0, 0])[1]}
+             for b in BOXES}
+    return {
+        "total": len(chosen), "offset": offset, "limit": limit, "items": chosen[offset: offset + limit],
+        "boxes": boxes, "groups": groups, "labels": list(local.values()),
+    }
+
+
+def _has_received(maildb: MailDB, thread: sqlite3.Row) -> bool:
+    if not thread["has_sent"]:
+        return True
+    return any(r["direction"] != "sent" for r in maildb.thread_rows_by_key(thread["thread_key"]))
+
+
+def _body_matches(maildb: MailDB, tid: str, needle: str) -> bool:
+    thread = maildb.thread(tid)
+    if thread is None:
+        return False
+    return any(needle in (r["body"] or "").casefold() for r in maildb.thread_rows_by_key(thread["thread_key"]))
+
+
+def read_thread(maildb: MailDB, sources: list[MailSource], tid: str) -> dict | None:
+    """One conversation, oldest first, with quoted text and signatures kept apart."""
+    thread = maildb.thread(tid)
+    if thread is None:
+        return None
+    by_id = {s.id: s for s in sources}
+    book = ContactIndex(maildb.contacts())
+    local = {label["id"]: label for label in maildb.labels()}
+    links = maildb.label_links()
+    item = _thread_item(thread, by_id, local, links)
+    messages = []
+    for row in maildb.thread_rows_by_key(thread["thread_key"]):
+        contact = book.find(row["sender"])
+        mine = row["direction"] == "sent"
+        messages.append({
+            "id": row["uid"],
+            "mine": mine,
+            "sender": "나" if mine else (contact or {}).get("name") or row["sender_name"] or row["sender"],
+            "sender_address": row["sender"],
+            "date": row["date"],
+            "time": row["time"],
+            "body": row["body"],
+            "quoted": row["quoted"],
+            "signature": row["signature"],
+            "unread": bool(row["unread"]),
+            "hints": maildb.hints(row["uid"]),
+            "source": by_id[row["source_id"]].name if row["source_id"] in by_id else "",
+        })
+    item["messages"] = messages
+    item["local_labels"] = sorted(links[0].get(thread["thread_key"], set()))
+    return item

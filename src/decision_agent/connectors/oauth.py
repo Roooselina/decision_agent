@@ -10,7 +10,7 @@ import urllib.parse
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from decision_agent.connectors.base import ConnectorError, SecretStore
+from decision_agent.connectors.base import ConnectorError, LoginExpired, SecretStore
 from decision_agent.connectors.http import Http, HttpError
 
 PENDING_SECONDS = 600
@@ -154,7 +154,7 @@ class OAuthManager:
     def access_token(self, connector_id: str, app: OAuthApp) -> str:
         raw = self.secrets.get(self.secret_name(connector_id))
         if not raw:
-            raise ConnectorError("계정이 연결되어 있지 않습니다.")
+            raise LoginExpired("계정이 연결되어 있지 않습니다.")
         try:
             saved = json.loads(raw)
         except ValueError as exc:
@@ -208,7 +208,7 @@ class OAuthManager:
             except Exception:  # noqa: BLE001 - the error body is optional detail only
                 detail = ""
             if reason == "invalid_grant":
-                raise ConnectorError(f"{EXPIRED} ({detail})" if detail and detail != reason else EXPIRED)
+                raise LoginExpired(f"{EXPIRED} ({detail})" if detail and detail != reason else EXPIRED)
             raise ConnectorError(f"로그인 서버가 요청을 거절했습니다 ({response.status}). {detail}".strip())
         body = response.json()
         if not body.get("access_token"):

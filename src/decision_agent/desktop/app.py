@@ -34,6 +34,7 @@ from decision_agent.desktop.errors import UserError
 from decision_agent.desktop.helper import quiet_now
 from decision_agent.desktop.hotkey import hotkey_status
 from decision_agent.desktop.maildb import MailDB
+from decision_agent.desktop.mailpoller import MailPoller
 from decision_agent.desktop.notify import LogNotifier, Notifier
 from decision_agent.desktop.paths import app_home, log_path, mail_db_path, state_db_path
 from decision_agent.desktop.policy import FolderPolicy
@@ -81,6 +82,10 @@ MAX_LOCK_RETRIES = 4
 MAX_FOLLOWUPS = 6
 LOG_TAIL_LINES = 200
 SUPERVISE_SECONDS = 30.0
+# Quiet period after new mail before the folder is analysed once.
+MAIL_ANALYSIS_DELAY = 30.0
+# Job text of a connectors run that leaves the mail sources to the mail poller.
+NO_MAIL = "-mail"
 PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다시 점검하세요."
 # Settings that only change how the program shows itself. Saving them does not restart the
 # watchers or check the folders again.
@@ -176,6 +181,11 @@ class DecisionAgentApp:
         self.autostart = None
         self.drops = DropBox()
         self.inbox = ActivityLog(limit=50)
+        # Background mail refresh (no model calls) and the quiet period before an analysis.
+        self.mail_poller = MailPoller(self)
+        self.mail_analysis_delay = MAIL_ANALYSIS_DELAY
+        self._mail_timers: dict[str, threading.Timer] = {}
+        self.mail_events: list[dict] = []
 
     # lifecycle
 
@@ -188,6 +198,8 @@ class DecisionAgentApp:
             self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
             self._worker.start()
             self._start_connector_timer()
+            if self.settings.mail_poll_enabled and self.start_watchers:
+                self.mail_poller.start()
             self._digest_timer = PeriodicTimer(60.0, self.digest_tick)
             self._digest_timer.start()
             self._supervisor = PeriodicTimer(SUPERVISE_SECONDS, self.supervise)
@@ -203,11 +215,66 @@ class DecisionAgentApp:
         if not self.connectors.enabled_ids():
             return
         interval = self.settings.connector_interval_minutes * 60.0
-        self._connector_timer = PeriodicTimer(interval, lambda: self.run_connectors())
+        # Mail sources are refreshed by the mail poller; the timer runs the other connectors.
+        self._connector_timer = PeriodicTimer(interval, lambda: self.run_connectors(mail=not self._polling()))
         self._connector_timer.start()
-        self._schedule(20.0, lambda: self.run_connectors())
+        self._schedule(20.0, lambda: self.run_connectors(mail=not self._polling()))
+
+    def _polling(self) -> bool:
+        return self.mail_poller.running
+
+    def schedule_mail_analysis(self, target: str) -> None:
+        """Queue one normal analysis of a folder after new mail, once the mail goes quiet.
+
+        Several new mails within the delay lead to one analysis; the usual job path applies the
+        cost profile, verdict reuse and the confirm gate.
+        """
+        with self._lock:
+            if not self._running:
+                return
+            previous = self._mail_timers.pop(target, None)
+            if previous is not None:
+                previous.cancel()
+
+            def fire() -> None:
+                with self._lock:
+                    self._mail_timers.pop(target, None)
+                    running = self._running
+                if running:
+                    self.enqueue(Job("reanalyze", target))
+
+            timer = threading.Timer(self.mail_analysis_delay, fire)
+            timer.daemon = True
+            self._mail_timers[target] = timer
+            timer.start()
+
+    def mail_arrived(self, source: MailSource, count: int) -> None:
+        """New mail of a source: a toast and an event for the open pages (counts only)."""
+        text = f"{source.name}: 새 메일 {count}통"
+        self.mail_events = ([*self.mail_events, {"seq": self.maildb.change_seq(), "text": text}])[-20:]
+        if self.settings.notify and not quiet_now(self.settings, self.clock()):
+            self.notifier.notify("새 메일", text)
+
+    def mail_state(self) -> dict:
+        """Local state only: the open pages poll this to learn about new mail."""
+        status = self.mail_poller.status()
+        return {"seq": self.maildb.change_seq(), "status": status, "events": list(self.mail_events)}
+
+    def check_mail_now(self, source_id: str = "") -> bool:
+        """The manual trigger ("지금 확인"): wake the poller, or start it if it was off."""
+        if not self.settings.mail_sources:
+            return False
+        if not self.mail_poller.running:
+            self.mail_poller.start()
+        self.mail_poller.trigger(source_id)
+        return True
 
     def stop(self) -> None:
+        self.mail_poller.stop()
+        with self._lock:
+            for timer in self._mail_timers.values():
+                timer.cancel()
+            self._mail_timers.clear()
         with self._lock:
             self._running = False
             if self._connector_timer is not None:
@@ -561,8 +628,11 @@ class DecisionAgentApp:
         query = mailsources.query_for(source, self.settings, self.maildb, since)
         outcome, status = self.connectors.fetch_source(source.connector, query, known)
         if outcome is not None:
+            account = self.connectors.accounts.get(source.connector, {}).get("account", "")
             stats = mailsources.apply_fetch(
-                runtime.engine, self.maildb, source, outcome, query, self.settings, self.connectors.today()
+                runtime.engine, self.maildb, source, outcome, query, self.settings, self.connectors.today(),
+                accounts=[account] if account else [],
+                unread=bool(self.maildb.meta_get(f"last_fetch:{source.id}")),
             )
             status["stats"] = stats
             status["summary"] = mail_summary(stats, query.scope_text())
@@ -773,6 +843,9 @@ class DecisionAgentApp:
         if only.startswith("source:"):
             ids: list[str] = []
             sources = [s for s in self.settings.mail_sources if s.id == only[len("source:"):]]
+        elif only == NO_MAIL:
+            ids = [i for i in self.connectors.enabled_ids() if i not in MAIL_CONNECTORS] if is_default else []
+            sources = []
         else:
             if only:
                 ids = [only] if only not in MAIL_CONNECTORS and is_default else []
@@ -813,8 +886,11 @@ class DecisionAgentApp:
         runtime.engine.set_external("notes", {"notes": doc} if doc is not None else {})
         return runtime.engine.analyze()
 
-    def run_connectors(self, connector_id: str = "") -> bool:
-        """Queue one connectors job per folder that receives something."""
+    def run_connectors(self, connector_id: str = "", mail: bool = True) -> bool:
+        """Queue one connectors job per folder that receives something.
+
+        mail=False leaves the mail sources to the mail poller (the periodic timer does that).
+        """
         target = self.target_root()
         if target is None:
             return False
@@ -823,7 +899,7 @@ class DecisionAgentApp:
         targets: list[str] = []
         if connector_id not in MAIL_CONNECTORS:
             targets.append(target)
-        for source in self.settings.mail_sources:
+        for source in self.settings.mail_sources if mail else []:
             wanted = source.connector == connector_id if connector_id else self._mail_active(source)
             place = self.source_target(source)
             if wanted and source.enabled and place and place not in targets:
@@ -831,7 +907,7 @@ class DecisionAgentApp:
         if not targets:
             return False
         for place in targets:
-            self.enqueue(Job("connectors", place, text=connector_id))
+            self.enqueue(Job("connectors", place, text=connector_id or ("" if mail else NO_MAIL)))
         return True
 
     def connector_overview(self) -> list[dict]:
@@ -1036,6 +1112,48 @@ class DecisionAgentApp:
         if item is None:
             raise UserError("메일을 찾지 못했습니다.")
         return item
+
+    # conversations and local labels (stored in the mail index only, never in the account)
+
+    def thread_list(self, params: dict) -> dict:
+        result = mailview.list_threads(self.maildb, list(self.settings.mail_sources), params)
+        result["state"] = self.mail_state()
+        result["sources"] = len(self.settings.mail_sources)
+        return result
+
+    def thread_read(self, tid: str) -> dict:
+        item = mailview.read_thread(self.maildb, list(self.settings.mail_sources), tid)
+        if item is None:
+            raise UserError("대화를 찾지 못했습니다.")
+        return item
+
+    def thread_mark_read(self, tid: str, read: bool = True) -> None:
+        if not self.maildb.mark_read(tid, read):
+            raise UserError("대화를 찾지 못했습니다.")
+        self._changed()
+
+    def thread_labels_set(self, tid: str, label_ids: list[str]) -> None:
+        if not self.maildb.set_thread_labels(tid, label_ids):
+            raise UserError("대화를 찾지 못했습니다.")
+        self._changed()
+
+    def label_create(self, name: str, color: str) -> dict:
+        try:
+            label = self.maildb.create_label(name, color)
+        except ValueError as exc:
+            raise UserError(str(exc)) from exc
+        self._changed()
+        return label
+
+    def label_delete(self, label_id: str) -> None:
+        if not self.maildb.delete_label(label_id):
+            raise UserError("라벨을 찾지 못했습니다.")
+        self._changed()
+
+    def source_labels_set(self, source_id: str, label_ids: list[str]) -> None:
+        self._source(source_id)
+        self.maildb.set_source_labels(source_id, label_ids)
+        self._changed()
 
     # daily digest
 

@@ -33,6 +33,8 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 MAX_PAGES = 10
+# Threads expanded in one fetch (one threads.get each).
+MAX_THREADS = 50
 # Waits after HTTP 429 before the next attempt; SLEEP is replaced in tests.
 BACKOFF = (1.0, 2.0, 4.0, 8.0)
 SLEEP = time.sleep
@@ -176,6 +178,8 @@ class Gmail(_GoogleBase):
         super().__init__(options, ctx)
         # Filled while talking to Gmail; shown in the settings card only, never logged.
         self.label_names: list[str] | None = None
+        # Label id -> name for user labels, so stored mail carries names, not ids.
+        self.label_map: dict[str, str] = {}
 
     @staticmethod
     def _decode(data: str) -> str:
@@ -223,6 +227,10 @@ class Gmail(_GoogleBase):
         if response.status == 403:
             return None
         labels = check_response(response, self.label).json().get("labels", []) or []
+        self.label_map = {
+            str(item.get("id")): str(item.get("name")) for item in labels
+            if item.get("type") == "user" and item.get("id") and item.get("name")
+        }
         self.label_names = sorted(
             item.get("name", "") for item in labels if item.get("type") == "user" and item.get("name")
         )
@@ -270,9 +278,15 @@ class Gmail(_GoogleBase):
         stamp = int(message.get("internalDate", "0") or 0) / 1000.0
         return datetime.datetime.fromtimestamp(stamp).date().isoformat() if stamp else today.isoformat()
 
+    @staticmethod
+    def _time_of(message: dict) -> str:
+        stamp = int(message.get("internalDate", "0") or 0) / 1000.0
+        return datetime.datetime.fromtimestamp(stamp).strftime("%H:%M") if stamp else ""
+
     def mail_message(self, message: dict, today: datetime.date) -> MailMessage:
         headers = self._headers_of(message)
         msg_id = str(message.get("id", ""))
+        label_ids = [str(i) for i in message.get("labelIds", []) or []]
         return MailMessage(
             msg_id=msg_id,
             date=self._date_of(message, today),
@@ -280,7 +294,13 @@ class Gmail(_GoogleBase):
             sender=headers.get("from", ""),
             body=self._body_text(message.get("payload", {}), msg_id),
             thread_id=str(message.get("threadId", "")),
-            labels=list(message.get("labelIds", []) or []),
+            labels=[self.label_map.get(i, i) for i in label_ids],
+            time=self._time_of(message),
+            to=headers.get("to", ""),
+            header_id=headers.get("message-id", "").strip(),
+            in_reply_to=headers.get("in-reply-to", "").strip(),
+            references=headers.get("references", "").split(),
+            direction="sent" if "SENT" in label_ids else "received",
         )
 
 
@@ -313,10 +333,19 @@ class Gmail(_GoogleBase):
         return list(seen.values())[: query.max_messages]
 
     def fetch_source(
-        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+        self,
+        query: MailQuery,
+        today: datetime.date,
+        known: set[str] | None = None,
+        threads: set[str] | None = None,
     ) -> FetchOutcome:
         """Fetch one source. Mails whose id is in `known` are already stored: Gmail messages
-        never change, so their bodies are not requested again."""
+        never change, so their bodies are not requested again.
+
+        With query.include_sent, the other messages of each thread with a new matching mail
+        (and of the thread ids in `threads`) are read too, so my own replies, which usually do
+        not carry the source's label, are part of the conversation.
+        """
         known = known or set()
         refs = self._refs(query)
         stats = new_mail_stats()
@@ -333,11 +362,70 @@ class Gmail(_GoogleBase):
         workers = max(1, min(query.workers, len(fresh) or 1))
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="gmail") as pool:
             messages = list(pool.map(read, fresh))
-        docs = collect_mail(messages, query, stats)
+        if query.include_sent:
+            fresh_set = set(fresh)
+            wanted = {str(r["threadId"]) for r in refs if r["id"] in fresh_set and r.get("threadId")}
+            wanted |= set(threads or ())
+            listed = {r["id"] for r in refs} | known
+            extra = self.thread_messages(sorted(wanted), listed, today)
+            messages.extend(extra)
+            stats["thread"] = len(extra)
+        docs = collect_mail([m for m in messages if not m.via_thread], query, stats)
         return FetchOutcome(
             docs, mail_summary(stats, query.scope_text()), stats, seen_ids=[r["id"] for r in refs],
             messages=messages,
         )
+
+    def thread_messages(self, thread_ids: list[str], skip: set[str], today: datetime.date) -> list[MailMessage]:
+        """Messages of the threads that are not in skip (one threads.get per thread)."""
+        found: list[MailMessage] = []
+        for thread_id in thread_ids[:MAX_THREADS]:
+            data = self._get(f"{API}/threads/{thread_id}", {"format": "full"})
+            for raw in data.get("messages", []) or []:
+                if str(raw.get("id", "")) in skip or "DRAFT" in (raw.get("labelIds") or []):
+                    continue
+                message = self.mail_message(raw, today)
+                message.via_thread = True
+                found.append(message)
+        return found
+
+    def poll_changes(self, query: MailQuery, state: dict) -> tuple[bool, dict, set[str]]:
+        """(changed, new state, thread ids with added mail) from users.history.list.
+
+        The first call only records the current historyId (the caller then lists normally).
+        An expired historyId (404) asks for one bounded re-list.
+        """
+        start = state.get("history_id")
+        if not start:
+            profile = self._get(f"{API}/profile")
+            return True, {"history_id": str(profile.get("historyId") or "")}, set()
+        threads: set[str] = set()
+        added = 0
+        newest = start
+        token = None
+        for _ in range(MAX_PAGES):
+            params = {"startHistoryId": start, "historyTypes": "messageAdded", "maxResults": 500}
+            if token:
+                params["pageToken"] = token
+            response = self._request(f"{API}/history", params)
+            if response.status == 404:
+                # The historyId is too old: start again from the current one and list once.
+                profile = self._get(f"{API}/profile")
+                return True, {"history_id": str(profile.get("historyId") or "")}, set()
+            page = check_response(response, self.label).json()
+            for entry in page.get("history", []) or []:
+                for item in entry.get("messagesAdded", []) or []:
+                    message = item.get("message") or {}
+                    if "DRAFT" in (message.get("labelIds") or []):
+                        continue
+                    added += 1
+                    if message.get("threadId"):
+                        threads.add(str(message["threadId"]))
+            newest = str(page.get("historyId") or newest)
+            token = page.get("nextPageToken")
+            if not token:
+                break
+        return added > 0, {"history_id": newest}, threads
 
     def fetch(self, today: datetime.date) -> FetchOutcome:
         return self.fetch_source(self.options_query(), today)

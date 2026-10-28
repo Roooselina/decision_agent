@@ -85,6 +85,10 @@ class MailSource(BaseModel):
     # Which stored mails become documents for the model. None means the default for the scope:
     # off for all_mail, all for filtered.
     analysis: Literal["off", "address_book", "decision_like", "all"] | None = None
+    # Also store my own replies of a matching thread (Gmail reads the whole thread).
+    include_sent: bool = True
+    # Toast for new mail: auto means on only when the source's mail is analysed.
+    notify: Literal["auto", "on", "off"] = "auto"
 
     @property
     def effective_analysis(self) -> str:
@@ -164,6 +168,9 @@ class AppSettings(BaseModel):
     # Days the local mail index keeps a mail, and the most new mails read per source and cycle.
     mail_index_days: int = Field(default=180, ge=30, le=365)
     mail_cycle_cap: int = Field(default=500, ge=1, le=2000)
+    # Background mail refresh while the app runs (no model calls). Seconds between checks.
+    mail_poll_enabled: bool = True
+    mail_poll_seconds: int = Field(default=60, ge=30, le=600)
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)
     hotkey_enabled: bool = True
     hotkey: str = "ctrl+shift+space"

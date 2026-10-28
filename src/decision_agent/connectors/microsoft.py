@@ -37,6 +37,9 @@ MICROSOFT_GUIDE = (
 )
 
 
+# Pages followed when a delta query starts (ids only).
+MAX_DELTA_PAGES = 20
+
 class _MicrosoftBase(Connector):
     uses_oauth = True
     scopes: tuple[str, ...] = ()
@@ -193,22 +196,35 @@ class OutlookMail(_MicrosoftBase):
             content = strip_html(content)
         address = (item.get("from") or {}).get("emailAddress") or {}
         subject = item.get("subject") or NO_SUBJECT
+        received = str(item.get("receivedDateTime") or "")
+        recipients = [
+            (r.get("emailAddress") or {}).get("address", "") for r in item.get("toRecipients") or []
+        ]
         return MailMessage(
             msg_id=str(item.get("id") or subject),
-            date=(item.get("receivedDateTime") or "")[:10] or today.isoformat(),
+            date=received[:10] or today.isoformat(),
             subject=subject,
             sender=address.get("address", ""),
             sender_name=address.get("name", ""),
             body=content,
             thread_id=str(item.get("conversationId") or ""),
+            time=_local_clock(received),
+            to=", ".join(r for r in recipients if r),
+            header_id=str(item.get("internetMessageId") or ""),
         )
 
     def fetch_source(
-        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+        self,
+        query: MailQuery,
+        today: datetime.date,
+        known: set[str] | None = None,
+        threads: set[str] | None = None,
     ) -> FetchOutcome:
         """Fetch one source: list headers, then read bodies only for mails not stored yet."""
         known = known or set()
-        items = self._items(query, today, "id,subject,receivedDateTime,from,conversationId")
+        items = self._items(
+            query, today, "id,subject,receivedDateTime,from,toRecipients,conversationId,internetMessageId"
+        )
         stats = new_mail_stats()
         stats["matched"] = len(items)
         fresh = [item for item in items if str(item.get("id")) not in known]
@@ -235,6 +251,34 @@ class OutlookMail(_MicrosoftBase):
     def fetch(self, today: datetime.date) -> FetchOutcome:
         return self.fetch_source(self.options_query(), today)
 
+    def poll_changes(self, query: MailQuery, state: dict) -> tuple[bool, dict, set[str]]:
+        """(changed, new state, thread ids) from a Graph delta query per folder (ids only).
+
+        The first call follows the delta pages to get a deltaLink and reports a change so the
+        caller lists normally. Later calls only ask the deltaLink for what was added since.
+        """
+        links: dict[str, str] = dict(state.get("delta") or {})
+        changed = not links
+        new_links: dict[str, str] = {}
+        for name in query.labels or ["inbox"]:
+            folder = self._folder_id(name)
+            url: str | None = links.get(folder) or (
+                f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages/delta"
+            )
+            params: dict | None = None if folder in links else {"$select": "id"}
+            for _ in range(MAX_DELTA_PAGES):
+                body = self._get(url, params)
+                params = None
+                if folder in links and any("@removed" not in item for item in body.get("value", [])):
+                    changed = True
+                if body.get("@odata.deltaLink"):
+                    new_links[folder] = body["@odata.deltaLink"]
+                    break
+                url = body.get("@odata.nextLink")
+                if not url:
+                    break
+        return changed, {"delta": new_links}, set()
+
     def preview_source(self, query: MailQuery, today: datetime.date, limit: int = 10) -> dict:
         items = self._items(query, today, "id,subject,receivedDateTime,from")
         rules = MailFilter.of(query)
@@ -249,3 +293,12 @@ class OutlookMail(_MicrosoftBase):
 
     def preview(self, today: datetime.date, limit: int = 10) -> dict:
         return self.preview_source(self.options_query(), today, limit)
+
+
+def _local_clock(stamp: str) -> str:
+    """HH:MM in local time from a Graph UTC timestamp, or ""."""
+    try:
+        moment = datetime.datetime.fromisoformat(stamp)
+    except ValueError:
+        return ""
+    return moment.astimezone().strftime("%H:%M") if moment.tzinfo else moment.strftime("%H:%M")
