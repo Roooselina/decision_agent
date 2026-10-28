@@ -7,6 +7,7 @@ mails whatever the server supports.
 
 from __future__ import annotations
 
+import datetime
 import email.utils
 import re
 from dataclasses import dataclass, field
@@ -53,6 +54,22 @@ class MailQuery:
     prefilter: bool = True
     # How the provider calls labels in status sentences (Gmail labels, IMAP/Outlook folders).
     folder_word: str = "라벨"
+    # Incremental listing: only mail on or after this ISO date (instead of days_back).
+    since: str | None = None
+    # At most this many bodies are read in one fetch; the rest wait for the next one.
+    body_cap: int | None = None
+
+    def listing_start(self, today: datetime.date) -> datetime.date:
+        if self.since:
+            return datetime.date.fromisoformat(self.since)
+        return today - datetime.timedelta(days=self.days_back)
+
+    def capped(self, fresh: list, stats: dict[str, int]) -> list:
+        """The fresh mails to read now; the rest are counted as deferred."""
+        if self.body_cap is None or len(fresh) <= self.body_cap:
+            return fresh
+        stats["deferred"] = len(fresh) - self.body_cap
+        return fresh[: self.body_cap]
 
     @property
     def kind(self) -> str:
@@ -151,7 +168,10 @@ def _any_of(field_name: str, terms: list[str]) -> str:
 
 def gmail_search(query: MailQuery) -> str:
     """The Gmail search string for everything except labels (those go in labelIds)."""
-    parts = [f"newer_than:{query.days_back}d"]
+    if query.since:
+        parts = ["after:" + query.since.replace("-", "/")]
+    else:
+        parts = [f"newer_than:{query.days_back}d"]
     for name, terms in (("from", query.senders), ("subject", query.subject_keywords)):
         found = _any_of(name, [t.lstrip("@") if name == "from" else t for t in terms])
         if found:

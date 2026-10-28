@@ -38,3 +38,10 @@ def state_db_path(root: Path) -> Path:
     folder = app_home() / "state"
     folder.mkdir(parents=True, exist_ok=True)
     return folder / f"{digest}.sqlite"
+
+
+def mail_db_path() -> Path:
+    """The local mail index and address book (one for all folders, in the app's own folder)."""
+    folder = app_home() / "state"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / "mail.sqlite"

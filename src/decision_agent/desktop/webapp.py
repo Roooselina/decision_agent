@@ -153,6 +153,10 @@ class TextBody(BaseModel):
     text: str = Field(min_length=2, max_length=1000)
 
 
+class ContactsImportBody(BaseModel):
+    text: str = Field(max_length=1_000_000)
+
+
 class DraftBody(BaseModel):
     root: str
     topic: str
@@ -440,6 +444,44 @@ def create_web_app(
         except (ConnectorError, UserError) as exc:
             raise _bad(exc) from exc
         return {"ok": True}
+
+    @app.post("/api/mail-sources/{source_id}/forget", dependencies=auth)
+    def mail_source_forget(source_id: str):
+        try:
+            return {"removed": controller.forget_source_mail(source_id)}
+        except UserError as exc:
+            raise _bad(exc) from exc
+
+    @app.post("/api/mail/{uid}/include", dependencies=auth)
+    def mail_include(uid: str):
+        try:
+            return controller.include_mail(uid)
+        except UserError as exc:
+            raise _bad(exc) from exc
+
+    @app.get("/api/contacts", dependencies=auth)
+    def contacts_list():
+        return controller.contact_list()
+
+    @app.post("/api/contacts", dependencies=auth)
+    def contacts_save(body: dict):
+        try:
+            return controller.save_contact(body)
+        except UserError as exc:
+            raise _bad(exc) from exc
+
+    @app.delete("/api/contacts", dependencies=auth)
+    def contacts_delete(pattern: str):
+        if not controller.delete_contact(pattern):
+            raise HTTPException(status_code=404, detail="주소록에 없는 주소입니다.")
+        return {"ok": True}
+
+    @app.post("/api/contacts/import", dependencies=auth)
+    def contacts_import(body: ContactsImportBody):
+        try:
+            return controller.import_contacts(body.text)
+        except UserError as exc:
+            raise _bad(exc) from exc
 
     @app.post("/api/connectors/disconnect", dependencies=auth)
     def connector_disconnect(body: ConnectorIdBody):

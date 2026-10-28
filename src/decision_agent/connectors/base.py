@@ -56,6 +56,8 @@ class FetchOutcome:
     # Ids of every mail the server listed for a mail source, including ones already stored
     # whose bodies were not requested again. None for other connectors.
     seen_ids: list[str] | None = None
+    # The mails whose bodies were read in this fetch (for the local mail index).
+    messages: list[MailMessage] = field(default_factory=list)
 
 
 # matched: listed by the server; read: body text used; subject_only: no readable body, the
@@ -64,7 +66,7 @@ class FetchOutcome:
 # already stored, so the body was not requested again.
 MAIL_STATS = (
     "matched", "read", "subject_only", "skipped_empty", "skipped_filtered", "skipped_prefilter",
-    "known",
+    "known", "deferred", "stored_only",
 )
 NO_SUBJECT = "(제목 없음)"
 NO_SCOPE = "읽을 범위가 없습니다. 설정에서 메일 소스를 추가하세요."
@@ -90,6 +92,10 @@ def mail_summary(stats: dict[str, int], scope: str) -> str:
         parts.append(f"조건에 맞지 않아 제외 {stats['skipped_filtered']}건")
     if stats.get("skipped_prefilter"):
         parts.append(f"결정 표현 없음 {stats['skipped_prefilter']}건 건너뜀")
+    if stats.get("stored_only"):
+        parts.append(f"분석하지 않고 저장만 {stats['stored_only']}건")
+    if stats.get("deferred"):
+        parts.append(f"다음에 가져올 메일 {stats['deferred']}건")
     return ", ".join(parts)
 
 

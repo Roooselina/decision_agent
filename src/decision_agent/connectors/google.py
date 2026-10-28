@@ -323,6 +323,7 @@ class Gmail(_GoogleBase):
         stats["matched"] = len(refs)
         fresh = [ref["id"] for ref in refs if ref["id"] not in known]
         stats["known"] = len(refs) - len(fresh)
+        fresh = query.capped(fresh, stats)
 
         def read(msg_id: str) -> MailMessage:
             message = self._get(f"{API}/messages/{msg_id}", {"format": "full"})
@@ -334,7 +335,8 @@ class Gmail(_GoogleBase):
             messages = list(pool.map(read, fresh))
         docs = collect_mail(messages, query, stats)
         return FetchOutcome(
-            docs, mail_summary(stats, query.scope_text()), stats, seen_ids=[r["id"] for r in refs]
+            docs, mail_summary(stats, query.scope_text()), stats, seen_ids=[r["id"] for r in refs],
+            messages=messages,
         )
 
     def fetch(self, today: datetime.date) -> FetchOutcome:

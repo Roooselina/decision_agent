@@ -1532,7 +1532,7 @@
       h("span", {}, "모든 연결은 읽기 전용입니다. 보내기, 삭제, 읽음 표시, 만들기 기능이 없고, 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
       targetName ? h("span", {class: "set-target", title: targetName}, "함께 분석할 폴더: " + folderName(targetName)) : null);
     return [intro, ...cal.map(c => serviceCard(c, s)), aiCard(s, st), costCard(s), privacyCard(s, st),
-      h("h2", {class: "set-section"}, "다른 연결"), ...others.map(c => serviceCard(c, s))];
+      h("h2", {class: "set-section"}, "다른 연결"), ...others.map(c => serviceCard(c, s)), contactsCard()];
   }
 
   const SERVICE_ICON = {google_calendar: "calendar", outlook_calendar: "calendar", gmail: "mail", outlook_mail: "mail",
@@ -1547,6 +1547,66 @@
   // ---------------------------------------------------------------- mail sources
 
   const PURPOSES = [["decision", "결정 근거"], ["task", "할 일 요청"], ["requirement", "요구사항 변경"], ["schedule", "일정"]];
+  const ANALYSIS_OPTIONS = [["off", "분석 안 함 (저장과 검색만)"], ["address_book", "주소록에 팀이 있는 사람의 메일만"],
+    ["decision_like", "결정 표현이 있는 메일만"], ["all", "모든 메일"]];
+  const ALL_MAIL_NOTICE = "이 폴더의 모든 메일을 이 컴퓨터에 저장합니다. AI 분석은 따로 켭니다.";
+  const ROLES = ["팀원", "교수", "외부", "기타"];
+
+  // ---------------------------------------------------------------- address book
+
+  function contactsCard() {
+    const list = h("div", {class: "stack-sm"}, h("p", {class: "muted"}, "불러오는 중입니다."));
+    const card = h("section", {class: "card set-card contacts-card", id: "set-contacts"},
+      h("div", {class: "source-top"}, h("h2", {}, "주소록"),
+        h("div", {class: "row"}, button("CSV 가져오기", {size: "sm", onClick: importContacts}),
+          button("사람 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => contactForm(null)}))),
+      h("p", {class: "small muted"}, "보낸 사람을 팀과 역할로 묶습니다. 이 컴퓨터에만 저장되고 AI로 보내지 않습니다. 소스의 보낸 사람에 team:팀이름 으로 쓰면 그 팀 주소로 바뀝니다."),
+      list);
+    api("/api/contacts").then(data => {
+      const rows = data.contacts.map(c => h("li", {class: "contact-row"},
+        h("span", {class: "strong"}, c.name || c.pattern), h("span", {class: "muted"}, c.pattern),
+        c.team ? h("span", {class: "badge neutral"}, "팀 " + c.team) : null, h("span", {class: "badge neutral"}, c.role),
+        h("span", {class: "row"}, button("수정", {size: "sm", onClick: () => contactForm(c)}),
+          button("삭제", {size: "sm", variant: "danger-outline", onClick: async () => {
+            await api("/api/contacts?pattern=" + encodeURIComponent(c.pattern), "DELETE");
+            toast("주소록에서 지웠습니다.", "success"); renderRoute(true);
+          }}))));
+      const suggested = data.suggested.map(x => h("li", {class: "contact-row"},
+        h("span", {class: "strong"}, x.name || x.address), h("span", {class: "muted"}, x.address + " · " + x.count + "통"),
+        button("팀 지정", {size: "sm", onClick: () => contactForm({pattern: x.address, name: x.name, team: "", role: "팀원", note: ""}, true)})));
+      set(list,
+        rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "아직 아무도 없습니다."),
+        suggested.length ? h("details", {class: "result-more"}, h("summary", {}, "자주 온 보낸 사람 " + suggested.length + "명"), h("ul", {class: "source-list"}, ...suggested)) : null);
+    }).catch(e => set(list, h("p", {class: "danger-text"}, e.message)));
+    return card;
+  }
+
+  function contactForm(c, fresh) {
+    const pattern = input({value: c ? c.pattern : "", placeholder: "kim@example.com 또는 @example.com", disabled: Boolean(c && !fresh)});
+    const name = input({value: c ? c.name : "", maxlength: "40"});
+    const team = input({value: c ? c.team : "", maxlength: "40", placeholder: "예: 팀A"});
+    const role = select(ROLES.map(r => [r, r]), c ? c.role : "팀원", {"aria-label": "역할"});
+    const note = input({value: c ? c.note : "", maxlength: "200"});
+    modal({title: c && !fresh ? "주소록 수정" : "주소록에 추가", plain: true,
+      body: h("div", {class: "stack"}, field("주소", pattern, "주소 하나 또는 @도메인"), field("이름", name), field("팀", team), field("역할", role), field("메모", note)),
+      actions: [{label: "취소"}, {label: "저장", variant: "primary", onClick: async () => {
+        await api("/api/contacts", "POST", {pattern: pattern.value.trim(), name: name.value.trim(), team: team.value.trim(), role: role.value, note: note.value.trim()});
+        toast("주소록을 저장했습니다.", "success"); renderRoute(true);
+      }}]});
+  }
+
+  function importContacts() {
+    const file = h("input", {type: "file", accept: ".csv,text/csv"});
+    modal({title: "주소록 CSV 가져오기", plain: true,
+      body: h("div", {class: "stack-sm"}, h("p", {class: "small muted"}, "열 순서: 이름, 주소, 팀. 첫 줄이 머리글이어도 됩니다. 형식이 맞지 않는 줄은 건너뜁니다."), file),
+      actions: [{label: "취소"}, {label: "가져오기", variant: "primary", onClick: async () => {
+        if (!file.files || !file.files[0]) throw new Error("CSV 파일을 고르세요.");
+        const text = await file.files[0].text();
+        const r = await api("/api/contacts/import", "POST", {text});
+        toast(r.added + "명을 추가했습니다" + (r.skipped ? ", " + r.skipped + "줄은 형식이 맞지 않아 건너뛰었습니다." : "."), "success");
+        renderRoute(true);
+      }}]});
+  }
   const SOURCE_SENDING = "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다";
 
   function sourceStatusLine(src) {
@@ -1578,6 +1638,14 @@
         result.textContent = "응답이 늦습니다. 백그라운드에서 계속 시도합니다.";
       }));
       const edit = button("수정", {size: "sm", onClick: () => sourceForm(c, s, src)});
+      const forget = button("메일 지우기", {size: "sm"});
+      forget.addEventListener("click", () => busy(forget, async () => {
+        const ok = await confirmDialog({title: "저장된 메일 지우기", message: "이 컴퓨터에 저장한 '" + src.name + "' 메일 " + (src.indexed || 0) + "건과 분석 사본을 지웁니다. 메일함의 메일은 그대로입니다.", confirmLabel: "지우기", danger: true});
+        if (!ok) return;
+        const r = await api("/api/mail-sources/" + encodeURIComponent(src.id) + "/forget", "POST", {});
+        toast("저장된 메일 " + r.removed + "건을 지웠습니다.", "success");
+        renderRoute(true);
+      }));
       const remove = button("삭제", {size: "sm", variant: "danger-outline"});
       remove.addEventListener("click", () => busy(remove, async () => {
         const ok = await confirmDialog({title: "메일 소스 삭제", message: "'" + src.name + "' 소스와 이 소스에서 가져온 메일 사본을 지웁니다. 메일함의 메일은 그대로입니다.", confirmLabel: "삭제", danger: true});
@@ -1593,8 +1661,9 @@
           src.team ? h("span", {class: "badge neutral"}, "팀 " + src.team) : null,
           src.enabled ? null : h("span", {class: "badge state paused"}, "꺼짐")),
         h("p", {class: "small muted"}, src.filter_summary),
+        h("p", {class: "small muted"}, "이 컴퓨터에 저장된 메일 " + (src.indexed || 0) + "건"),
         sourceStatusLine(src),
-        h("div", {class: "row source-actions"}, preview.run, run, edit, remove),
+        h("div", {class: "row source-actions"}, preview.run, run, edit, forget, remove),
         result, preview.out);
     });
     const add = button("소스 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => sourceForm(c, s, null)});
@@ -1615,7 +1684,28 @@
   function sourceForm(c, s, src) {
     const isGmail = c.id === "gmail";
     const v = src || {name: "", purpose: "decision", team: "", target: "", labels: [], senders: [], subject_keywords: [],
-      exclude_senders: [], exclude_subject_keywords: [], gmail_query: "", days_back: 90, enabled: true};
+      exclude_senders: [], exclude_subject_keywords: [], gmail_query: "", days_back: 90, enabled: true, scope: "filtered", analysis: null};
+    let scope = v.scope || "filtered";
+    const scopeCtl = segmented([["filtered", "조건에 맞는 메일"], ["all_mail", "폴더의 모든 메일"]], scope, (next) => { scope = next; drawScope(); }, "읽을 범위");
+    const confirmAll = h("input", {type: "checkbox"});
+    const allNote = h("div", {class: "stack-sm"},
+      callout("warning", "alert-circle", null, ALL_MAIL_NOTICE),
+      h("label", {class: "check-line"}, confirmAll, h("span", {}, "이 폴더의 모든 메일을 이 컴퓨터에 저장하는 것에 동의합니다.")));
+    const analysis = select(ANALYSIS_OPTIONS, v.analysis || (scope === "all_mail" ? "off" : "all"), {"aria-label": "AI 분석"});
+    const sendingLine = h("div", {});
+    const drawSending = () => set(sendingLine, s.allow_external_send && analysis.value !== "off"
+      ? h("p", {class: "warn-text small"}, icon("alert-circle", "sm"), SOURCE_SENDING) : null);
+    analysis.addEventListener("change", drawSending);
+    const scopeBox = h("div", {});
+    function drawScope() {
+      const already = src && src.scope === "all_mail";
+      set(scopeBox, scope === "all_mail" ? (already ? callout("neutral", "info", null, ALL_MAIL_NOTICE) : allNote) : null);
+      if (!src) {
+        analysis.value = scope === "all_mail" ? "off" : "all";
+        days.value = scope === "all_mail" ? "30" : "90";
+      }
+      drawSending();
+    }
     const name = input({value: v.name, maxlength: "40", placeholder: "예: 팀A 회의록"});
     const purpose = select(PURPOSES, v.purpose, {"aria-label": "용도"});
     const team = input({value: v.team, maxlength: "40", placeholder: "예: 팀A"});
@@ -1636,9 +1726,11 @@
     const query = input({value: v.gmail_query || "", maxlength: "100", placeholder: "예: has:attachment"});
     const days = input({type: "number", min: "1", max: "365", value: String(v.days_back)});
     const enabled = toggle("이 소스 사용", v.enabled, "끄면 이 소스에서 가져온 메일 사본을 분석에서 뺍니다.");
-    const sending = s.allow_external_send ? h("p", {class: "warn-text small"}, icon("alert-circle", "sm"), SOURCE_SENDING) : null;
+    drawScope();
     const body = h("div", {class: "stack"},
       field("이름", name, null, {required: true}),
+      h("div", {class: "field"}, h("span", {class: "field-label"}, "읽을 범위"), scopeCtl), scopeBox,
+      field("AI 분석", analysis, "저장한 메일 중 어떤 메일을 AI로 점검할지 고릅니다. '분석 안 함'이면 모델이 메일을 보지 않습니다."),
       field("용도", purpose, "메일을 어떤 자료로 볼지 고릅니다. 결정 근거는 회의록처럼, 나머지는 할 일, 요구사항, 일정 항목으로 읽습니다."),
       field("팀", team, "선택. 결과 화면에서 팀으로 거를 수 있습니다."),
       field("프로젝트 폴더", target, "이 소스의 메일을 함께 분석할 감시 폴더입니다."),
@@ -1649,7 +1741,7 @@
         h("div", {class: "stack"}, field("제외할 보낸 사람", exSenders), field("제외할 제목 키워드", exKeywords),
           isGmail ? field("Gmail 검색식 (고급)", query, "Gmail 검색창 문법입니다. 다른 조건과 함께 적용됩니다.") : null)),
       field("과거 일수", days, "처음 가져올 때 며칠 전 메일까지 읽을지 정합니다. 이미 가져온 메일은 180일 동안 남겨 둡니다."),
-      enabled, sending);
+      enabled, sendingLine);
     modal({title: src ? "메일 소스 수정" : "메일 소스 추가", wide: true, plain: true, body,
       actions: [{label: "취소"}, {label: "저장", variant: "primary", onClick: async () => {
         const payload = {
@@ -1657,7 +1749,12 @@
           labels: linesOf(labels), senders: linesOf(senders), subject_keywords: linesOf(keywords),
           exclude_senders: linesOf(exSenders), exclude_subject_keywords: linesOf(exKeywords),
           days_back: Number(days.value || 90), enabled: enabled.input.checked,
+          scope, analysis: analysis.value,
         };
+        if (scope === "all_mail" && !(src && src.scope === "all_mail")) {
+          if (!confirmAll.checked) throw new Error("모든 메일을 저장하려면 확인란을 선택하세요.");
+          payload.all_mail_confirm = true;
+        }
         if (isGmail) payload.gmail_query = query.value.trim();
         if (src) payload.id = src.id;
         await api("/api/mail-sources", "POST", payload);

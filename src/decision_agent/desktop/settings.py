@@ -47,6 +47,8 @@ MAIL_CONNECTORS = ("gmail", "outlook_mail", "imap_mail")
 MAX_MAIL_SOURCES = 20
 NARROW_SOURCE = "범위를 좁혀 주세요: 라벨, 보낸 사람, 제목 키워드 중 하나는 필요합니다."
 INBOX_NAMES = {"inbox", "받은 편지함", "받은편지함"}
+ALL_MAIL_CONFIRM = "모든 메일을 저장하려면 확인란을 선택하세요."
+ALL_MAIL_NOTICE = "이 폴더의 모든 메일을 이 컴퓨터에 저장합니다. AI 분석은 따로 켭니다."
 _Term = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 _Terms = Annotated[list[_Term], Field(max_length=30)]
 
@@ -76,6 +78,19 @@ class MailSource(BaseModel):
     days_back: int = Field(default=90, ge=1, le=365)
     max_messages: int = Field(default=300, ge=1, le=1000)
     enabled: bool = True
+    # filtered: the narrowing rules above. all_mail: every mail of one folder or label (INBOX
+    # by default) is stored on this computer; it needs an explicit confirmation.
+    scope: Literal["filtered", "all_mail"] = "filtered"
+    all_mail_confirmed_at: str | None = None
+    # Which stored mails become documents for the model. None means the default for the scope:
+    # off for all_mail, all for filtered.
+    analysis: Literal["off", "address_book", "decision_like", "all"] | None = None
+
+    @property
+    def effective_analysis(self) -> str:
+        if self.analysis is not None:
+            return self.analysis
+        return "off" if self.scope == "all_mail" else "all"
 
     @field_validator("name", "team")
     @classmethod
@@ -88,6 +103,12 @@ class MailSource(BaseModel):
             raise ValueError("이름을 입력하세요.")
         if self.gmail_query and self.connector != "gmail":
             raise ValueError("Gmail 검색식은 Gmail 소스에서만 쓸 수 있습니다.")
+        if self.scope == "all_mail":
+            if not self.all_mail_confirmed_at:
+                raise ValueError(ALL_MAIL_CONFIRM)
+            if len(self.labels) > 1:
+                raise ValueError("전체 메일 소스는 폴더나 라벨 하나만 고를 수 있습니다.")
+            return self
         narrowing = self.senders or self.subject_keywords or self.gmail_query
         if self.connector == "gmail":
             if not (self.labels or narrowing):
@@ -140,6 +161,9 @@ class AppSettings(BaseModel):
     mail_sources: list[MailSource] = Field(default_factory=list, max_length=MAX_MAIL_SOURCES)
     # Purpose "decision" sources send a mail to extraction only when it has decision wording.
     mail_prefilter: bool = True
+    # Days the local mail index keeps a mail, and the most new mails read per source and cycle.
+    mail_index_days: int = Field(default=180, ge=30, le=365)
+    mail_cycle_cap: int = Field(default=500, ge=1, le=2000)
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)
     hotkey_enabled: bool = True
     hotkey: str = "ctrl+shift+space"

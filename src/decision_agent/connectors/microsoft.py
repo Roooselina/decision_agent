@@ -165,7 +165,7 @@ class OutlookMail(_MicrosoftBase):
 
     def _items(self, query: MailQuery, today: datetime.date, select: str) -> list[dict]:
         """Messages of every folder of the query (newest first), unioned by id."""
-        since = (today - datetime.timedelta(days=query.days_back)).isoformat()
+        since = query.listing_start(today).isoformat()
         prefer = 'outlook.body-content-type="text"'
         found: dict[str, dict] = {}
         for name in query.labels or ["inbox"]:
@@ -213,6 +213,7 @@ class OutlookMail(_MicrosoftBase):
         stats["matched"] = len(items)
         fresh = [item for item in items if str(item.get("id")) not in known]
         stats["known"] = len(items) - len(fresh)
+        fresh = query.capped(fresh, stats)
         prefer = 'outlook.body-content-type="text"'
 
         def read(item: dict) -> MailMessage:
@@ -227,7 +228,9 @@ class OutlookMail(_MicrosoftBase):
             messages = list(pool.map(read, fresh))
         docs = collect_mail(messages, query, stats)
         seen = [str(item.get("id")) for item in items]
-        return FetchOutcome(docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen)
+        return FetchOutcome(
+            docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen, messages=messages
+        )
 
     def fetch(self, today: datetime.date) -> FetchOutcome:
         return self.fetch_source(self.options_query(), today)

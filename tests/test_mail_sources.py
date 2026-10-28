@@ -64,7 +64,7 @@ class FakeGmail:
     def add(self, msg_id: str, label: str, subject: str, body: str, sender: str = "lead@team.kr", days_ago: int = 1):
         stamp = datetime.datetime.combine(TODAY - datetime.timedelta(days=days_ago), datetime.time(12))
         message = {
-            "id": msg_id, "labels": [self.labels[label]], "internalDate": str(int(stamp.timestamp() * 1000)),
+            "id": msg_id, "labels": [self.labels.get(label, label)], "internalDate": str(int(stamp.timestamp() * 1000)),
             "payload": {
                 "mimeType": "text/plain", "body": {"data": b64(body)},
                 "headers": [{"name": "Subject", "value": subject}, {"name": "From", "value": sender}],

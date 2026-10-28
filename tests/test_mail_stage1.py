@@ -94,10 +94,11 @@ def test_unreadable_bodies_are_counted_and_keep_the_subject():
     gmail = gmail_with(http, {"img": image_only, "pdf": pdf_only, "big": large, "empty": quoted})
     http.add("GET", f"{API}/messages/big/attachments/BIG1", lambda p, b, f: {"data": b64("<p>- 발표는 취소한다</p>")})
     outcome = gmail.fetch(TODAY)
-    assert outcome.stats == {
+    expected = {
         "matched": 4, "read": 1, "subject_only": 2, "skipped_empty": 1, "skipped_filtered": 0,
         "skipped_prefilter": 0, "known": 0,
     }
+    assert {key: outcome.stats[key] for key in expected} == expected
     assert outcome.summary == (
         "4건 찾음, 1건 읽음, 제목만 사용 2건, 1건은 본문이 비어 있거나 인용만 있어 건너뜀"
     )

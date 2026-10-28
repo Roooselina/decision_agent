@@ -87,7 +87,7 @@ class ImapMail(Connector):
         """Open each folder read-only, search it, and run work(conn, folder, numbers)."""
         host = self.text_option("host")
         port = self.int_option("port", 993, 1, 65535)
-        since = (today - datetime.timedelta(days=query.days_back)).strftime("%d-%b-%Y")
+        since = query.listing_start(today).strftime("%d-%b-%Y")
         folders = query.labels or ["INBOX"]
         try:
             conn = IMAP_FACTORY(host, port)
@@ -164,6 +164,9 @@ class ImapMail(Connector):
                 if head.msg_id in known:
                     stats["known"] += 1
                     continue
+                if query.body_cap is not None and len(messages) >= query.body_cap:
+                    stats["deferred"] += 1
+                    continue
                 raw = self._raw(conn, number, "(BODY.PEEK[])")
                 if raw is None:
                     stats["skipped_empty"] += 1
@@ -173,7 +176,9 @@ class ImapMail(Connector):
         self._session(today, query, work)
         stats["matched"] = len(seen)
         docs = collect_mail(messages, query, stats)
-        return FetchOutcome(docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen)
+        return FetchOutcome(
+            docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen, messages=messages
+        )
 
     def fetch(self, today: datetime.date) -> FetchOutcome:
         return self.fetch_source(self.options_query(), today)

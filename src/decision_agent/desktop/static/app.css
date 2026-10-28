@@ -891,3 +891,6 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .source-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .source-actions { flex-wrap: wrap; gap: 6px; }
 .label-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.check-line { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.contact-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 12px; overflow-wrap: anywhere; }
+.contact-row .row { margin-left: auto; gap: 6px; }

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from decision_agent import __version__
-from decision_agent.connectors.base import ConnectorError, SecretStore
+from decision_agent.connectors.base import ConnectorError, SecretStore, mail_summary
 from decision_agent.connectors.http import Http
 from decision_agent.connectors.registry import CONNECTORS
 from decision_agent.desktop import calendar_view, mailsources
@@ -33,8 +33,9 @@ from decision_agent.desktop.engine import EXTERNAL_PREFIX, CycleReport, ProjectE
 from decision_agent.desktop.errors import UserError
 from decision_agent.desktop.helper import quiet_now
 from decision_agent.desktop.hotkey import hotkey_status
+from decision_agent.desktop.maildb import MailDB
 from decision_agent.desktop.notify import LogNotifier, Notifier
-from decision_agent.desktop.paths import app_home, log_path, state_db_path
+from decision_agent.desktop.paths import app_home, log_path, mail_db_path, state_db_path
 from decision_agent.desktop.policy import FolderPolicy
 from decision_agent.desktop.progress import ActivityLog, ProgressTracker
 from decision_agent.desktop.providers import (
@@ -127,8 +128,11 @@ class DecisionAgentApp:
         secret_store: SecretStore | None = None,
         clock: Callable[[], datetime.datetime] = datetime.datetime.now,
         activity_file: Path | None = None,
+        mail_db: MailDB | None = None,
     ) -> None:
         self.clock = clock
+        # Local mail index and address book (app folder, never inside a watched folder).
+        self.maildb = mail_db or MailDB(mail_db_path())
         self.hotkey_state: dict = hotkey_status(settings.hotkey, False, False, "")
         self.settings_hooks: list[Callable[[AppSettings], None]] = []
         self._digest_timer: PeriodicTimer | None = None
@@ -551,14 +555,30 @@ class DecisionAgentApp:
         return source.enabled and bool(saved and saved.enabled)
 
     def _fetch_source(self, runtime: _RootRuntime, source: MailSource) -> dict:
-        """Fetch one source into the runtime. Returns its status record (counts only)."""
-        known = mailsources.known_ids(runtime.engine, runtime.db, source, self.settings)
-        query = mailsources.query_for(source, self.settings)
+        """Fetch one source into the index and the runtime. Returns its status (counts only)."""
+        known = mailsources.known_ids(self.maildb, source)
+        since = mailsources.since_for(self.maildb, source)
+        query = mailsources.query_for(source, self.settings, self.maildb, since)
         outcome, status = self.connectors.fetch_source(source.connector, query, known)
         if outcome is not None:
-            mailsources.store_outcome(runtime.engine, runtime.db, source, outcome, self.connectors.today())
+            stats = mailsources.apply_fetch(
+                runtime.engine, self.maildb, source, outcome, query, self.settings, self.connectors.today()
+            )
+            status["stats"] = stats
+            status["summary"] = mail_summary(stats, query.scope_text())
         mailsources.save_status(runtime.db, source, status)
         return status
+
+    def _rebuild_sources(self, sources: list[MailSource]) -> None:
+        """Rebuild the documents of sources from the index and re-check changed folders."""
+        changed: set[str] = set()
+        for source in sources:
+            target = self.source_target(source)
+            runtime = self.runtimes.get(target) if target else None
+            if runtime is not None and mailsources.rebuild(runtime.engine, self.maildb, source, self.settings):
+                changed.add(target)
+        for target in changed:
+            self.enqueue(Job("reanalyze", target))
 
     def save_mail_source(self, raw: dict) -> dict:
         """Create or update a mail source from the settings form (validated here, never trusted)."""
@@ -572,6 +592,13 @@ class DecisionAgentApp:
             raise UserError(f"메일 소스는 {MAX_MAIL_SOURCES}개까지 만들 수 있습니다.")
         if previous is None:
             source_id = new_source_id(str(data.get("name") or ""), {s.id for s in sources})
+        confirmed = data.pop("all_mail_confirm", False) is True
+        data.pop("all_mail_confirmed_at", None)
+        if data.get("scope") == "all_mail":
+            if confirmed:
+                data["all_mail_confirmed_at"] = now_iso()
+            elif previous is not None and previous.scope == "all_mail":
+                data["all_mail_confirmed_at"] = previous.all_mail_confirmed_at
         try:
             source = MailSource(id=source_id, **data)
         except (ValueError, TypeError) as exc:
@@ -595,6 +622,9 @@ class DecisionAgentApp:
             saved.enabled = True
             new.connectors[source.connector] = saved
         self._apply_light(new)
+        if previous is not None:
+            # Purpose, team, policy or switch changes apply from the index without a fetch.
+            self._rebuild_sources([source])
         return source.model_dump()
 
     def delete_mail_source(self, source_id: str) -> None:
@@ -605,8 +635,71 @@ class DecisionAgentApp:
         new.mail_sources = [s for s in new.mail_sources if s.id != source_id]
         self._apply_light(new)
         runtime = self.runtimes.get(target) if target else None
+        mailsources.forget_source(self.maildb, source)
         if runtime is not None and mailsources.remove_documents(runtime.engine, runtime.db, source):
             self.enqueue(Job("reanalyze", target))
+
+    def forget_source_mail(self, source_id: str) -> int:
+        """'메일 지우기': delete the source's indexed mail and its documents; keep the source."""
+        source = self._source(source_id)
+        removed = self.maildb.count(source.id)
+        mailsources.forget_source(self.maildb, source)
+        self._rebuild_sources([source])
+        return removed
+
+    def include_mail(self, uid: str) -> dict:
+        """Send one stored mail to the analysis whatever the source's policy says."""
+        row = self.maildb.get(uid)
+        if row is None:
+            raise UserError("메일을 찾지 못했습니다.")
+        source = self._source(row["source_id"])
+        self.maildb.set_include(uid, True)
+        self._rebuild_sources([source])
+        return {"ok": True, "source": source.name}
+
+    # address book
+
+    def contact_list(self) -> dict:
+        return {"contacts": self.maildb.contacts(), "suggested": self.maildb.top_senders(20)}
+
+    def save_contact(self, raw: dict) -> dict:
+        allowed = {"pattern", "name", "team", "role", "note"}
+        unknown = set(raw or {}) - allowed
+        if unknown:
+            raise UserError(f"알 수 없는 항목입니다: {', '.join(sorted(unknown))}")
+        try:
+            row = self.maildb.put_contact(
+                str(raw.get("pattern") or ""), str(raw.get("name") or ""), str(raw.get("team") or ""),
+                str(raw.get("role") or "기타"), str(raw.get("note") or ""),
+            )
+        except ValueError as exc:
+            raise UserError(str(exc)) from exc
+        self._contacts_changed()
+        return row
+
+    def delete_contact(self, pattern: str) -> bool:
+        removed = self.maildb.delete_contact(pattern)
+        if removed:
+            self._contacts_changed()
+        return removed
+
+    def import_contacts(self, text: str) -> dict:
+        if len(text) > 1_000_000:
+            raise UserError("CSV 파일이 너무 큽니다.")
+        result = self.maildb.import_csv(text)
+        if result["added"]:
+            self._contacts_changed()
+        return result
+
+    def _contacts_changed(self) -> None:
+        """Sources that depend on the address book choose their documents again."""
+        affected = [
+            s for s in self.settings.mail_sources
+            if s.effective_analysis == "address_book"
+            or any(x.casefold().startswith(mailsources.TEAM_PREFIX) for x in s.senders + s.exclude_senders)
+        ]
+        self._rebuild_sources(affected)
+        self._changed()
 
     def preview_mail_source(self, source_id: str) -> dict:
         source = self._source(source_id)
@@ -647,6 +740,9 @@ class DecisionAgentApp:
             item["filter_summary"] = mailsources.filter_summary(source)
             item["status"] = mailsources.read_status(runtime.db if runtime else None, source)
             item["target_root"] = target
+            item["analysis_effective"] = source.effective_analysis
+            item["analysis_label"] = mailsources.ANALYSIS_LABELS[source.effective_analysis]
+            item["indexed"] = self.maildb.count(source.id)
             rows.append(item)
         return rows
 
@@ -1625,6 +1721,7 @@ class DecisionAgentApp:
             except Exception:  # noqa: BLE001 - keep going so the rest is still deleted
                 log.warning("could not forget connector %s", connector_id)
         secret_store.delete_api_key()
+        self.maildb.purge()
         home = app_home()
         for name in ("state", "digests", "tmp", "webview"):
             shutil.rmtree(home / name, ignore_errors=True)
