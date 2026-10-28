@@ -173,7 +173,7 @@ def test_gmail_reads_only_the_chosen_label_and_decodes_the_body():
     assert listing["params"]["labelIds"] == "L1" and listing["params"]["q"] == "newer_than:14d"
     (doc,) = outcome.docs.values()
     texts = [b.text for b in doc.sections[0].blocks]
-    assert texts[0].startswith("2026-10-20 주간 회의록") and "결정: 발표는 취소한다." in texts
+    assert texts[:2] == ["2026-10-20", "제목: 주간 회의록"] and "결정: 발표는 취소한다." in texts
     assert not any("이전 메일" in t or "서명" in t for t in texts)
     built = build(outcome.docs)
     assert [m.text for m in built.meetings] == ["결정: 발표는 취소한다."]

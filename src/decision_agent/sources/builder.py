@@ -236,7 +236,8 @@ def _meeting_items_from_blocks(
             in_decision = bool(_DECISION_HEAD.search(block.text))
             skipping = bool(_SKIP_HEAD.search(block.text))
             continue
-        if skipping:
+        if skipping or block.location == "subject":
+            # The subject line of a mail document is context, not a decision of its own.
             continue
         text = block.text.strip()
         if block.kind == "bullet":
@@ -347,7 +348,8 @@ def _artifacts_from_blocks(
     heading: str | None = None
     result: list[Artifact] = []
     for index, block in enumerate(section.blocks, start=1):
-        if block.kind == "heading":
+        if block.kind == "heading" or block.location == "subject":
+            # A mail subject is not an item, but its words still give the scope.
             heading = block.text
             continue
         if has_bullets and block.kind != "bullet":

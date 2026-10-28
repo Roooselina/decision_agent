@@ -105,7 +105,7 @@ def test_unreadable_bodies_are_counted_and_keep_the_subject():
     texts = {
         doc.meta["msg_id"]: [b.text for b in doc.sections[0].blocks][1:] for doc in outcome.docs.values()
     }
-    assert texts["big"] == ["발표는 취소한다"]
+    assert texts["big"] == ["제목: 결정 사항", "발표는 취소한다"]
     assert texts["img"] == ["제3차 미래포럼 행사 안내(26.11.4. 서울 글래드 여의도)"]
     assert texts["pdf"] == ["회의 자료 송부"]
     # The PDF itself is never downloaded.

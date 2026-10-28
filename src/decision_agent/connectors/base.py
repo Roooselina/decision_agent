@@ -313,12 +313,23 @@ def clean_message_text(value: str, limit: int = 6000) -> list[str]:
     return out
 
 
+SUBJECT_PREFIX = "제목: "
+SUBJECT_LOCATION = "subject"
+
+
 def message_document(
     subject: str, date: str, sender: str, lines: list[str], kind: str = "MEETING"
 ) -> ParsedDocument:
-    """One message as a meeting-style document: a dated heading, then its lines."""
+    """One message as a meeting-style document: a dated heading, the subject line, then its lines.
+
+    The heading carries only the date. A subject with a decision word ("확정", "action items")
+    in the heading would turn the whole message into a decision section and switch off the
+    sentence extraction of its body.
+    """
     section = Section(name="message")
-    section.blocks.append(Block(text=f"{date} {subject}".strip(), kind="heading", level=2))
+    section.blocks.append(Block(text=date, kind="heading", level=2))
+    if subject and lines != [subject]:
+        section.blocks.append(Block(text=f"{SUBJECT_PREFIX}{subject}", kind="para", location=SUBJECT_LOCATION))
     for index, line in enumerate(lines, start=1):
         match = _BULLET_RE.match(line)
         if match:
