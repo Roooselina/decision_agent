@@ -7,15 +7,18 @@ import email.utils
 import imaplib
 
 from decision_agent.connectors.base import (
+    NO_SUBJECT,
     Connector,
     ConnectorError,
     FetchOutcome,
+    MailMessage,
     OptionSpec,
     SecretSpec,
-    clean_message_text,
-    message_document,
+    mail_document,
+    mail_summary,
+    new_mail_stats,
+    preview_summary,
     strip_html,
-    unique_name,
 )
 
 # Replaced in tests. Always a TLS connection.
@@ -56,13 +59,13 @@ class ImapMail(Connector):
     )
     secrets = (SecretSpec("password", "비밀번호 또는 앱 비밀번호"),)
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
+    def _session(self, today: datetime.date, work) -> object:
+        """Open the folder read-only, list the message numbers since days_back, run work()."""
         host = self.text_option("host")
         port = self.int_option("port", 993, 1, 65535)
         days = self.int_option("days_back", 14, 1, 365)
         limit = self.int_option("max_messages", 200, 1, 1000)
         since = (today - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
-        docs = {}
         try:
             conn = IMAP_FACTORY(host, port)
             try:
@@ -74,21 +77,7 @@ class ImapMail(Connector):
                 if status != "OK":
                     raise ConnectorError("메일 검색에 실패했습니다.")
                 ids = data[0].split()[-limit:] if data and data[0] else []
-                for message_id in ids:
-                    status, parts = conn.fetch(message_id, "(BODY.PEEK[])")
-                    if status != "OK" or not parts or not isinstance(parts[0], tuple):
-                        continue
-                    message = email.message_from_bytes(parts[0][1], policy=email.policy.default)
-                    lines = clean_message_text(message_text(message))
-                    if not lines:
-                        continue
-                    stamp = email.utils.parsedate_to_datetime(message["Date"]) if message["Date"] else None
-                    date = (stamp.date() if stamp else today).isoformat()
-                    subject = str(message["Subject"] or "(제목 없음)")
-                    key = str(message["Message-ID"] or f"{subject}{date}")
-                    docs[unique_name(f"{date} {subject}", key)] = message_document(
-                        subject, date, str(message["From"] or ""), lines
-                    )
+                return work(conn, ids)
             finally:
                 try:
                     conn.logout()
@@ -98,4 +87,60 @@ class ImapMail(Connector):
             raise ConnectorError("메일 서버가 로그인 또는 요청을 거절했습니다. 계정과 비밀번호를 확인하세요.") from exc
         except (OSError, TimeoutError) as exc:
             raise ConnectorError(f"메일 서버에 연결하지 못했습니다: {exc}") from exc
-        return FetchOutcome(docs, f"메일 {len(docs)}건")
+
+    def _scope(self) -> str:
+        return f"폴더: {self.text_option('folder')}, 최근 {self.int_option('days_back', 14, 1, 365)}일"
+
+    @staticmethod
+    def _parse(raw: bytes, today: datetime.date, with_body: bool) -> MailMessage:
+        message = email.message_from_bytes(raw, policy=email.policy.default)
+        try:
+            stamp = email.utils.parsedate_to_datetime(message["Date"]) if message["Date"] else None
+        except (TypeError, ValueError):
+            stamp = None
+        date = (stamp.date() if stamp else today).isoformat()
+        subject = str(message["Subject"] or NO_SUBJECT)
+        return MailMessage(
+            msg_id=str(message["Message-ID"] or f"{subject}{date}"),
+            date=date,
+            subject=subject,
+            sender=str(message["From"] or ""),
+            body=message_text(message) if with_body else "",
+        )
+
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        stats = new_mail_stats()
+        docs = {}
+
+        def work(conn, ids):
+            stats["matched"] = len(ids)
+            for message_id in ids:
+                status, parts = conn.fetch(message_id, "(BODY.PEEK[])")
+                if status != "OK" or not parts or not isinstance(parts[0], tuple):
+                    stats["skipped_empty"] += 1
+                    continue
+                made = mail_document(self._parse(parts[0][1], today, True), stats)
+                if made is not None:
+                    docs[made[0]] = made[1]
+
+        self._session(today, work)
+        return FetchOutcome(docs, mail_summary(stats, self._scope()), stats)
+
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        stats = new_mail_stats()
+        rows: list[dict] = []
+
+        def work(conn, ids):
+            stats["matched"] = len(ids)
+            for message_id in list(reversed(ids))[:limit]:
+                status, parts = conn.fetch(message_id, "(BODY.PEEK[HEADER])")
+                if status != "OK" or not parts or not isinstance(parts[0], tuple):
+                    continue
+                mail = self._parse(parts[0][1], today, False)
+                rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
+
+        self._session(today, work)
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, self._scope())}
+
+    def account_info(self) -> dict:
+        return {"account": self.text_option("username")}

@@ -13,7 +13,7 @@ from decision_agent.connectors.base import (
     SecretStore,
 )
 from decision_agent.connectors.http import Http, UrllibHttp
-from decision_agent.connectors.oauth import OAuthManager
+from decision_agent.connectors.oauth import MISSING_SCOPE, OAuthManager
 from decision_agent.connectors.registry import CONNECTORS, describe
 from decision_agent.desktop.secrets import KeyringSecrets, SecretStoreUnavailable
 from decision_agent.desktop.settings import AppSettings
@@ -40,6 +40,9 @@ class ConnectorManager:
         self.secrets = secrets or KeyringSecrets()
         self.today = today
         self.oauth = OAuthManager(self.http, self.secrets, get_settings().ui_port)
+        # Connected account and label names per connector, in memory only: shown in the
+        # settings card so the user can tell which account is read, never logged or saved.
+        self.accounts: dict[str, dict] = {}
 
     # lookup
 
@@ -72,10 +75,14 @@ class ConnectorManager:
                 s.name: bool(self.secrets.get(connector.secret_key(s.name))) for s in cls.secrets
             }
             info["connected"] = (
-                bool(self.secrets.get(connector.secret_key("oauth"))) if cls.uses_oauth else None
+                self.oauth.connected(connector_id, connector.oauth_app()) if cls.uses_oauth else None
             )
             info["problems"] = connector.problems()
+            if cls.uses_oauth and not info["connected"] and self.secrets.get(connector.secret_key("oauth")):
+                info["problems"] = [*info["problems"], MISSING_SCOPE]
             info["status"] = statuses.get(connector_id)
+            info["account"] = self.accounts.get(connector_id, {}).get("account", "")
+            info["label_names"] = self.accounts.get(connector_id, {}).get("labels", [])
             rows.append(info)
         return rows
 
@@ -124,7 +131,23 @@ class ConnectorManager:
         return self.oauth.begin(connector_id, connector.oauth_app())
 
     def finish_login(self, state: str, code: str) -> str:
-        return self.oauth.complete(state, code)
+        connector_id = self.oauth.complete(state, code)
+        self.accounts.pop(connector_id, None)
+        self.remember_account(connector_id)
+        return connector_id
+
+    def remember_account(self, connector_id: str, connector: Connector | None = None) -> None:
+        """Look up the connected account once and keep it in memory for the settings card."""
+        connector = connector or self.instance(connector_id)
+        try:
+            info = connector.account_info()
+        except ConnectorError:
+            return
+        except Exception:  # noqa: BLE001 - the account line is optional
+            log.warning("account lookup failed for %s", connector_id)
+            return
+        if info:
+            self.accounts[connector_id] = info
 
     def forget(self, connector_id: str) -> None:
         """Remove every stored secret of one connector."""
@@ -132,6 +155,7 @@ class ConnectorManager:
         for spec in connector.secrets:
             self.secrets.delete(connector.secret_key(spec.name))
         self.secrets.delete(connector.secret_key("oauth"))
+        self.accounts.pop(connector_id, None)
 
     # fetching
 
@@ -149,4 +173,24 @@ class ConnectorManager:
         except Exception as exc:
             log.exception("connector %s failed", connector_id)
             return None, {"at": stamp, "ok": False, "message": f"예기치 않은 오류: {exc}"[:200], "summary": ""}
-        return outcome, {"at": stamp, "ok": True, "message": "", "summary": outcome.summary}
+        if connector_id not in self.accounts:
+            self.remember_account(connector_id, connector)
+        elif getattr(connector, "label_names", None) is not None:
+            self.accounts[connector_id]["labels"] = list(connector.label_names)
+        status = {"at": stamp, "ok": True, "message": "", "summary": outcome.summary}
+        if outcome.stats:
+            status["stats"] = dict(outcome.stats)
+        return outcome, status
+
+    def preview(self, connector_id: str) -> dict:
+        """Up to ten matching mails, headers only. Nothing is stored and no model is called."""
+        connector = self.instance(connector_id)
+        problems = connector.problems()
+        if problems:
+            raise ConnectorError(problems[0])
+        result = connector.preview(self.today())
+        if connector_id not in self.accounts:
+            self.remember_account(connector_id, connector)
+        result["account"] = self.accounts.get(connector_id, {}).get("account", "")
+        result["label_names"] = self.accounts.get(connector_id, {}).get("labels", [])
+        return result

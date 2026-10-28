@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import html
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -50,6 +51,80 @@ class ConnectorContext:
 class FetchOutcome:
     docs: dict[str, ParsedDocument] = field(default_factory=dict)
     summary: str = ""
+    # Counts only (never subjects, bodies or addresses). Mail connectors fill MAIL_STATS keys.
+    stats: dict[str, int] = field(default_factory=dict)
+
+
+# matched: listed by the server; read: body text used; subject_only: no readable body, the
+# subject line was kept instead; skipped_empty: neither body nor subject; skipped_filtered:
+# left out by a sender, subject or decision filter.
+MAIL_STATS = ("matched", "read", "subject_only", "skipped_empty", "skipped_filtered")
+NO_SUBJECT = "(제목 없음)"
+
+
+def new_mail_stats() -> dict[str, int]:
+    return dict.fromkeys(MAIL_STATS, 0)
+
+
+def mail_summary(stats: dict[str, int], scope: str) -> str:
+    """One status sentence that tells apart 'nothing matched' and 'matched but unreadable'."""
+    matched = stats.get("matched", 0)
+    if not matched:
+        return f"조건에 맞는 메일이 없습니다 ({scope})"
+    parts = [f"{matched}건 찾음", f"{stats.get('read', 0)}건 읽음"]
+    if stats.get("subject_only"):
+        parts.append(f"제목만 사용 {stats['subject_only']}건")
+    if stats.get("skipped_empty"):
+        parts.append(f"{stats['skipped_empty']}건은 본문이 비어 있거나 인용만 있어 건너뜀")
+    if stats.get("skipped_filtered"):
+        parts.append(f"조건에 맞지 않아 제외 {stats['skipped_filtered']}건")
+    if stats.get("skipped_prefilter"):
+        parts.append(f"결정 표현 없음 {stats['skipped_prefilter']}건 건너뜀")
+    return ", ".join(parts)
+
+
+def preview_summary(stats: dict[str, int], scope: str) -> str:
+    """A preview reads headers only, so it can say how many mails match but not how many read."""
+    if not stats.get("matched"):
+        return f"조건에 맞는 메일이 없습니다 ({scope})"
+    return f"조건에 맞는 메일 {stats['matched']}건 ({scope})"
+
+
+@dataclass
+class MailMessage:
+    """One fetched mail, provider independent. Never logged."""
+
+    msg_id: str
+    date: str
+    subject: str
+    sender: str
+    body: str = ""
+    thread_id: str = ""
+    labels: list[str] = field(default_factory=list)
+    sender_name: str = ""
+
+
+def mail_document(
+    message: MailMessage, stats: dict[str, int], kind: str = "MEETING"
+) -> tuple[str, ParsedDocument] | None:
+    """(document name, document) for one mail, or None when nothing readable is left.
+
+    A mail whose body is empty, an image, an attachment or only quoted text keeps one line made
+    of its subject, because announcements often carry the date and place only in the subject.
+    """
+    lines = clean_message_text(message.body)
+    subject = message.subject.strip()
+    if lines:
+        stats["read"] = stats.get("read", 0) + 1
+    elif subject and subject != NO_SUBJECT:
+        lines = [subject]
+        stats["subject_only"] = stats.get("subject_only", 0) + 1
+    else:
+        stats["skipped_empty"] = stats.get("skipped_empty", 0) + 1
+        return None
+    doc = message_document(subject or NO_SUBJECT, message.date, message.sender, lines, kind)
+    doc.meta["msg_id"] = message.msg_id
+    return unique_name(f"{message.date} {subject}", message.msg_id), doc
 
 
 class Connector:
@@ -114,13 +189,65 @@ class Connector:
     def fetch(self, today: datetime.date) -> FetchOutcome:
         raise NotImplementedError
 
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        """Up to `limit` matching mails as headers only. Never stores anything or calls a model."""
+        raise ConnectorError("이 연결은 미리보기를 지원하지 않습니다.")
+
+    def account_info(self) -> dict:
+        """What the user needs to see which account is read (UI only, never logged)."""
+        return {}
+
+
+# Short Korean hints for the error reasons Google puts in its JSON error body.
+GOOGLE_HINTS = {
+    "accessnotconfigured": "Google Cloud에서 이 API를 사용 설정했는지 확인하세요",
+    "service_disabled": "Google Cloud에서 이 API를 사용 설정했는지 확인하세요",
+    "insufficientpermissions": "권한이 부족합니다. 계정을 다시 연결하세요",
+    "access_token_scope_insufficient": "권한이 부족합니다. 계정을 다시 연결하세요",
+    "invalid_grant": "로그인이 만료되었습니다. 다시 연결하세요; 테스트 모드의 Google 앱은 7일 뒤 만료됩니다",
+    "autherror": "로그인이 만료되었습니다. 다시 연결하세요; 테스트 모드의 Google 앱은 7일 뒤 만료됩니다",
+}
+
+
+def error_reason(response: HttpResponse) -> tuple[str, str]:
+    """(reason, message) from a Google-style JSON error body, or empty strings."""
+    try:
+        body = json.loads(response.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return "", ""
+    if not isinstance(body, dict):
+        return "", ""
+    error = body.get("error")
+    if isinstance(error, str):
+        return error, str(body.get("error_description") or "")[:160]
+    if not isinstance(error, dict):
+        return "", ""
+    reason = ""
+    errors = error.get("errors")
+    if isinstance(errors, list) and errors and isinstance(errors[0], dict):
+        reason = str(errors[0].get("reason") or "")
+    for detail in error.get("details") or []:
+        if not reason and isinstance(detail, dict) and detail.get("reason"):
+            reason = str(detail["reason"])
+    return reason or str(error.get("status") or ""), str(error.get("message") or "")[:160]
+
 
 def check_response(response: HttpResponse, service: str) -> HttpResponse:
-    """Raise a readable ConnectorError for a failed response."""
+    """Raise a readable ConnectorError for a failed response.
+
+    Only the service's own reason and message are shown, never request headers or tokens.
+    """
     if response.ok:
         return response
     if response.status in {401, 403}:
-        raise ConnectorError(f"{service}: 인증에 실패했거나 읽기 권한이 없습니다 ({response.status}).")
+        reason, message = error_reason(response)
+        hint = GOOGLE_HINTS.get(reason.lower(), "")
+        text = f"{service}: 인증에 실패했거나 읽기 권한이 없습니다 ({response.status})."
+        if hint:
+            text += f" {hint}."
+        if message:
+            text += f" ({message})"
+        raise ConnectorError(text)
     if response.status == 404:
         raise ConnectorError(f"{service}: 대상을 찾을 수 없습니다. 이름이나 주소를 확인하세요.")
     if response.status == 429:

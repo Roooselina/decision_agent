@@ -4,19 +4,22 @@ import datetime
 import urllib.parse
 
 from decision_agent.connectors.base import (
+    NO_SUBJECT,
     CalendarEvent,
     Connector,
     ConnectorError,
     FetchOutcome,
+    MailMessage,
     OptionSpec,
     SecretSpec,
     calendar_documents,
     check_response,
-    clean_message_text,
     clock_of,
-    message_document,
+    mail_document,
+    mail_summary,
+    new_mail_stats,
+    preview_summary,
     strip_html,
-    unique_name,
 )
 from decision_agent.connectors.http import HttpError
 from decision_agent.connectors.oauth import OAuthApp
@@ -147,16 +150,15 @@ class OutlookMail(_MicrosoftBase):
                     return folder["id"]
         raise ConnectorError(f"메일 폴더 '{name}'을(를) 찾지 못했습니다. 이름을 확인하세요.")
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
+    def _items(self, today: datetime.date, select: str, limit: int) -> list[dict]:
         folder = self._folder_id(self.text_option("folder"))
         days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 200, 1, 1000)
         since = (today - datetime.timedelta(days=days)).isoformat()
         prefer = 'outlook.body-content-type="text"'
         url: str | None = f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages"
         params: dict | None = {
             "$top": min(limit, 100),
-            "$select": "id,subject,receivedDateTime,from,body",
+            "$select": select,
             "$filter": f"receivedDateTime ge {since}T00:00:00Z",
             "$orderby": "receivedDateTime desc",
         }
@@ -165,18 +167,48 @@ class OutlookMail(_MicrosoftBase):
             body = self._get(url, params, prefer)
             items.extend(body.get("value", []))
             url, params = body.get("@odata.nextLink"), None
+        return items[:limit]
+
+    def _scope(self) -> str:
+        return f"폴더: {self.text_option('folder')}, 최근 {self.int_option('days_back', 14, 1, 365)}일"
+
+    @staticmethod
+    def mail_message(item: dict, today: datetime.date) -> MailMessage:
+        content = (item.get("body") or {}).get("content", "")
+        if (item.get("body") or {}).get("contentType") == "html":
+            content = strip_html(content)
+        address = (item.get("from") or {}).get("emailAddress") or {}
+        subject = item.get("subject") or NO_SUBJECT
+        return MailMessage(
+            msg_id=str(item.get("id") or subject),
+            date=(item.get("receivedDateTime") or "")[:10] or today.isoformat(),
+            subject=subject,
+            sender=address.get("address", ""),
+            sender_name=address.get("name", ""),
+            body=content,
+            thread_id=str(item.get("conversationId") or ""),
+        )
+
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        limit = self.int_option("max_messages", 200, 1, 1000)
+        items = self._items(today, "id,subject,receivedDateTime,from,body,conversationId", limit)
+        stats = new_mail_stats()
+        stats["matched"] = len(items)
         docs = {}
+        for item in items:
+            made = mail_document(self.mail_message(item, today), stats)
+            if made is not None:
+                docs[made[0]] = made[1]
+        return FetchOutcome(docs, mail_summary(stats, self._scope()), stats)
+
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        items = self._items(
+            today, "id,subject,receivedDateTime,from", self.int_option("max_messages", 200, 1, 1000)
+        )
+        rows = []
         for item in items[:limit]:
-            content = (item.get("body") or {}).get("content", "")
-            if (item.get("body") or {}).get("contentType") == "html":
-                content = strip_html(content)
-            lines = clean_message_text(content)
-            if not lines:
-                continue
-            date = (item.get("receivedDateTime") or "")[:10] or today.isoformat()
-            subject = item.get("subject") or "(제목 없음)"
-            sender = ((item.get("from") or {}).get("emailAddress") or {}).get("address", "")
-            docs[unique_name(f"{date} {subject}", item.get("id", subject))] = message_document(
-                subject, date, sender, lines
-            )
-        return FetchOutcome(docs, f"메일 {len(docs)}건")
+            mail = self.mail_message(item, today)
+            rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
+        stats = new_mail_stats()
+        stats["matched"] = len(items)
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, self._scope())}

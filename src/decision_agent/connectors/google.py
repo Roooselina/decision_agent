@@ -5,21 +5,24 @@ import datetime
 import urllib.parse
 
 from decision_agent.connectors.base import (
+    NO_SUBJECT,
     CalendarEvent,
     Connector,
     ConnectorError,
     FetchOutcome,
+    MailMessage,
     OptionSpec,
     SecretSpec,
     calendar_documents,
     check_response,
-    clean_message_text,
     clock_of,
-    message_document,
+    mail_document,
+    mail_summary,
+    new_mail_stats,
+    preview_summary,
     strip_html,
-    unique_name,
 )
-from decision_agent.connectors.http import HttpError
+from decision_agent.connectors.http import HttpError, HttpResponse
 from decision_agent.connectors.oauth import OAuthApp
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -27,6 +30,13 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 MAX_PAGES = 10
+API = "https://gmail.googleapis.com/gmail/v1/users/me"
+# Gmail system labels are addressed by id (INBOX, STARRED, ...), not by a display name.
+SYSTEM_LABELS = frozenset({
+    "INBOX", "SENT", "DRAFT", "SPAM", "TRASH", "STARRED", "IMPORTANT", "UNREAD", "CHAT",
+    "CATEGORY_PERSONAL", "CATEGORY_SOCIAL", "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES",
+    "CATEGORY_FORUMS",
+})
 
 GOOGLE_GUIDE = (
     "Google Cloud 콘솔에서 프로젝트를 만들고 해당 API(Calendar 또는 Gmail)를 사용 설정합니다.",
@@ -63,12 +73,14 @@ class _GoogleBase(Connector):
         token = self.ctx.oauth.access_token(self.id, self.oauth_app())
         return {"Authorization": f"Bearer {token}"}
 
-    def _get(self, url: str, params: dict | None = None) -> dict:
+    def _request(self, url: str, params: dict | None = None) -> HttpResponse:
         try:
-            response = self.ctx.http.request("GET", url, headers=self._headers(), params=params)
+            return self.ctx.http.request("GET", url, headers=self._headers(), params=params)
         except HttpError as exc:
             raise ConnectorError(str(exc)) from exc
-        return check_response(response, self.label).json()
+
+    def _get(self, url: str, params: dict | None = None) -> dict:
+        return check_response(self._request(url, params), self.label).json()
 
 
 class GoogleCalendar(_GoogleBase):
@@ -144,60 +156,160 @@ class Gmail(_GoogleBase):
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
 
+    def __init__(self, options, ctx) -> None:
+        super().__init__(options, ctx)
+        # Filled while talking to Gmail; shown in the settings card only, never logged.
+        self.label_names: list[str] | None = None
+
     @staticmethod
     def _decode(data: str) -> str:
         padded = data + "=" * (-len(data) % 4)
         return base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8", errors="replace")
 
-    def _body_text(self, part: dict) -> str:
+    def _part_data(self, part: dict, msg_id: str) -> str | None:
+        """The part's text. Large parts carry only an attachmentId and are fetched separately."""
+        body = part.get("body") or {}
+        if body.get("data"):
+            return self._decode(body["data"])
+        if body.get("attachmentId") and msg_id:
+            found = self._get(f"{API}/messages/{msg_id}/attachments/{body['attachmentId']}")
+            data = found.get("data")
+            return self._decode(data) if data else None
+        return None
+
+    def _body_text(self, part: dict, msg_id: str = "") -> str:
         mime = part.get("mimeType", "")
-        data = (part.get("body") or {}).get("data")
-        if mime == "text/plain" and data:
-            return self._decode(data)
+        if mime == "text/plain" and not part.get("filename"):
+            data = self._part_data(part, msg_id)
+            if data:
+                return data
         plain = ""
         html_text = ""
         for child in part.get("parts", []) or []:
-            found = self._body_text(child)
+            found = self._body_text(child, msg_id)
             if found and child.get("mimeType", "").startswith("text/html"):
                 html_text = html_text or found
             elif found:
                 plain = plain or found
         if plain:
             return plain
-        if mime == "text/html" and data:
-            return strip_html(self._decode(data))
+        if mime == "text/html" and not part.get("filename"):
+            data = self._part_data(part, msg_id)
+            if data:
+                return strip_html(data)
         return strip_html(html_text) if html_text else ""
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
-        label = self.text_option("label")
-        days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 200, 1, 1000)
-        query = f'label:"{label}" newer_than:{days}d'
+    # labels and account
+
+    def user_labels(self) -> list[dict] | None:
+        """All labels, or None when the current grant does not allow listing them."""
+        response = self._request(f"{API}/labels")
+        if response.status == 403:
+            return None
+        labels = check_response(response, self.label).json().get("labels", []) or []
+        self.label_names = sorted(
+            item.get("name", "") for item in labels if item.get("type") == "user" and item.get("name")
+        )
+        return labels
+
+    def resolve_label(self, name: str, labels: list[dict]) -> str:
+        """Label id for a name: case-insensitive, trimmed, nested labels by their full A/B name."""
+        wanted = name.strip()
+        if wanted.upper() in SYSTEM_LABELS:
+            return wanted.upper()
+        for item in labels:
+            if item.get("id") == wanted or item.get("name", "").strip().casefold() == wanted.casefold():
+                return item["id"]
+        known = ", ".join((self.label_names or [])[:10]) or "없음"
+        raise ConnectorError(f"라벨 '{wanted}'을(를) 찾지 못했습니다. 있는 라벨: {known}")
+
+    def account_info(self) -> dict:
+        profile = self._get(f"{API}/profile")
+        if self.label_names is None:
+            self.user_labels()
+        return {"account": str(profile.get("emailAddress") or ""), "labels": list(self.label_names or [])}
+
+    # listing and reading
+
+    def _list_ids(self, params: dict, limit: int) -> list[dict]:
         refs: list[dict] = []
         token = None
         while len(refs) < limit:
-            params = {"q": query, "maxResults": min(limit - len(refs), 100)}
+            page = {**params, "maxResults": min(limit - len(refs), 100)}
             if token:
-                params["pageToken"] = token
-            listing = self._get("https://gmail.googleapis.com/gmail/v1/users/me/messages", params)
-            refs.extend(listing.get("messages", []))
+                page["pageToken"] = token
+            listing = self._get(f"{API}/messages", page)
+            refs.extend(listing.get("messages", []) or [])
             token = listing.get("nextPageToken")
             if not token:
                 break
+        return refs[:limit]
+
+    def _query(self) -> tuple[dict, str]:
+        """List parameters for the configured label, and the scope sentence for the summary."""
+        label = self.text_option("label")
+        days = self.int_option("days_back", 14, 1, 365)
+        scope = f"라벨: {label}, 최근 {days}일"
+        labels = self.user_labels()
+        if labels is None:
+            # Listing labels was refused: fall back to the label name in the search query.
+            return {"q": f'label:"{label}" newer_than:{days}d'}, scope
+        return {"labelIds": self.resolve_label(label, labels), "q": f"newer_than:{days}d"}, scope
+
+    @staticmethod
+    def _headers_of(message: dict) -> dict[str, str]:
+        return {h["name"].lower(): h["value"] for h in message.get("payload", {}).get("headers", [])}
+
+    @staticmethod
+    def _date_of(message: dict, today: datetime.date) -> str:
+        stamp = int(message.get("internalDate", "0") or 0) / 1000.0
+        return datetime.datetime.fromtimestamp(stamp).date().isoformat() if stamp else today.isoformat()
+
+    def mail_message(self, message: dict, today: datetime.date) -> MailMessage:
+        headers = self._headers_of(message)
+        msg_id = str(message.get("id", ""))
+        return MailMessage(
+            msg_id=msg_id,
+            date=self._date_of(message, today),
+            subject=headers.get("subject", NO_SUBJECT),
+            sender=headers.get("from", ""),
+            body=self._body_text(message.get("payload", {}), msg_id),
+            thread_id=str(message.get("threadId", "")),
+            labels=list(message.get("labelIds", []) or []),
+        )
+
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        limit = self.int_option("max_messages", 200, 1, 1000)
+        params, scope = self._query()
+        refs = self._list_ids(params, limit)
+        stats = new_mail_stats()
+        stats["matched"] = len(refs)
         docs = {}
+        for ref in refs:
+            message = self._get(f"{API}/messages/{ref['id']}", {"format": "full"})
+            message.setdefault("id", ref["id"])
+            made = mail_document(self.mail_message(message, today), stats)
+            if made is not None:
+                docs[made[0]] = made[1]
+        return FetchOutcome(docs, mail_summary(stats, scope), stats)
+
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        params, scope = self._query()
+        refs = self._list_ids(params, self.int_option("max_messages", 200, 1, 1000))
+        rows = []
         for ref in refs[:limit]:
             message = self._get(
-                f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{ref['id']}",
-                {"format": "full"},
+                f"{API}/messages/{ref['id']}",
+                {"format": "metadata", "metadataHeaders": ["Subject", "From", "Date"]},
             )
-            payload = message.get("payload", {})
-            headers = {h["name"].lower(): h["value"] for h in payload.get("headers", [])}
-            stamp = int(message.get("internalDate", "0") or 0) / 1000.0
-            date = datetime.datetime.fromtimestamp(stamp).date().isoformat() if stamp else today.isoformat()
-            subject = headers.get("subject", "(제목 없음)")
-            lines = clean_message_text(self._body_text(payload))
-            if not lines:
-                continue
-            doc = message_document(subject, date, headers.get("from", ""), lines)
-            docs[unique_name(f"{date} {subject}", ref["id"])] = doc
-        return FetchOutcome(docs, f"메일 {len(docs)}건")
+            headers = self._headers_of(message)
+            rows.append(
+                {
+                    "date": self._date_of(message, today),
+                    "subject": headers.get("subject", NO_SUBJECT),
+                    "sender": headers.get("from", ""),
+                }
+            )
+        stats = new_mail_stats()
+        stats["matched"] = len(refs)
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, scope)}

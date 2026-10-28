@@ -15,6 +15,22 @@ from decision_agent.connectors.http import Http, HttpError
 
 PENDING_SECONDS = 600
 EXPIRY_MARGIN = 90
+# Scopes a token response may add or leave out without changing what can be read.
+_IGNORED_SCOPES = frozenset({"offline_access", "openid", "profile", "email"})
+MISSING_SCOPE = "읽기 권한 체크가 빠졌습니다. 다시 연결하고 권한 항목을 모두 선택하세요."
+EXPIRED = "로그인이 만료되었습니다. 다시 연결하세요; 테스트 모드의 Google 앱은 7일 뒤 만료됩니다"
+
+
+def _scope_name(scope: str) -> str:
+    # Microsoft may answer "https://graph.microsoft.com/Mail.Read" for "Mail.Read".
+    return scope.strip().rstrip("/").rsplit("/", 1)[-1].casefold()
+
+
+def missing_scopes(required: tuple[str, ...], granted: str | list[str]) -> list[str]:
+    """Required scopes that the granted list lacks (the user can untick them on consent)."""
+    items = granted.split() if isinstance(granted, str) else list(granted)
+    have = {_scope_name(s) for s in items}
+    return [s for s in required if _scope_name(s) not in _IGNORED_SCOPES and _scope_name(s) not in have]
 
 
 @dataclass(frozen=True)
@@ -113,8 +129,27 @@ class OAuthManager:
         token = self._token_request(pending.app, form)
         if not token.get("refresh_token"):
             raise ConnectorError("로그인은 되었지만 계속 읽을 수 있는 권한(refresh token)을 받지 못했습니다.")
+        granted = token.get("scope")
+        if granted is not None and missing_scopes(pending.app.scopes, granted):
+            # Google lets the user untick a permission; such a login is not stored.
+            raise ConnectorError(MISSING_SCOPE)
         self._store(pending.connector_id, token, token["refresh_token"])
         return pending.connector_id
+
+    def connected(self, connector_id: str, app: OAuthApp) -> bool:
+        """A login is stored and, when the grant was recorded, it covers the required scopes."""
+        raw = self.secrets.get(self.secret_name(connector_id))
+        if not raw:
+            return False
+        try:
+            saved = json.loads(raw)
+        except ValueError:
+            return False
+        if not isinstance(saved, dict):
+            return False
+        granted = saved.get("scopes")
+        # Logins stored before scopes were recorded keep working.
+        return granted is None or not missing_scopes(app.scopes, granted)
 
     def access_token(self, connector_id: str, app: OAuthApp) -> str:
         raw = self.secrets.get(self.secret_name(connector_id))
@@ -146,6 +181,16 @@ class OAuthManager:
             "access_token": token.get("access_token", ""),
             "expires_at": self.clock() + float(token.get("expires_in", 0) or 0),
         }
+        if token.get("scope") is not None:
+            record["scopes"] = str(token["scope"]).split()
+        else:
+            previous = self.secrets.get(self.secret_name(connector_id))
+            try:
+                kept = json.loads(previous).get("scopes") if previous else None
+            except (ValueError, AttributeError):
+                kept = None
+            if kept is not None:
+                record["scopes"] = kept
         self.secrets.set(self.secret_name(connector_id), json.dumps(record))
 
     def _token_request(self, app: OAuthApp, form: dict[str, str]) -> dict:
@@ -155,11 +200,15 @@ class OAuthManager:
             raise ConnectorError(str(exc)) from exc
         if not response.ok:
             detail = ""
+            reason = ""
             try:
                 body = response.json()
+                reason = str(body.get("error") or "")
                 detail = str(body.get("error_description") or body.get("error") or "")[:160]
             except Exception:  # noqa: BLE001 - the error body is optional detail only
                 detail = ""
+            if reason == "invalid_grant":
+                raise ConnectorError(f"{EXPIRED} ({detail})" if detail and detail != reason else EXPIRED)
             raise ConnectorError(f"로그인 서버가 요청을 거절했습니다 ({response.status}). {detail}".strip())
         body = response.json()
         if not body.get("access_token"):

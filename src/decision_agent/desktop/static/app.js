@@ -1322,8 +1322,9 @@
           return true;
         });
       } else if (name === "범위 선택") {
+        const labels = (c.label_names || []).length ? h("p", {class: "small muted"}, "있는 라벨: " + c.label_names.join(", ")) : null;
         set(body, h("p", {class: "muted"}, "지정한 범위만 읽습니다. 범위를 좁힐수록 개인 정보가 덜 들어옵니다."),
-          ...scopeFields, scopeFields.length ? null : callout("neutral", "info", null, "따로 고를 범위가 없습니다."), periodic);
+          ...scopeFields, labels, scopeFields.length ? null : callout("neutral", "info", null, "따로 고를 범위가 없습니다."), periodic);
         nav("저장하고 테스트", async () => { await saveConfig(periodic.input.checked); return true; });
       } else {
         const result = h("div", {}, callout("info", "loader", "가져오는 중입니다", "처음 연결은 시간이 조금 걸릴 수 있습니다."));
@@ -1436,6 +1437,23 @@
   // Figma 15:340 / 16:1185: two tabs, "연결 및 AI" and "알림 및 데이터".
   const SET = {tab: "connect", test: null};
   const CALENDAR_IDS = ["google_calendar", "outlook_calendar"];
+  const MAIL_IDS = ["gmail", "outlook_mail", "imap_mail"];
+
+  // Headers of up to ten matching mails. Nothing is stored and nothing goes to the AI.
+  function previewBlock(path) {
+    const out = h("div", {class: "stack-sm"});
+    const run = button("미리보기", {icon: "search"});
+    run.addEventListener("click", () => busy(run, async () => {
+      const r = await api(path, "POST", {});
+      set(out,
+        h("p", {class: "small muted"}, "AI로 보내지 않는 미리보기입니다."),
+        r.account ? h("p", {class: "small"}, "연결된 계정: " + r.account) : null,
+        h("p", {class: "small"}, r.summary),
+        r.rows.length ? h("ul", {class: "preview-list"}, ...r.rows.map(row => h("li", {},
+          h("span", {class: "muted"}, row.date + " "), h("span", {class: "strong"}, row.subject), h("span", {class: "muted"}, " · " + row.sender)))) : null);
+    }));
+    return {run, out};
+  }
 
   ROUTES.settings = {
     title: "설정", auto: false,
@@ -1528,7 +1546,8 @@
       : (configured ? "읽기 범위: " + c.reads : (isCal ? "관련 일정을 확인하려면 캘린더를 연결하십시오." : c.reads));
     return h("section", {class: "card svc-card", id: "set-" + c.id},
       icon(SERVICE_ICON[c.id] || "link", "svc-icon"),
-      h("div", {class: "svc-main"}, h("h2", {}, c.label), h("p", {class: "svc-state " + state[0]}, state[1]), h("p", {class: "svc-line"}, line)),
+      h("div", {class: "svc-main"}, h("h2", {}, c.label), h("p", {class: "svc-state " + state[0]}, state[1]), h("p", {class: "svc-line"}, line),
+        c.account ? h("p", {class: "svc-line small"}, "연결된 계정: " + c.account) : null),
       h("div", {class: "svc-actions"}, configured
         ? button("연결 관리", {onClick: () => manageConnector(c)})
         : button(c.label + " 연결", {variant: "primary", onClick: () => connectWizard(c)})));
@@ -1537,6 +1556,7 @@
   // Figma 16:1538: state, what is read, last fetch, change scope, fetch now, disconnect.
   function manageConnector(c) {
     const st = c.status;
+    const preview = MAIL_IDS.includes(c.id) ? previewBlock("/api/connectors/" + encodeURIComponent(c.id) + "/preview") : null;
     const ok = c.enabled && (!st || st.ok);
     const result = h("p", {class: "small muted"});
     const run = button("지금 가져오기", {});
@@ -1559,10 +1579,11 @@
         h("div", {}, ok ? h("span", {class: "badge state ok"}, icon("check"), "정상")
           : (c.enabled ? h("span", {class: "badge state error"}, icon("alert-circle"), "오류") : h("span", {class: "badge state paused"}, icon("pause-bars"), "자동 가져오기 꺼짐"))),
         h("div", {class: "manage-lines"}, h("p", {}, "읽기 범위: " + c.reads),
+          c.account ? h("p", {}, "연결된 계정: " + c.account) : null,
           h("p", {}, "마지막 가져오기: " + (st && st.at ? stamp(st.at) + (st.ok && st.summary ? " (" + st.summary + ")" : "") : "아직 없음")),
           st && !st.ok ? h("p", {class: "danger-text"}, st.message) : null),
-        h("div", {class: "row"}, button("읽기 범위 변경", {onClick: () => { close(); connectWizard(c, "범위 선택"); }}), run),
-        result),
+        h("div", {class: "row"}, button("읽기 범위 변경", {onClick: () => { close(); connectWizard(c, "범위 선택"); }}), run, preview ? preview.run : null),
+        result, preview ? preview.out : null),
       actions: [{label: "연결 해제", variant: "danger-outline", onClick: async () => {
         await api("/api/connectors/disconnect", "POST", {id: c.id});
         toast("연결을 해제했습니다. 저장된 비밀 값과 가져온 사본을 지웠습니다.", "success");

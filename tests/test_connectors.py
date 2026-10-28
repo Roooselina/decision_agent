@@ -80,6 +80,13 @@ def context(http, **secrets):
     return ConnectorContext(http=http, secrets=MemorySecrets(**secrets), oauth=StubOAuth())
 
 
+def gmail_labels(http, *names):
+    """Register the Gmail label list with user labels L1, L2, ... named as given."""
+    labels = [{"id": "INBOX", "name": "INBOX", "type": "system"}]
+    labels += [{"id": f"L{i}", "name": name, "type": "user"} for i, name in enumerate(names, start=1)]
+    http.add("GET", "https://gmail.googleapis.com/gmail/v1/users/me/labels", lambda p, b, f: {"labels": labels})
+
+
 def build(docs):
     named = []
     for name, doc in docs.items():
@@ -160,8 +167,10 @@ def test_gmail_reads_only_the_chosen_label_and_decodes_the_body():
             ],
         },
     })
+    gmail_labels(http, "회의록")
     outcome = Gmail({"client_id": "cid", "label": "회의록"}, context(http)).fetch(TODAY)
-    assert 'label:"회의록"' in http.calls[0]["params"]["q"]
+    listing = next(c for c in http.calls if c["url"].endswith("/messages"))
+    assert listing["params"]["labelIds"] == "L1" and listing["params"]["q"] == "newer_than:14d"
     (doc,) = outcome.docs.values()
     texts = [b.text for b in doc.sections[0].blocks]
     assert texts[0].startswith("2026-10-20 주간 회의록") and "결정: 발표는 취소한다." in texts
@@ -483,6 +492,7 @@ def test_gmail_follows_next_page_tokens_up_to_the_limit():
                 "mimeType": "text/plain", "body": {"data": base64.urlsafe_b64encode("결정: 발표는 취소한다.".encode()).decode()}}}
 
     http.add("GET", "https://gmail.googleapis.com/gmail/v1/users/me/messages/", one)
+    gmail_labels(http, "x")
     outcome = Gmail({"client_id": "cid", "label": "x", "max_messages": 5}, context(http)).fetch(TODAY)
     listing_calls = [c for c in http.calls if c["url"].endswith("/messages")]
     assert len(listing_calls) == 2

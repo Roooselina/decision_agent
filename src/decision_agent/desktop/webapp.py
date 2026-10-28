@@ -402,6 +402,14 @@ def create_web_app(
             raise HTTPException(status_code=400, detail="분석할 감시 폴더를 먼저 등록하세요.")
         return {"ok": True}
 
+    @app.post("/api/connectors/{connector_id}/preview", dependencies=auth)
+    def connector_preview(connector_id: str):
+        try:
+            controller.connectors.cls(connector_id)
+            return controller.connectors.preview(connector_id)
+        except ConnectorError as exc:
+            raise _bad(exc) from exc
+
     @app.post("/api/connectors/disconnect", dependencies=auth)
     def connector_disconnect(body: ConnectorIdBody):
         try:
