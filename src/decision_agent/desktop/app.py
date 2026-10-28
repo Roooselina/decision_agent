@@ -21,7 +21,7 @@ from decision_agent import __version__
 from decision_agent.connectors.base import ConnectorError, SecretStore
 from decision_agent.connectors.http import Http
 from decision_agent.connectors.registry import CONNECTORS
-from decision_agent.desktop import calendar_view
+from decision_agent.desktop import calendar_view, mailsources
 from decision_agent.desktop import digest as digest_module
 from decision_agent.desktop import folders as folders_module
 from decision_agent.desktop import notes as notes_store
@@ -45,10 +45,15 @@ from decision_agent.desktop.providers import (
     describe_llm_error,
 )
 from decision_agent.desktop.settings import (
+    MAIL_CONNECTORS,
+    MAX_MAIL_SOURCES,
     AppSettings,
     ConnectorSettings,
     FolderRejected,
+    MailSource,
     add_folder,
+    migrate_mail_sources,
+    new_source_id,
     remove_folder,
     root_key,
     save_settings,
@@ -173,6 +178,7 @@ class DecisionAgentApp:
         with self._lock:
             self._running = True
             self.last_tick = time.time()
+            self._migrate_mail_settings()
             self._build_runtimes()
             self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
             self._worker.start()
@@ -242,6 +248,7 @@ class DecisionAgentApp:
             progress = ProgressTracker(on_change=self._changed, activity=self.activity)
             engine = ProjectEngine(root, self.settings, db, self.bundle, progress=progress)
             runtime = _RootRuntime(engine=engine, db=db)
+            self._drop_single_label_mail(runtime)
             if self.start_watchers:
                 self._start_debouncer(key, runtime)
                 self._start_watcher(key, runtime)
@@ -499,6 +506,144 @@ class DecisionAgentApp:
         if report.rebuilt and not report.needs_followup and report.pending_confirm is None:
             runtime.db.meta_put("initial_done", "1")
 
+    # mail sources
+
+    def _migrate_mail_settings(self) -> None:
+        """Carry the old single label or folder of each mail connector into a source."""
+        new = self.settings.model_copy(deep=True)
+        if migrate_mail_sources(new):
+            self.settings = new
+            if self.settings_file is not None:
+                save_settings(new, self.settings_file)
+
+    @staticmethod
+    def _drop_single_label_mail(runtime: _RootRuntime) -> None:
+        """Mail stored by the old single-label setup is dropped once; the sources refetch it."""
+        if runtime.db.meta_get("mail_sources_v1"):
+            return
+        old = [
+            r["path"] for r in runtime.db.list_files()
+            if any(r["path"].startswith(f"{EXTERNAL_PREFIX}{c}/") for c in MAIL_CONNECTORS)
+        ]
+        if old:
+            runtime.db.delete_files(old)
+        for connector_id in MAIL_CONNECTORS:
+            runtime.db.meta_delete(f"connector_status:{connector_id}")
+        runtime.db.meta_put("mail_sources_v1", "1")
+
+    def _source(self, source_id: str) -> MailSource:
+        for source in self.settings.mail_sources:
+            if source.id == source_id:
+                return source
+        raise UserError("메일 소스를 찾지 못했습니다.")
+
+    def source_target(self, source: MailSource) -> str | None:
+        """The folder whose analysis receives the source's mail (its own, else the default)."""
+        if source.target:
+            key = str(Path(source.target).resolve())
+            if key in self.runtimes:
+                return key
+        return self.target_root()
+
+    def _mail_active(self, source: MailSource) -> bool:
+        saved = self.settings.connectors.get(source.connector)
+        return source.enabled and bool(saved and saved.enabled)
+
+    def _fetch_source(self, runtime: _RootRuntime, source: MailSource) -> dict:
+        """Fetch one source into the runtime. Returns its status record (counts only)."""
+        known = mailsources.known_ids(runtime.engine, runtime.db, source, self.settings)
+        query = mailsources.query_for(source, self.settings)
+        outcome, status = self.connectors.fetch_source(source.connector, query, known)
+        if outcome is not None:
+            mailsources.store_outcome(runtime.engine, runtime.db, source, outcome, self.connectors.today())
+        mailsources.save_status(runtime.db, source, status)
+        return status
+
+    def save_mail_source(self, raw: dict) -> dict:
+        """Create or update a mail source from the settings form (validated here, never trusted)."""
+        data = dict(raw or {})
+        source_id = str(data.pop("id", "") or "")
+        sources = list(self.settings.mail_sources)
+        previous = next((s for s in sources if s.id == source_id), None) if source_id else None
+        if source_id and previous is None:
+            raise UserError("메일 소스를 찾지 못했습니다.")
+        if previous is None and len(sources) >= MAX_MAIL_SOURCES:
+            raise UserError(f"메일 소스는 {MAX_MAIL_SOURCES}개까지 만들 수 있습니다.")
+        if previous is None:
+            source_id = new_source_id(str(data.get("name") or ""), {s.id for s in sources})
+        try:
+            source = MailSource(id=source_id, **data)
+        except (ValueError, TypeError) as exc:
+            raise UserError(_validation_message(exc)) from exc
+        if source.target and str(Path(source.target).resolve()) not in self.runtimes:
+            raise UserError("등록된 감시 폴더만 고를 수 있습니다.")
+        if previous is not None:
+            old_target = self.source_target(previous)
+            moved = old_target != self.source_target(source)
+            if moved or not source.enabled:
+                # The documents follow the source; a disabled source keeps none.
+                runtime = self.runtimes.get(old_target) if old_target else None
+                if runtime is not None and mailsources.remove_documents(runtime.engine, runtime.db, previous):
+                    self.enqueue(Job("reanalyze", old_target))
+        new = self.settings.model_copy(deep=True)
+        new.mail_sources = [source if s.id == source.id else s for s in sources]
+        if previous is None:
+            new.mail_sources.append(source)
+        if source.enabled:
+            saved = new.connectors.get(source.connector) or ConnectorSettings()
+            saved.enabled = True
+            new.connectors[source.connector] = saved
+        self._apply_light(new)
+        return source.model_dump()
+
+    def delete_mail_source(self, source_id: str) -> None:
+        """Remove one source and only its documents."""
+        source = self._source(source_id)
+        target = self.source_target(source)
+        new = self.settings.model_copy(deep=True)
+        new.mail_sources = [s for s in new.mail_sources if s.id != source_id]
+        self._apply_light(new)
+        runtime = self.runtimes.get(target) if target else None
+        if runtime is not None and mailsources.remove_documents(runtime.engine, runtime.db, source):
+            self.enqueue(Job("reanalyze", target))
+
+    def preview_mail_source(self, source_id: str) -> dict:
+        source = self._source(source_id)
+        return self.connectors.preview_source(
+            source.connector, mailsources.query_for(source, self.settings)
+        )
+
+    def run_mail_source(self, source_id: str) -> bool:
+        source = self._source(source_id)
+        target = self.source_target(source)
+        if target is None:
+            return False
+        self.enqueue(Job("connectors", target, text=f"source:{source.id}"))
+        return True
+
+    def _apply_light(self, new: AppSettings) -> None:
+        """Save settings that need no folder restart (connector and source changes)."""
+        self.settings = new
+        if self.settings_file is not None:
+            save_settings(new, self.settings_file)
+        self._start_connector_timer()
+        self._changed()
+
+    def mail_source_rows(self, connector_id: str) -> list[dict]:
+        rows = []
+        for source in self.settings.mail_sources:
+            if source.connector != connector_id:
+                continue
+            target = self.source_target(source)
+            runtime = self.runtimes.get(target) if target else None
+            item = source.model_dump()
+            item["purpose_label"] = mailsources.PURPOSE_LABELS[source.purpose]
+            item["filter_summary"] = mailsources.filter_summary(source)
+            item["status"] = mailsources.read_status(runtime.db if runtime else None, source)
+            item["target_root"] = target
+            rows.append(item)
+        return rows
+
     # connectors, notes, imports
 
     def target_root(self) -> str | None:
@@ -518,11 +663,27 @@ class DecisionAgentApp:
         runtime.db.meta_put(self._status_key(connector_id), json.dumps(status, ensure_ascii=False))
 
     def _connector_cycle(self, runtime: _RootRuntime, only: str) -> CycleReport:
+        """Fetch into one folder: its mail sources, and the other connectors when it is the
+        default target. `only` is "", a connector id, or "source:<id>"."""
         engine = runtime.engine
-        ids = [only] if only else self.connectors.enabled_ids()
+        key = str(engine.root)
+        is_default = key == self.target_root()
+        if only.startswith("source:"):
+            ids: list[str] = []
+            sources = [s for s in self.settings.mail_sources if s.id == only[len("source:"):]]
+        else:
+            if only:
+                ids = [only] if only not in MAIL_CONNECTORS and is_default else []
+            else:
+                ids = [i for i in self.connectors.enabled_ids() if i not in MAIL_CONNECTORS] if is_default else []
+            sources = [
+                s for s in self.settings.mail_sources
+                if (s.connector == only if only else self._mail_active(s)) and (only or s.enabled)
+            ]
+            sources = [s for s in sources if self.source_target(s) == key]
         engine.progress.begin()
         engine.progress.set_phase("reading")
-        engine.progress.set_files(len(ids))
+        engine.progress.set_files(len(ids) + len(sources))
         for connector_id in ids:
             label = self.connectors.cls(connector_id).label
             outcome, status = self.connectors.fetch(connector_id)
@@ -533,6 +694,15 @@ class DecisionAgentApp:
             else:
                 self.activity.add(f"{label}: {status['message']}", "error")
             engine.progress.file_done(label)
+        for source in sources:
+            label = f"{mailsources.CONNECTOR_LABELS[source.connector]} {source.name}"
+            status = self._fetch_source(runtime, source)
+            if status["ok"]:
+                self.activity.add(f"{label}: {status['summary']}")
+            else:
+                self.activity.add(f"{label}: {status['message']}", "error")
+            self._save_status(runtime, source.connector, status)
+            engine.progress.file_done(label)
         return engine.analyze()
 
     def _notes_cycle(self, runtime: _RootRuntime) -> CycleReport:
@@ -542,12 +712,24 @@ class DecisionAgentApp:
         return runtime.engine.analyze()
 
     def run_connectors(self, connector_id: str = "") -> bool:
+        """Queue one connectors job per folder that receives something."""
         target = self.target_root()
         if target is None:
             return False
         if not connector_id and not self.connectors.enabled_ids():
             return False
-        self.enqueue(Job("connectors", target, text=connector_id))
+        targets: list[str] = []
+        if connector_id not in MAIL_CONNECTORS:
+            targets.append(target)
+        for source in self.settings.mail_sources:
+            wanted = source.connector == connector_id if connector_id else self._mail_active(source)
+            place = self.source_target(source)
+            if wanted and source.enabled and place and place not in targets:
+                targets.append(place)
+        if not targets:
+            return False
+        for place in targets:
+            self.enqueue(Job("connectors", place, text=connector_id))
         return True
 
     def connector_overview(self) -> list[dict]:
@@ -560,6 +742,8 @@ class DecisionAgentApp:
         rows = self.connectors.overview(statuses)
         for row in rows:
             row["target"] = target
+            if row["id"] in MAIL_CONNECTORS:
+                row["sources"] = self.mail_source_rows(row["id"])
         return rows
 
     def save_connector_config(self, connector_id: str, enabled: bool, options: dict) -> None:
@@ -576,8 +760,13 @@ class DecisionAgentApp:
         self._changed()
 
     def disconnect_connector(self, connector_id: str) -> None:
-        """Turn the connector off, forget its secrets, and drop the documents it delivered."""
+        """Turn the connector off, forget its secrets, and drop the documents it delivered.
+
+        For a mail connector every source of it is removed with its documents.
+        """
         self.connectors.cls(connector_id)
+        for source in [s for s in self.settings.mail_sources if s.connector == connector_id]:
+            self.delete_mail_source(source.id)
         self.save_connector_config(connector_id, False, {})
         self.connectors.forget(connector_id)
         target = self.target_root()
@@ -1113,6 +1302,9 @@ class DecisionAgentApp:
         """Findings with what the detail panel shows: decision text, its source and date, and
         the date of the item itself when it is a dated schedule entry."""
         rows: list[dict] = []
+        by_prefix = {
+            f"{EXTERNAL_PREFIX}{mailsources.source_key(s)}/": s for s in self.settings.mail_sources
+        }
         for key, runtime in self._each():
             build = runtime.engine.last_build
             dates = {
@@ -1130,6 +1322,12 @@ class DecisionAgentApp:
                 item["decision_date"] = summary.get("date", "")
                 item["decision_source"] = summary.get("source", "")
                 item["date"] = dates.get(row["artifact_id"], "")
+                source = next(
+                    (s for p, s in by_prefix.items() if str(row["source_doc"] or "").startswith(p)), None
+                )
+                item["mail_source"] = source.name if source else ""
+                item["mail_connector"] = mailsources.CONNECTOR_LABELS[source.connector] if source else ""
+                item["team"] = source.team if source else ""
                 rows.append(item)
         return rows
 
@@ -1438,6 +1636,29 @@ class DecisionAgentApp:
         self.activity.add("모든 앱 데이터를 삭제했습니다. 감시 폴더의 파일은 그대로입니다.")
         self.reconfigure(AppSettings(ui_port=self.settings.ui_port))
         return {"ok": True, "data_folder": str(home)}
+
+
+SOURCE_FIELD_LABELS = {
+    "name": "이름", "connector": "연결", "purpose": "용도", "team": "팀", "target": "프로젝트 폴더",
+    "labels": "라벨 또는 폴더", "senders": "보낸 사람", "subject_keywords": "제목 키워드",
+    "exclude_senders": "제외할 보낸 사람", "exclude_subject_keywords": "제외할 제목 키워드",
+    "gmail_query": "Gmail 검색식", "days_back": "과거 일수", "max_messages": "최대 메일 수",
+}
+
+
+def _validation_message(exc: Exception) -> str:
+    """A Korean sentence for the first problem of a rejected form."""
+    errors = getattr(exc, "errors", None)
+    if not callable(errors):
+        return str(exc)
+    for error in errors():
+        if error.get("type") == "value_error":
+            return str(error.get("msg", "")).removeprefix("Value error, ")
+        field = str((error.get("loc") or ("",))[0])
+        if error.get("type") == "extra_forbidden":
+            return f"알 수 없는 항목입니다: {field}"
+        return f"'{SOURCE_FIELD_LABELS.get(field, field)}' 값을 확인하세요."
+    return "입력값을 확인하세요."
 
 
 def _open_in_file_manager(path: Path) -> None:

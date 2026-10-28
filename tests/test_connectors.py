@@ -179,8 +179,15 @@ def test_gmail_reads_only_the_chosen_label_and_decodes_the_body():
     assert [m.text for m in built.meetings] == ["결정: 발표는 취소한다."]
 
 
-def test_gmail_requires_a_label():
-    assert any("라벨" in m for m in Gmail({"client_id": "c"}, context(FakeHttp())).problems())
+def test_gmail_without_a_label_or_source_reads_nothing():
+    # The read scope comes from mail sources; the old single label is optional, and without it
+    # the connector refuses to list mail instead of reading the whole mailbox.
+    http = FakeHttp()
+    gmail = Gmail({"client_id": "c"}, context(http))
+    assert not any("라벨" in p for p in gmail.problems())
+    with pytest.raises(ConnectorError, match="메일 소스"):
+        gmail.fetch(TODAY)
+    assert http.calls == []
 
 
 def test_outlook_calendar_follows_next_link_only_on_graph():

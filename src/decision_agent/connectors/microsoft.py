@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import datetime
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 
 from decision_agent.connectors.base import (
+    NO_SCOPE,
     NO_SUBJECT,
     CalendarEvent,
     Connector,
@@ -15,13 +17,13 @@ from decision_agent.connectors.base import (
     calendar_documents,
     check_response,
     clock_of,
-    mail_document,
     mail_summary,
     new_mail_stats,
     preview_summary,
     strip_html,
 )
 from decision_agent.connectors.http import HttpError
+from decision_agent.connectors.mailfilter import MailFilter, MailQuery, collect_mail
 from decision_agent.connectors.oauth import OAuthApp
 
 GRAPH = "https://graph.microsoft.com/v1.0"
@@ -133,7 +135,7 @@ class OutlookMail(_MicrosoftBase):
     options = (
         OptionSpec("client_id", "애플리케이션(클라이언트) ID", required=True),
         OptionSpec("tenant", "테넌트", default="common"),
-        OptionSpec("folder", "읽을 메일 폴더 이름", help="예: 회의록. 받은 편지함 하위 폴더도 찾습니다.", required=True),
+        OptionSpec("folder", "읽을 메일 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
@@ -150,27 +152,39 @@ class OutlookMail(_MicrosoftBase):
                     return folder["id"]
         raise ConnectorError(f"메일 폴더 '{name}'을(를) 찾지 못했습니다. 이름을 확인하세요.")
 
-    def _items(self, today: datetime.date, select: str, limit: int) -> list[dict]:
-        folder = self._folder_id(self.text_option("folder"))
-        days = self.int_option("days_back", 14, 1, 365)
-        since = (today - datetime.timedelta(days=days)).isoformat()
-        prefer = 'outlook.body-content-type="text"'
-        url: str | None = f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages"
-        params: dict | None = {
-            "$top": min(limit, 100),
-            "$select": select,
-            "$filter": f"receivedDateTime ge {since}T00:00:00Z",
-            "$orderby": "receivedDateTime desc",
-        }
-        items: list[dict] = []
-        while url and len(items) < limit:
-            body = self._get(url, params, prefer)
-            items.extend(body.get("value", []))
-            url, params = body.get("@odata.nextLink"), None
-        return items[:limit]
+    def options_query(self) -> MailQuery:
+        """The single-folder setup of older versions, as a mail query."""
+        folder = self.text_option("folder")
+        if not folder:
+            raise ConnectorError(NO_SCOPE)
+        return MailQuery(
+            source_id="", name=folder, labels=[folder] if folder else [], folder_word="폴더",
+            days_back=self.int_option("days_back", 14, 1, 365),
+            max_messages=self.int_option("max_messages", 200, 1, 1000), prefilter=False,
+        )
 
-    def _scope(self) -> str:
-        return f"폴더: {self.text_option('folder')}, 최근 {self.int_option('days_back', 14, 1, 365)}일"
+    def _items(self, query: MailQuery, today: datetime.date, select: str) -> list[dict]:
+        """Messages of every folder of the query (newest first), unioned by id."""
+        since = (today - datetime.timedelta(days=query.days_back)).isoformat()
+        prefer = 'outlook.body-content-type="text"'
+        found: dict[str, dict] = {}
+        for name in query.labels or ["inbox"]:
+            folder = self._folder_id(name)
+            url: str | None = f"{GRAPH}/me/mailFolders/{urllib.parse.quote(folder, safe='')}/messages"
+            params: dict | None = {
+                "$top": min(query.max_messages, 100),
+                "$select": select,
+                "$filter": f"receivedDateTime ge {since}T00:00:00Z",
+                "$orderby": "receivedDateTime desc",
+            }
+            taken = 0
+            while url and taken < query.max_messages:
+                body = self._get(url, params, prefer)
+                for item in body.get("value", []):
+                    found.setdefault(str(item.get("id")), item)
+                    taken += 1
+                url, params = body.get("@odata.nextLink"), None
+        return list(found.values())[: query.max_messages]
 
     @staticmethod
     def mail_message(item: dict, today: datetime.date) -> MailMessage:
@@ -189,26 +203,46 @@ class OutlookMail(_MicrosoftBase):
             thread_id=str(item.get("conversationId") or ""),
         )
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
-        limit = self.int_option("max_messages", 200, 1, 1000)
-        items = self._items(today, "id,subject,receivedDateTime,from,body,conversationId", limit)
+    def fetch_source(
+        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+    ) -> FetchOutcome:
+        """Fetch one source: list headers, then read bodies only for mails not stored yet."""
+        known = known or set()
+        items = self._items(query, today, "id,subject,receivedDateTime,from,conversationId")
         stats = new_mail_stats()
         stats["matched"] = len(items)
-        docs = {}
+        fresh = [item for item in items if str(item.get("id")) not in known]
+        stats["known"] = len(items) - len(fresh)
+        prefer = 'outlook.body-content-type="text"'
+
+        def read(item: dict) -> MailMessage:
+            if item.get("body") is not None:
+                return self.mail_message(item, today)
+            msg_id = urllib.parse.quote(str(item.get("id")), safe="")
+            body = self._get(f"{GRAPH}/me/messages/{msg_id}", {"$select": "body"}, prefer)
+            return self.mail_message({**item, "body": body.get("body")}, today)
+
+        workers = max(1, min(query.workers, len(fresh) or 1))
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="outlook") as pool:
+            messages = list(pool.map(read, fresh))
+        docs = collect_mail(messages, query, stats)
+        seen = [str(item.get("id")) for item in items]
+        return FetchOutcome(docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen)
+
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        return self.fetch_source(self.options_query(), today)
+
+    def preview_source(self, query: MailQuery, today: datetime.date, limit: int = 10) -> dict:
+        items = self._items(query, today, "id,subject,receivedDateTime,from")
+        rules = MailFilter.of(query)
+        rows = []
         for item in items:
-            made = mail_document(self.mail_message(item, today), stats)
-            if made is not None:
-                docs[made[0]] = made[1]
-        return FetchOutcome(docs, mail_summary(stats, self._scope()), stats)
+            mail = self.mail_message(item, today)
+            if len(rows) < limit and rules.matches(mail):
+                rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
+        stats = new_mail_stats()
+        stats["matched"] = len(items)
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, query.scope_text())}
 
     def preview(self, today: datetime.date, limit: int = 10) -> dict:
-        items = self._items(
-            today, "id,subject,receivedDateTime,from", self.int_option("max_messages", 200, 1, 1000)
-        )
-        rows = []
-        for item in items[:limit]:
-            mail = self.mail_message(item, today)
-            rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
-        stats = new_mail_stats()
-        stats["matched"] = len(items)
-        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, self._scope())}
+        return self.preview_source(self.options_query(), today, limit)

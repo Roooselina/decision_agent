@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import base64
 import datetime
+import time
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 
 from decision_agent.connectors.base import (
+    NO_SCOPE,
     NO_SUBJECT,
     CalendarEvent,
     Connector,
@@ -16,13 +19,13 @@ from decision_agent.connectors.base import (
     calendar_documents,
     check_response,
     clock_of,
-    mail_document,
     mail_summary,
     new_mail_stats,
     preview_summary,
     strip_html,
 )
 from decision_agent.connectors.http import HttpError, HttpResponse
+from decision_agent.connectors.mailfilter import MailQuery, collect_mail, gmail_search
 from decision_agent.connectors.oauth import OAuthApp
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -30,6 +33,9 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 MAX_PAGES = 10
+# Waits after HTTP 429 before the next attempt; SLEEP is replaced in tests.
+BACKOFF = (1.0, 2.0, 4.0, 8.0)
+SLEEP = time.sleep
 API = "https://gmail.googleapis.com/gmail/v1/users/me"
 # Gmail system labels are addressed by id (INBOX, STARRED, ...), not by a display name.
 SYSTEM_LABELS = frozenset({
@@ -74,10 +80,20 @@ class _GoogleBase(Connector):
         return {"Authorization": f"Bearer {token}"}
 
     def _request(self, url: str, params: dict | None = None) -> HttpResponse:
-        try:
-            return self.ctx.http.request("GET", url, headers=self._headers(), params=params)
-        except HttpError as exc:
-            raise ConnectorError(str(exc)) from exc
+        """GET with a short backoff on HTTP 429 (Retry-After is honoured, up to 30 seconds)."""
+        for attempt in range(len(BACKOFF) + 1):
+            try:
+                response = self.ctx.http.request("GET", url, headers=self._headers(), params=params)
+            except HttpError as exc:
+                raise ConnectorError(str(exc)) from exc
+            if response.status != 429 or attempt == len(BACKOFF):
+                return response
+            wait = BACKOFF[attempt]
+            retry_after = {k.lower(): v for k, v in response.headers.items()}.get("retry-after", "")
+            if retry_after.isdigit():
+                wait = min(30.0, float(retry_after))
+            SLEEP(wait)
+        return response
 
     def _get(self, url: str, params: dict | None = None) -> dict:
         return check_response(self._request(url, params), self.label).json()
@@ -151,7 +167,7 @@ class Gmail(_GoogleBase):
     scope = GMAIL_SCOPE
     options = (
         OptionSpec("client_id", "클라이언트 ID", required=True),
-        OptionSpec("label", "읽을 라벨 이름", help="예: 회의록. 라벨을 지정해야만 읽습니다.", required=True),
+        OptionSpec("label", "읽을 라벨 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
@@ -245,17 +261,6 @@ class Gmail(_GoogleBase):
                 break
         return refs[:limit]
 
-    def _query(self) -> tuple[dict, str]:
-        """List parameters for the configured label, and the scope sentence for the summary."""
-        label = self.text_option("label")
-        days = self.int_option("days_back", 14, 1, 365)
-        scope = f"라벨: {label}, 최근 {days}일"
-        labels = self.user_labels()
-        if labels is None:
-            # Listing labels was refused: fall back to the label name in the search query.
-            return {"q": f'label:"{label}" newer_than:{days}d'}, scope
-        return {"labelIds": self.resolve_label(label, labels), "q": f"newer_than:{days}d"}, scope
-
     @staticmethod
     def _headers_of(message: dict) -> dict[str, str]:
         return {h["name"].lower(): h["value"] for h in message.get("payload", {}).get("headers", [])}
@@ -278,24 +283,65 @@ class Gmail(_GoogleBase):
             labels=list(message.get("labelIds", []) or []),
         )
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
-        limit = self.int_option("max_messages", 200, 1, 1000)
-        params, scope = self._query()
-        refs = self._list_ids(params, limit)
+
+    def options_query(self) -> MailQuery:
+        """The single-label setup of older versions, as a mail query (kept for direct use)."""
+        label = self.text_option("label")
+        if not label:
+            raise ConnectorError(NO_SCOPE)
+        return MailQuery(
+            source_id="", name=label, labels=[label] if label else [],
+            days_back=self.int_option("days_back", 14, 1, 365),
+            max_messages=self.int_option("max_messages", 200, 1, 1000), prefilter=False,
+        )
+
+    def _refs(self, query: MailQuery) -> list[dict]:
+        """Message refs for the query: one list per label (any of), unioned by id, newest first."""
+        search = gmail_search(query)
+        if not query.labels:
+            return self._list_ids({"q": search}, query.max_messages)
+        labels = self.user_labels()
+        seen: dict[str, dict] = {}
+        for name in query.labels:
+            if labels is None:
+                # Listing labels was refused: fall back to the label name in the search query.
+                params = {"q": f'label:"{name}" {search}'}
+            else:
+                params = {"labelIds": self.resolve_label(name, labels), "q": search}
+            for ref in self._list_ids(params, query.max_messages):
+                seen.setdefault(ref["id"], ref)
+        return list(seen.values())[: query.max_messages]
+
+    def fetch_source(
+        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+    ) -> FetchOutcome:
+        """Fetch one source. Mails whose id is in `known` are already stored: Gmail messages
+        never change, so their bodies are not requested again."""
+        known = known or set()
+        refs = self._refs(query)
         stats = new_mail_stats()
         stats["matched"] = len(refs)
-        docs = {}
-        for ref in refs:
-            message = self._get(f"{API}/messages/{ref['id']}", {"format": "full"})
-            message.setdefault("id", ref["id"])
-            made = mail_document(self.mail_message(message, today), stats)
-            if made is not None:
-                docs[made[0]] = made[1]
-        return FetchOutcome(docs, mail_summary(stats, scope), stats)
+        fresh = [ref["id"] for ref in refs if ref["id"] not in known]
+        stats["known"] = len(refs) - len(fresh)
 
-    def preview(self, today: datetime.date, limit: int = 10) -> dict:
-        params, scope = self._query()
-        refs = self._list_ids(params, self.int_option("max_messages", 200, 1, 1000))
+        def read(msg_id: str) -> MailMessage:
+            message = self._get(f"{API}/messages/{msg_id}", {"format": "full"})
+            message.setdefault("id", msg_id)
+            return self.mail_message(message, today)
+
+        workers = max(1, min(query.workers, len(fresh) or 1))
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="gmail") as pool:
+            messages = list(pool.map(read, fresh))
+        docs = collect_mail(messages, query, stats)
+        return FetchOutcome(
+            docs, mail_summary(stats, query.scope_text()), stats, seen_ids=[r["id"] for r in refs]
+        )
+
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        return self.fetch_source(self.options_query(), today)
+
+    def preview_source(self, query: MailQuery, today: datetime.date, limit: int = 10) -> dict:
+        refs = self._refs(query)
         rows = []
         for ref in refs[:limit]:
             message = self._get(
@@ -312,4 +358,7 @@ class Gmail(_GoogleBase):
             )
         stats = new_mail_stats()
         stats["matched"] = len(refs)
-        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, scope)}
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, query.scope_text())}
+
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        return self.preview_source(self.options_query(), today, limit)

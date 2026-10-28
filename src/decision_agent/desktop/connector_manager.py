@@ -13,6 +13,7 @@ from decision_agent.connectors.base import (
     SecretStore,
 )
 from decision_agent.connectors.http import Http, UrllibHttp
+from decision_agent.connectors.mailfilter import MailQuery
 from decision_agent.connectors.oauth import MISSING_SCOPE, OAuthManager
 from decision_agent.connectors.registry import CONNECTORS, describe
 from decision_agent.desktop.secrets import KeyringSecrets, SecretStoreUnavailable
@@ -161,13 +162,37 @@ class ConnectorManager:
 
     def fetch(self, connector_id: str) -> tuple[FetchOutcome | None, dict]:
         """Run one connector. Returns the documents (or None) and a status record."""
+        return self._run(connector_id, lambda connector: connector.fetch(self.today()))
+
+    def fetch_source(
+        self, connector_id: str, query: MailQuery, known: set[str]
+    ) -> tuple[FetchOutcome | None, dict]:
+        """Run one mail source on its connector's login."""
+        return self._run(
+            connector_id, lambda connector: connector.fetch_source(query, self.today(), known)
+        )
+
+    def preview_source(self, connector_id: str, query: MailQuery) -> dict:
+        """Headers of up to ten mails of one source. Nothing is stored, no model is called."""
+        connector = self.instance(connector_id)
+        problems = connector.problems()
+        if problems:
+            raise ConnectorError(problems[0])
+        result = connector.preview_source(query, self.today())
+        if connector_id not in self.accounts:
+            self.remember_account(connector_id, connector)
+        result["account"] = self.accounts.get(connector_id, {}).get("account", "")
+        result["label_names"] = self.accounts.get(connector_id, {}).get("labels", [])
+        return result
+
+    def _run(self, connector_id: str, call) -> tuple[FetchOutcome | None, dict]:
         stamp = datetime.datetime.now().replace(microsecond=0).isoformat()
         connector = self.instance(connector_id)
         problems = connector.problems()
         if problems:
             return None, {"at": stamp, "ok": False, "message": problems[0], "summary": ""}
         try:
-            outcome = connector.fetch(self.today())
+            outcome = call(connector)
         except ConnectorError as exc:
             return None, {"at": stamp, "ok": False, "message": str(exc), "summary": ""}
         except Exception as exc:

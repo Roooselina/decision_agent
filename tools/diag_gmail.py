@@ -44,6 +44,11 @@ def run(manager: ConnectorManager, keyword: str) -> int:
     conn = manager.instance("gmail")
     label = conn.text_option("label")
     days = conn.int_option("days_back", 14, 1, 365)
+    if not label:
+        # Newer versions keep the labels in mail sources; check the first Gmail source.
+        sources = [s for s in manager.get_settings().mail_sources if s.connector == "gmail" and s.labels]
+        if sources:
+            label, days = sources[0].labels[0], sources[0].days_back
     print(f"configured label : {label!r}")
     print(f"days_back        : {days}")
     problems = conn.problems()

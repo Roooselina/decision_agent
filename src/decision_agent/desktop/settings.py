@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from decision_agent.config import DEFAULT_SETTINGS, Settings
 from decision_agent.desktop.paths import app_home, settings_path
@@ -33,6 +41,63 @@ class ConnectorSettings(BaseModel):
 
     enabled: bool = False
     options: dict[str, Any] = Field(default_factory=dict)
+
+
+MAIL_CONNECTORS = ("gmail", "outlook_mail", "imap_mail")
+MAX_MAIL_SOURCES = 20
+NARROW_SOURCE = "범위를 좁혀 주세요: 라벨, 보낸 사람, 제목 키워드 중 하나는 필요합니다."
+INBOX_NAMES = {"inbox", "받은 편지함", "받은편지함"}
+_Term = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+_Terms = Annotated[list[_Term], Field(max_length=30)]
+
+
+class MailSource(BaseModel):
+    """What one mail source reads. The account login stays one per connector.
+
+    labels are Gmail labels, or folders for IMAP and Outlook. A source must be narrowed by at
+    least one label, sender, subject keyword or Gmail query, so a whole inbox is never sent to
+    an external AI by accident.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,39}$")
+    name: str = Field(min_length=1, max_length=40)
+    connector: Literal["gmail", "outlook_mail", "imap_mail"]
+    purpose: Literal["decision", "task", "requirement", "schedule"] = "decision"
+    team: str = Field(default="", max_length=40)
+    target: str = Field(default="", max_length=500)
+    labels: _Terms = Field(default_factory=list)
+    senders: _Terms = Field(default_factory=list)
+    subject_keywords: _Terms = Field(default_factory=list)
+    exclude_senders: _Terms = Field(default_factory=list)
+    exclude_subject_keywords: _Terms = Field(default_factory=list)
+    gmail_query: str = Field(default="", max_length=100)
+    days_back: int = Field(default=90, ge=1, le=365)
+    max_messages: int = Field(default=300, ge=1, le=1000)
+    enabled: bool = True
+
+    @field_validator("name", "team")
+    @classmethod
+    def _one_line(cls, value: str) -> str:
+        return " ".join(value.split())
+
+    @model_validator(mode="after")
+    def _narrow(self) -> MailSource:
+        if not self.name:
+            raise ValueError("이름을 입력하세요.")
+        if self.gmail_query and self.connector != "gmail":
+            raise ValueError("Gmail 검색식은 Gmail 소스에서만 쓸 수 있습니다.")
+        narrowing = self.senders or self.subject_keywords or self.gmail_query
+        if self.connector == "gmail":
+            if not (self.labels or narrowing):
+                raise ValueError(NARROW_SOURCE)
+        elif not self.labels:
+            raise ValueError("읽을 폴더 이름을 입력하세요.")
+        inbox = any(label.casefold() in INBOX_NAMES for label in self.labels)
+        if inbox and not narrowing:
+            raise ValueError(NARROW_SOURCE)
+        return self
 
 
 class AppSettings(BaseModel):
@@ -71,6 +136,10 @@ class AppSettings(BaseModel):
     adaptive_sampling: bool = True
     connectors: dict[str, ConnectorSettings] = Field(default_factory=dict)
     connector_target: str | None = None
+    # Named mail sources (what to read); the account login stays one per connector.
+    mail_sources: list[MailSource] = Field(default_factory=list, max_length=MAX_MAIL_SOURCES)
+    # Purpose "decision" sources send a mail to extraction only when it has decision wording.
+    mail_prefilter: bool = True
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)
     hotkey_enabled: bool = True
     hotkey: str = "ctrl+shift+space"
@@ -100,6 +169,14 @@ class AppSettings(BaseModel):
         """Older settings allowed up to 1440 minutes; keep them loadable by clamping to 1-60."""
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             return int(min(max(value, 1), 60))
+        return value
+
+    @field_validator("mail_sources")
+    @classmethod
+    def _unique_sources(cls, value: list[MailSource]) -> list[MailSource]:
+        ids = [source.id for source in value]
+        if len(ids) != len(set(ids)):
+            raise ValueError("메일 소스 id가 겹칩니다.")
         return value
 
     @field_validator("profile_color")
@@ -202,6 +279,56 @@ def apply_speed_settings(
             value = max(0, override) if name == "adaptive_min_samples" else max(1, override)
         setattr(target, name, value)
     return {name: getattr(target, name) for name in SPEED_ENV}
+
+
+def new_source_id(name: str, taken: set[str]) -> str:
+    """A short slug id for a mail source: ASCII words of the name, else a hash, never reused."""
+    words = re.findall(r"[a-z0-9]+", name.casefold())
+    base = "-".join(words)[:24].strip("-") or "src-" + hashlib.sha1(name.encode("utf-8")).hexdigest()[:6]
+    candidate, number = base, 2
+    while candidate in taken:
+        candidate = f"{base}-{number}"
+        number += 1
+    return candidate
+
+
+# Old single-folder options of each mail connector: (option name, label used in sources).
+_OLD_MAIL_OPTIONS = {"gmail": "label", "outlook_mail": "folder", "imap_mail": "folder"}
+
+
+def migrate_mail_sources(settings: AppSettings) -> bool:
+    """Turn the old single label or folder of a mail connector into one source named 기본.
+
+    Runs at every start and does nothing once the old option is gone, so running it twice
+    creates one source. Returns True when the settings changed.
+    """
+    changed = False
+    for connector_id, option in _OLD_MAIL_OPTIONS.items():
+        saved = settings.connectors.get(connector_id)
+        if saved is None or not str(saved.options.get(option) or "").strip():
+            continue
+        if not any(s.connector == connector_id for s in settings.mail_sources):
+            options = saved.options
+            try:
+                source = MailSource(
+                    id=new_source_id(f"{connector_id} basic", {s.id for s in settings.mail_sources}),
+                    name="기본",
+                    connector=connector_id,
+                    purpose="decision",
+                    labels=[str(options[option]).strip()],
+                    days_back=int(options.get("days_back") or 14),
+                    max_messages=int(options.get("max_messages") or 200),
+                    enabled=saved.enabled,
+                )
+            except (ValueError, TypeError):
+                # An unrestricted old setup (for example the whole inbox) is not carried over;
+                # the user adds a narrowed source in the settings.
+                source = None
+            if source is not None and len(settings.mail_sources) < MAX_MAIL_SOURCES:
+                settings.mail_sources.append(source)
+        saved.options = {k: v for k, v in saved.options.items() if k != option}
+        changed = True
+    return changed
 
 
 def root_key(path: Path | str) -> str:

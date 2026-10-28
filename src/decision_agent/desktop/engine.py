@@ -439,6 +439,70 @@ class ProjectEngine:
                 changed = True
         return changed
 
+    def external_meta(self, source: str) -> dict[str, dict]:
+        """path -> document meta of every stored document of one external source."""
+        prefix = f"{EXTERNAL_PREFIX}{source}/"
+        with self.lock:
+            rows = [r for r in self.db.list_files() if r["path"].startswith(prefix)]
+        found: dict[str, dict] = {}
+        for row in rows:
+            try:
+                found[row["path"]] = json.loads(row["payload"] or "{}").get("meta", {}) or {}
+            except ValueError:
+                found[row["path"]] = {}
+        return found
+
+    def merge_external(
+        self,
+        source: str,
+        docs: dict[str, ParsedDocument],
+        fetched_since: str | None,
+        keep_days: int = 180,
+        seen: set[str] | None = None,
+        today: datetime.date | None = None,
+    ) -> bool:
+        """Add or update fetched documents and keep the older ones. Returns True on change.
+
+        Mail is kept instead of replaced: a decision made by mail keeps its history after it
+        leaves the fetch window. A stored document is removed when it falls inside the window
+        that was just fetched (date >= fetched_since) but the server no longer lists it (deleted
+        or unlabeled mail), or when it is older than keep_days. `seen` holds the message ids the
+        server listed, including stored ones whose bodies were not fetched again.
+        """
+        prefix = f"{EXTERNAL_PREFIX}{source}/"
+        today = today or datetime.date.today()
+        oldest = (today - datetime.timedelta(days=keep_days)).isoformat()
+        changed = False
+        with self.lock:
+            existing = self.external_meta(source)
+            rows = {r["path"]: r for r in self.db.list_files() if r["path"].startswith(prefix)}
+            returned: set[str] = set()
+            for name, doc in docs.items():
+                path = prefix + name
+                returned.add(path)
+                doc.path = path
+                payload = doc.model_dump_json()
+                digest = _sha(payload)
+                old = rows.get(path)
+                if old is not None and old["sha256"] == digest and old["status"] == "ok":
+                    continue
+                self.db.upsert_file(path, 0, len(payload), digest, "connector", "ok", "", payload)
+                changed = True
+            stale = []
+            for path, meta in existing.items():
+                if path in returned:
+                    continue
+                date = str(meta.get("date") or "")
+                listed = seen is not None and meta.get("msg_id") in seen
+                too_old = bool(date) and date < oldest
+                gone = bool(fetched_since) and date >= fetched_since and not listed
+                if too_old or gone:
+                    stale.append(path)
+            if stale:
+                self.db.delete_files(stale)
+                changed = True
+        return changed
+
     def put_external_doc(self, source: str, name: str, doc: ParsedDocument) -> None:
         """Add or replace one external document without touching the source's other documents."""
         path = f"{EXTERNAL_PREFIX}{source}/{name}"

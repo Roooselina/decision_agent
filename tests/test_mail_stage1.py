@@ -96,6 +96,7 @@ def test_unreadable_bodies_are_counted_and_keep_the_subject():
     outcome = gmail.fetch(TODAY)
     assert outcome.stats == {
         "matched": 4, "read": 1, "subject_only": 2, "skipped_empty": 1, "skipped_filtered": 0,
+        "skipped_prefilter": 0, "known": 0,
     }
     assert outcome.summary == (
         "4건 찾음, 1건 읽음, 제목만 사용 2건, 1건은 본문이 비어 있거나 인용만 있어 건너뜀"

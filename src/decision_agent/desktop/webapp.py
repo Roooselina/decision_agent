@@ -410,6 +410,37 @@ def create_web_app(
         except ConnectorError as exc:
             raise _bad(exc) from exc
 
+    @app.post("/api/mail-sources", dependencies=auth)
+    def mail_source_save(body: dict):
+        try:
+            return controller.save_mail_source(body)
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+
+    @app.delete("/api/mail-sources/{source_id}", dependencies=auth)
+    def mail_source_delete(source_id: str):
+        try:
+            controller.delete_mail_source(source_id)
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+        return {"ok": True}
+
+    @app.post("/api/mail-sources/{source_id}/preview", dependencies=auth)
+    def mail_source_preview(source_id: str):
+        try:
+            return controller.preview_mail_source(source_id)
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+
+    @app.post("/api/mail-sources/{source_id}/run", dependencies=auth)
+    def mail_source_run(source_id: str):
+        try:
+            if not controller.run_mail_source(source_id):
+                raise HTTPException(status_code=400, detail="분석할 감시 폴더를 먼저 등록하세요.")
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+        return {"ok": True}
+
     @app.post("/api/connectors/disconnect", dependencies=auth)
     def connector_disconnect(body: ConnectorIdBody):
         try:

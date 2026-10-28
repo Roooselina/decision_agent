@@ -7,6 +7,7 @@ import email.utils
 import imaplib
 
 from decision_agent.connectors.base import (
+    NO_SCOPE,
     NO_SUBJECT,
     Connector,
     ConnectorError,
@@ -14,12 +15,12 @@ from decision_agent.connectors.base import (
     MailMessage,
     OptionSpec,
     SecretSpec,
-    mail_document,
     mail_summary,
     new_mail_stats,
     preview_summary,
     strip_html,
 )
+from decision_agent.connectors.mailfilter import MailFilter, MailQuery, collect_mail
 
 # Replaced in tests. Always a TLS connection.
 IMAP_FACTORY = imaplib.IMAP4_SSL
@@ -53,31 +54,54 @@ class ImapMail(Connector):
         OptionSpec("host", "IMAP 서버", help="예: imap.naver.com, imap.gmail.com", required=True),
         OptionSpec("port", "포트", "number", 993),
         OptionSpec("username", "계정", required=True),
-        OptionSpec("folder", "읽을 폴더 이름", help="예: 회의록 또는 INBOX", required=True),
+        OptionSpec("folder", "읽을 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
     secrets = (SecretSpec("password", "비밀번호 또는 앱 비밀번호"),)
 
-    def _session(self, today: datetime.date, work) -> object:
-        """Open the folder read-only, list the message numbers since days_back, run work()."""
+    def options_query(self) -> MailQuery:
+        """The single-folder setup of older versions, as a mail query."""
+        folder = self.text_option("folder")
+        if not folder:
+            raise ConnectorError(NO_SCOPE)
+        return MailQuery(
+            source_id="", name=folder, labels=[folder] if folder else [], folder_word="폴더",
+            days_back=self.int_option("days_back", 14, 1, 365),
+            max_messages=self.int_option("max_messages", 200, 1, 1000), prefilter=False,
+        )
+
+    @staticmethod
+    def _criteria(query: MailQuery, since: str) -> list[str]:
+        """SINCE plus FROM and SUBJECT when one plain ASCII term can be sent to the server.
+
+        Several terms, or non-ASCII ones, are checked locally by MailFilter instead.
+        """
+        criteria = ["SINCE", since]
+        for key, terms in (("FROM", query.senders), ("SUBJECT", query.subject_keywords)):
+            if len(terms) == 1 and terms[0].isascii() and terms[0].strip() and '"' not in terms[0]:
+                criteria += [key, f'"{terms[0].strip().lstrip("@")}"']
+        return criteria
+
+    def _session(self, today: datetime.date, query: MailQuery, work) -> None:
+        """Open each folder read-only, search it, and run work(conn, folder, numbers)."""
         host = self.text_option("host")
         port = self.int_option("port", 993, 1, 65535)
-        days = self.int_option("days_back", 14, 1, 365)
-        limit = self.int_option("max_messages", 200, 1, 1000)
-        since = (today - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
+        since = (today - datetime.timedelta(days=query.days_back)).strftime("%d-%b-%Y")
+        folders = query.labels or ["INBOX"]
         try:
             conn = IMAP_FACTORY(host, port)
             try:
                 conn.login(self.text_option("username"), self.secret("password"))
-                status, _ = conn.select(f'"{self.text_option("folder")}"', readonly=True)
-                if status != "OK":
-                    raise ConnectorError(f"폴더 '{self.text_option('folder')}'을(를) 열지 못했습니다.")
-                status, data = conn.search(None, "SINCE", since)
-                if status != "OK":
-                    raise ConnectorError("메일 검색에 실패했습니다.")
-                ids = data[0].split()[-limit:] if data and data[0] else []
-                return work(conn, ids)
+                for folder in folders:
+                    status, _ = conn.select(f'"{folder}"', readonly=True)
+                    if status != "OK":
+                        raise ConnectorError(f"폴더 '{folder}'을(를) 열지 못했습니다.")
+                    status, data = conn.search(None, *self._criteria(query, since))
+                    if status != "OK":
+                        raise ConnectorError("메일 검색에 실패했습니다.")
+                    numbers = data[0].split()[-query.max_messages:] if data and data[0] else []
+                    work(conn, folder, numbers)
             finally:
                 try:
                     conn.logout()
@@ -88,9 +112,6 @@ class ImapMail(Connector):
         except (OSError, TimeoutError) as exc:
             raise ConnectorError(f"메일 서버에 연결하지 못했습니다: {exc}") from exc
 
-    def _scope(self) -> str:
-        return f"폴더: {self.text_option('folder')}, 최근 {self.int_option('days_back', 14, 1, 365)}일"
-
     @staticmethod
     def _parse(raw: bytes, today: datetime.date, with_body: bool) -> MailMessage:
         message = email.message_from_bytes(raw, policy=email.policy.default)
@@ -100,47 +121,84 @@ class ImapMail(Connector):
             stamp = None
         date = (stamp.date() if stamp else today).isoformat()
         subject = str(message["Subject"] or NO_SUBJECT)
+        name, _ = email.utils.parseaddr(str(message["From"] or ""))
         return MailMessage(
             msg_id=str(message["Message-ID"] or f"{subject}{date}"),
             date=date,
             subject=subject,
             sender=str(message["From"] or ""),
+            sender_name=name,
             body=message_text(message) if with_body else "",
         )
 
-    def fetch(self, today: datetime.date) -> FetchOutcome:
-        stats = new_mail_stats()
-        docs = {}
+    @staticmethod
+    def _raw(conn, number: bytes, spec: str) -> bytes | None:
+        status, parts = conn.fetch(number, spec)
+        if status != "OK" or not parts or not isinstance(parts[0], tuple):
+            return None
+        return parts[0][1]
 
-        def work(conn, ids):
-            stats["matched"] = len(ids)
-            for message_id in ids:
-                status, parts = conn.fetch(message_id, "(BODY.PEEK[])")
-                if status != "OK" or not parts or not isinstance(parts[0], tuple):
+    def fetch_source(
+        self, query: MailQuery, today: datetime.date, known: set[str] | None = None
+    ) -> FetchOutcome:
+        """Fetch one source. Headers come first; bodies only for mails not stored yet.
+
+        One IMAP connection cannot be shared between threads, so bodies are read in order.
+        """
+        known = known or set()
+        stats = new_mail_stats()
+        messages: list[MailMessage] = []
+        seen: list[str] = []
+
+        def work(conn, folder, numbers):
+            for number in numbers:
+                if len(seen) >= query.max_messages:
+                    return
+                header = self._raw(conn, number, "(BODY.PEEK[HEADER])")
+                if header is None:
+                    continue
+                head = self._parse(header, today, False)
+                if head.msg_id in seen:
+                    continue
+                seen.append(head.msg_id)
+                if head.msg_id in known:
+                    stats["known"] += 1
+                    continue
+                raw = self._raw(conn, number, "(BODY.PEEK[])")
+                if raw is None:
                     stats["skipped_empty"] += 1
                     continue
-                made = mail_document(self._parse(parts[0][1], today, True), stats)
-                if made is not None:
-                    docs[made[0]] = made[1]
+                messages.append(self._parse(raw, today, True))
 
-        self._session(today, work)
-        return FetchOutcome(docs, mail_summary(stats, self._scope()), stats)
+        self._session(today, query, work)
+        stats["matched"] = len(seen)
+        docs = collect_mail(messages, query, stats)
+        return FetchOutcome(docs, mail_summary(stats, query.scope_text()), stats, seen_ids=seen)
 
-    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+    def fetch(self, today: datetime.date) -> FetchOutcome:
+        return self.fetch_source(self.options_query(), today)
+
+    def preview_source(self, query: MailQuery, today: datetime.date, limit: int = 10) -> dict:
         stats = new_mail_stats()
         rows: list[dict] = []
 
-        def work(conn, ids):
-            stats["matched"] = len(ids)
-            for message_id in list(reversed(ids))[:limit]:
-                status, parts = conn.fetch(message_id, "(BODY.PEEK[HEADER])")
-                if status != "OK" or not parts or not isinstance(parts[0], tuple):
+        def work(conn, folder, numbers):
+            stats["matched"] += len(numbers)
+            for number in list(reversed(numbers)):
+                if len(rows) >= limit:
+                    return
+                header = self._raw(conn, number, "(BODY.PEEK[HEADER])")
+                if header is None:
                     continue
-                mail = self._parse(parts[0][1], today, False)
-                rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
+                mail = self._parse(header, today, False)
+                if MailFilter.of(query).matches(mail):
+                    rows.append({"date": mail.date, "subject": mail.subject, "sender": mail.sender})
 
-        self._session(today, work)
-        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, self._scope())}
+        self._session(today, query, work)
+        return {"rows": rows, "stats": stats, "summary": preview_summary(stats, query.scope_text())}
+
+    def preview(self, today: datetime.date, limit: int = 10) -> dict:
+        return self.preview_source(self.options_query(), today, limit)
 
     def account_info(self) -> dict:
         return {"account": self.text_option("username")}

@@ -53,13 +53,21 @@ class FetchOutcome:
     summary: str = ""
     # Counts only (never subjects, bodies or addresses). Mail connectors fill MAIL_STATS keys.
     stats: dict[str, int] = field(default_factory=dict)
+    # Ids of every mail the server listed for a mail source, including ones already stored
+    # whose bodies were not requested again. None for other connectors.
+    seen_ids: list[str] | None = None
 
 
 # matched: listed by the server; read: body text used; subject_only: no readable body, the
 # subject line was kept instead; skipped_empty: neither body nor subject; skipped_filtered:
-# left out by a sender, subject or decision filter.
-MAIL_STATS = ("matched", "read", "subject_only", "skipped_empty", "skipped_filtered")
+# left out by a sender or subject filter; skipped_prefilter: no decision wording; known:
+# already stored, so the body was not requested again.
+MAIL_STATS = (
+    "matched", "read", "subject_only", "skipped_empty", "skipped_filtered", "skipped_prefilter",
+    "known",
+)
 NO_SUBJECT = "(제목 없음)"
+NO_SCOPE = "읽을 범위가 없습니다. 설정에서 메일 소스를 추가하세요."
 
 
 def new_mail_stats() -> dict[str, int]:
@@ -72,6 +80,8 @@ def mail_summary(stats: dict[str, int], scope: str) -> str:
     if not matched:
         return f"조건에 맞는 메일이 없습니다 ({scope})"
     parts = [f"{matched}건 찾음", f"{stats.get('read', 0)}건 읽음"]
+    if stats.get("known"):
+        parts.append(f"이미 가져온 메일 {stats['known']}건")
     if stats.get("subject_only"):
         parts.append(f"제목만 사용 {stats['subject_only']}건")
     if stats.get("skipped_empty"):
