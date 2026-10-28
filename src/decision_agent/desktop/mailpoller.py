@@ -144,6 +144,8 @@ class MailPoller:
             self._failed(poll, f"예기치 않은 오류: {exc}"[:200])
         finally:
             poll.lock.release()
+        if not poll.ok:
+            mailsources.save_check(self.app.maildb, source, False, poll.message)
         self.app._changed()
         return poll
 
@@ -169,10 +171,17 @@ class MailPoller:
             raise LoginExpired(problems[0])
         state_key = STATE_KEY.format(source.id)
         state = json.loads(maildb.meta_get(state_key) or "{}")
+        # Changed listing rules (senders, labels, ...) start over with a full listing; the
+        # history of the old rules says nothing about mail the new rules would match.
+        fingerprint = mailsources.fetch_fingerprint(source)
+        if state.get("fp") != fingerprint:
+            state = {}
         query = mailsources.query_for(source, app.settings, maildb)
-        changed, new_state, threads = connector.poll_changes(query, state)
+        changed, new_state, threads = connector.poll_changes(query, {k: v for k, v in state.items() if k != "fp"})
+        new_state = {**new_state, "fp": fingerprint}
         new = 0
         docs_changed = False
+        counts = None
         if changed:
             known = mailsources.known_ids(maildb, source)
             last = maildb.meta_get(f"last_fetch:{source.id}")
@@ -193,6 +202,7 @@ class MailPoller:
             )
             new = stats.get("new", 0)
             docs_changed = bool(stats.get("docs_changed"))
+            counts = mailsources.fetch_counts(outcome, query)
             status = {
                 "at": datetime.datetime.now().replace(microsecond=0).isoformat(), "ok": True, "message": "",
                 "summary": mail_summary(stats, query.scope_text()), "stats": stats,
@@ -203,6 +213,7 @@ class MailPoller:
         # The first fetch of a source only fills the index; "new" means arrived since then.
         first = not state
         poll.new = 0 if first else new
+        mailsources.save_check(maildb, source, True, "", mailsources.query_text(source, query), counts, poll.new)
         poll.checked_at = datetime.datetime.now().strftime("%H:%M")
         poll.next_due = self.clock() + self.interval()
         log.info("mail poller: one source checked, %d new", new)
@@ -218,7 +229,8 @@ class MailPoller:
         polls = [(s, self.polls.get(s.id)) for s in self.active_sources()]
         rows = [
             {"id": s.id, "name": s.name, "checked_at": p.checked_at, "new": p.new, "ok": p.ok,
-             "stopped": p.stopped, "message": p.message}
+             "stopped": p.stopped, "message": p.message,
+             "lines": mailsources.check_lines(mailsources.read_check(self.app.maildb, s))}
             for s, p in polls if p is not None
         ]
         checked = sorted(r["checked_at"] for r in rows if r["checked_at"])
@@ -226,16 +238,17 @@ class MailPoller:
         if not polls:
             line = ""
         elif any(r["stopped"] for r in rows):
-            line = "확인 멈춤 · 다시 로그인이 필요합니다"
+            stopped = next(r for r in rows if r["stopped"])
+            line = "메일을 가져오지 못했습니다. " + (stopped["message"] or "설정에서 다시 연결하세요.")
         elif failing and not checked:
-            line = "확인 실패 · 다시 시도 중"
+            line = "확인에 실패했습니다. 다시 시도합니다."
         elif checked:
             line = f"마지막 확인 {checked[-1]}"
             new = sum(r["new"] for r in rows)
             if new:
                 line += f" · 새 메일 {new}통"
             if failing:
-                line += " · 일부 확인 실패, 다시 시도 중"
+                line += " · 일부 소스 확인 실패, 다시 시도합니다"
         else:
             line = "확인 대기 중"
         return {"line": line, "running": self.running, "interval": self.interval(), "sources": rows}

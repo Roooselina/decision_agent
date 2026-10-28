@@ -295,6 +295,23 @@ def _chips(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str,
     return chips
 
 
+def _keys(thread: sqlite3.Row, sources: dict[str, MailSource],
+          thread_links: dict[str, set[str]], source_links: dict[str, set[str]]) -> set[str]:
+    """Every sidebar entry a thread belongs to (chips show fewer, without repeated names)."""
+    keys: set[str] = set()
+    source_ids = json.loads(thread["source_ids"] or "[]")
+    for sid in source_ids:
+        source = sources.get(sid)
+        if source is not None:
+            if source.team:
+                keys.add(f"team:{source.team}")
+            keys.add(f"purpose:{source.purpose}")
+        keys |= {f"local:{i}" for i in source_links.get(sid, set())}
+    keys |= {f"gmail:{name}" for name in json.loads(thread["labels"] or "[]")}
+    keys |= {f"local:{i}" for i in thread_links.get(thread["thread_key"], set())}
+    return keys
+
+
 def _analysis_badge(source_ids: list[str], sources: dict[str, MailSource]) -> str:
     known = [sources[s] for s in source_ids if s in sources]
     if known and all(s.effective_analysis == "off" for s in known):
@@ -337,6 +354,7 @@ def _thread_item(thread: sqlite3.Row, sources: dict[str, MailSource], local: dic
         "time": thread["last_time"],
         "snippet": thread["snippet"],
         "chips": _chips(thread, sources, local, *links),
+        "keys": sorted(_keys(thread, sources, *links)),
         "analysis": _analysis_badge(source_ids, sources),
     }
 
@@ -374,7 +392,7 @@ def list_threads(maildb: MailDB, sources: list[MailSource], params: dict,
             return False
         if box == "sent" and not item["has_sent"]:
             return False
-        if label and not any(c["key"] == label for c in item["chips"]):
+        if label and label not in item["keys"]:
             return False
         if since and item["date"] < since:
             return False
@@ -406,8 +424,18 @@ def list_threads(maildb: MailDB, sources: list[MailSource], params: dict,
             count("box:inbox", item)
         if item["has_sent"]:
             count("box:sent", item)
-        for chip in item["chips"]:
-            count(chip["key"], item)
+        for key in item["keys"]:
+            count(key, item)
+    # Every label a configured source gives is listed, even before any mail arrived.
+    for source in sources:
+        if source.team:
+            counts.setdefault(f"team:{source.team}", [0, 0])
+        counts.setdefault(f"purpose:{source.purpose}", [0, 0])
+        if source.connector == "gmail":
+            for name in source.labels:
+                counts.setdefault(f"gmail:{name}", [0, 0])
+    for label_id in local:
+        counts.setdefault(f"local:{label_id}", [0, 0])
     groups = {"team": [], "purpose": [], "gmail": [], "local": []}
     for key, (total, unread) in counts.items():
         kind, _, value = key.partition(":")
@@ -416,10 +444,6 @@ def list_threads(maildb: MailDB, sources: list[MailSource], params: dict,
                 PURPOSE_LABELS.get(value, value) if kind == "purpose" else value)
             color = local[value]["color"] if kind == "local" and value in local else ""
             groups[kind].append({"key": key, "name": name, "count": total, "unread": unread, "color": color})
-    for label_id, label in local.items():
-        if f"local:{label_id}" not in counts:
-            groups["local"].append({"key": f"local:{label_id}", "name": label["name"], "count": 0, "unread": 0,
-                                    "color": label["color"]})
     for values in groups.values():
         values.sort(key=lambda g: g["name"])
     boxes = {b: {"count": counts.get(f"box:{b}", [0, 0])[0], "unread": counts.get(f"box:{b}", [0, 0])[1]}

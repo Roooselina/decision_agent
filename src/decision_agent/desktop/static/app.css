@@ -922,7 +922,15 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .dot.c-blue { background: #3b82f6; } .dot.c-green { background: #22a35a; } .dot.c-orange { background: #e8890c; }
 .dot.c-red { background: #e5484d; } .dot.c-purple { background: #8b5cf6; } .dot.c-gray { background: #8d95a5; }
 .card.mail-page { padding: 0; overflow: hidden; }
-.mbox-status { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--border); min-height: 40px; }
+.mbox-status { padding: 8px 16px; border-bottom: 1px solid var(--border); }
+.mbox-status-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
+.mbox-status-line { margin: 0; }
+.mbox-sources { display: grid; gap: 8px; padding: 8px 0 4px; }
+.mbox-source { display: grid; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+.mbox-source-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.check-lines { margin: 0; padding-left: 16px; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.mbox-empty { display: grid; gap: 6px; justify-items: start; padding: 16px; color: var(--text-2); }
+.mbox-empty p { margin: 0; }
 .mbox { display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1.3fr); height: calc(100vh - 230px); min-height: 480px; }
 .mbox-side { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-right: 1px solid var(--border); overflow-y: auto; min-height: 0; }
 .mbox-side-item { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; padding: 6px 8px;

@@ -636,6 +636,10 @@ class DecisionAgentApp:
             )
             status["stats"] = stats
             status["summary"] = mail_summary(stats, query.scope_text())
+            mailsources.save_check(self.maildb, source, True, "", mailsources.query_text(source, query),
+                                   mailsources.fetch_counts(outcome, query), stats.get("new", 0))
+        else:
+            mailsources.save_check(self.maildb, source, False, status.get("message", ""))
         mailsources.save_status(runtime.db, source, status)
         return status
 
@@ -813,6 +817,8 @@ class DecisionAgentApp:
             item["analysis_effective"] = source.effective_analysis
             item["analysis_label"] = mailsources.ANALYSIS_LABELS[source.effective_analysis]
             item["indexed"] = self.maildb.count(source.id)
+            item["check"] = mailsources.read_check(self.maildb, source)
+            item["check_lines"] = mailsources.check_lines(item["check"])
             rows.append(item)
         return rows
 

@@ -19,6 +19,7 @@ from decision_agent.connectors.mailfilter import (
     MailFilter,
     MailQuery,
     collect_mail,
+    gmail_search,
     looks_like_decision,
 )
 from decision_agent.desktop.engine import ProjectEngine
@@ -268,6 +269,87 @@ def apply_fetch(
     return stats
 
 
+def query_text(source: MailSource, query: MailQuery) -> str:
+    """The search as the provider receives it (Gmail: label part plus the q string)."""
+    if source.connector == "gmail":
+        labels = " ".join(f'label:"{name}"' for name in query.labels)
+        return " ".join(part for part in (labels, gmail_search(query)) if part)
+    return query.scope_text()
+
+
+def fetch_counts(outcome: FetchOutcome, query: MailQuery) -> dict[str, int]:
+    """What one fetch found and why mails were not read or not analysed."""
+    rules = MailFilter.of(query)
+    stats = outcome.stats or {}
+    return {
+        "matched": stats.get("matched", 0),
+        "loaded": len(outcome.messages),
+        "known": stats.get("known", 0),
+        "excluded": sum(1 for m in outcome.messages if not (m.via_thread or rules.matches(m))),
+        "empty": stats.get("skipped_empty", 0),
+        "not_decision": stats.get("skipped_prefilter", 0),
+        "thread": stats.get("thread", 0),
+        "deferred": stats.get("deferred", 0),
+    }
+
+
+CHECK_KEY = "check:{}"
+
+
+def save_check(maildb: MailDB, source: MailSource, ok: bool, message: str = "", query: str | None = None,
+               counts: dict | None = None, new: int | None = None) -> dict:
+    """Record the last check of a source. A check without new mail keeps the earlier counts."""
+    try:
+        record = json.loads(maildb.meta_get(CHECK_KEY.format(source.id)) or "{}")
+    except ValueError:
+        record = {}
+    now = datetime.datetime.now().replace(microsecond=0)
+    record.update({"at": now.isoformat(), "checked_at": now.strftime("%H:%M"), "ok": ok, "message": message})
+    if query is not None:
+        record["query"] = query
+    if counts is not None:
+        record.update(counts)
+    if new is not None:
+        record["new"] = new
+    record["indexed"] = maildb.count(source.id)
+    maildb.meta_put(CHECK_KEY.format(source.id), json.dumps(record, ensure_ascii=False))
+    return record
+
+
+def read_check(maildb: MailDB, source: MailSource) -> dict | None:
+    try:
+        raw = maildb.meta_get(CHECK_KEY.format(source.id))
+        return json.loads(raw) if raw else None
+    except ValueError:
+        return None
+
+
+def check_lines(record: dict | None) -> list[str]:
+    """The record in plain Korean, one fact per line."""
+    if not record:
+        return ["아직 확인하지 않았습니다."]
+    lines = [f"마지막 확인 {record.get('checked_at', '')}"]
+    if record.get("query"):
+        lines.append(f"검색 조건: {record['query']}")
+    if "matched" in record:
+        lines.append(
+            f"조건에 맞는 메일 {record['matched']}통, 새로 읽은 메일 {record.get('loaded', 0)}통, "
+            f"저장된 메일 {record.get('indexed', 0)}통"
+        )
+        skipped = [
+            (record.get("known", 0), "이미 저장됨"), (record.get("excluded", 0), "제외 조건"),
+            (record.get("empty", 0), "본문 없음"), (record.get("not_decision", 0), "결정 표현 없음(저장만 함)"),
+            (record.get("deferred", 0), "다음 확인 때 읽음"),
+        ]
+        shown = [f"{label} {n}통" for n, label in skipped if n]
+        lines.append("건너뜀: " + (", ".join(shown) if shown else "없음"))
+        if record.get("thread"):
+            lines.append(f"같은 대화에서 함께 읽은 메일 {record['thread']}통 (내가 보낸 답장 포함)")
+    if not record.get("ok", True) and record.get("message"):
+        lines.append(f"오류: {record['message']}")
+    return lines
+
+
 def failure(message: str) -> dict:
     return {
         "at": datetime.datetime.now().replace(microsecond=0).isoformat(),
@@ -287,8 +369,27 @@ def read_status(db: StateDB | None, source: MailSource) -> dict | None:
 
 
 __all__ = [
-    "ANALYSIS_LABELS", "CONNECTOR_LABELS", "PURPOSE_LABELS", "apply_fetch", "build_documents",
-    "expand_senders", "failure", "filter_summary", "forget_source", "known_ids", "query_for",
-    "read_status", "rebuild", "remove_documents", "save_status", "since_for", "source_key",
+    "ANALYSIS_LABELS",
+    "CONNECTOR_LABELS",
+    "PURPOSE_LABELS",
+    "apply_fetch",
+    "build_documents",
+    "check_lines",
+    "expand_senders",
+    "failure",
+    "fetch_counts",
+    "filter_summary",
+    "forget_source",
+    "known_ids",
+    "query_for",
+    "query_text",
+    "read_check",
+    "read_status",
+    "rebuild",
+    "remove_documents",
+    "save_check",
+    "save_status",
+    "since_for",
+    "source_key",
     "status_key",
 ]

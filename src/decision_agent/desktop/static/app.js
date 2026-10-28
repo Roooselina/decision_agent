@@ -507,7 +507,14 @@
     const side = h("nav", {class: "mbox-side", "aria-label": "편지함과 라벨"});
     const listBox = h("div", {class: "mbox-list", role: "listbox", "aria-label": "대화 목록", tabindex: "-1"});
     const conv = h("section", {class: "mbox-conv", "aria-label": "대화"});
-    const statusLine = h("p", {class: "mbox-status small muted", role: "status"});
+    const statusLine = h("p", {class: "mbox-status-line small muted", role: "status"});
+    const sourcePanel = h("div", {class: "mbox-sources", hidden: true});
+    const sourceToggle = h("button", {type: "button", class: "link small", "aria-expanded": "false", onclick: () => {
+      sourcePanel.hidden = !sourcePanel.hidden;
+      sourceToggle.setAttribute("aria-expanded", String(!sourcePanel.hidden));
+      sourceToggle.textContent = sourcePanel.hidden ? "메일 연결 상태" : "상태 닫기";
+    }}, "메일 연결 상태");
+    const statusBar = h("div", {class: "mbox-status"}, h("div", {class: "mbox-status-row"}, statusLine, sourceToggle), sourcePanel);
     const search = input({type: "search", value: MP.q, placeholder: "메일 검색 (제목, 사람, 본문)", "aria-label": "메일 검색", class: "input mbox-search"});
     const filterRow = h("div", {class: "mbox-filters"});
     const center = h("div", {class: "mbox-center"}, h("div", {class: "mbox-top"}, search, filterRow), listBox);
@@ -523,7 +530,7 @@
         onclick: onPick},
         h("span", {class: "dot c-" + (color || "none"), "aria-hidden": "true"}),
         h("span", {class: "mbox-side-name truncate"}, name),
-        h("span", {class: "mbox-side-count" + (unread ? " strong" : " muted")}, unread ? String(unread) : (count ? String(count) : "")));
+        h("span", {class: "mbox-side-count strong"}, unread ? String(unread) : ""));
     }
 
     function drawSide() {
@@ -572,17 +579,28 @@
       return node;
     }
 
+    function emptyLine(text) {
+      return h("div", {class: "mbox-empty"}, h("p", {}, text),
+        h("button", {type: "button", class: "link small", onclick: () => { sourcePanel.hidden = false; sourceToggle.setAttribute("aria-expanded", "true"); sourceToggle.textContent = "상태 닫기"; }}, "메일 연결 상태 보기"));
+    }
+
     function drawList() {
       if (!data.sources) {
-        set(listBox, emptyState({icon: "mail", title: "연결된 메일이 없습니다",
-          text: "설정에서 Gmail이나 Outlook을 연결하고 메일 소스를 추가하면 새 메일이 자동으로 여기에 나타납니다.",
-          action: button("메일 연결", {variant: "primary", onClick: () => go("settings", {tab: "connect", focus: "gmail"})}), neutral: true}));
+        set(listBox, h("div", {class: "mbox-empty"}, h("p", {}, "소스가 없습니다."),
+          h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 소스 추가")));
         return;
       }
       if (!data.total) {
         const filtered = MP.q || MP.label || MP.sender || MP.day || MP.period !== "all" || MP.box !== "all";
-        set(listBox, emptyState({icon: "inbox", neutral: true, title: filtered ? "조건에 맞는 메일이 없습니다" : "아직 받은 메일이 없습니다",
-          text: filtered ? "검색어나 라벨, 기간을 바꿔 보세요." : "메일이 오면 자동으로 가져옵니다. 버튼을 누를 필요가 없습니다."}));
+        const rows = data.state.status.sources || [];
+        if (filtered) {
+          set(listBox, h("div", {class: "mbox-empty"}, h("p", {}, "조건에 맞는 메일이 없습니다.")));
+        } else if (rows.some(r => !r.ok)) {
+          set(listBox, emptyLine("확인에 실패했습니다. 다시 시도합니다."));
+        } else {
+          const checked = rows.map(r => r.checked_at).filter(Boolean).sort().pop();
+          set(listBox, emptyLine(checked ? "아직 가져온 메일이 없습니다. 마지막 확인 " + checked + ", 조건에 맞는 메일 0통." : "아직 가져온 메일이 없습니다. 확인 대기 중입니다."));
+        }
         return;
       }
       const more = data.offset + data.items.length < data.total
@@ -592,8 +610,18 @@
 
     function drawStatus() {
       const st = data.state.status;
-      statusLine.textContent = st.line || "";
-      statusLine.classList.toggle("danger-text", /실패|멈춤/.test(st.line || ""));
+      statusLine.textContent = st.line || (data.sources ? "확인 대기 중입니다." : "");
+      statusLine.classList.toggle("danger-text", /못했습니다|실패/.test(st.line || ""));
+      set(sourcePanel, ...(st.sources || []).map(src => {
+        const now = button("지금 확인", {size: "sm", onClick: (e) => busy(e.currentTarget, async () => {
+          await api("/api/mail/check", "POST", {source_id: src.id});
+          toast("확인하는 중입니다.", "info");
+        })});
+        return h("div", {class: "mbox-source"},
+          h("div", {class: "mbox-source-head"}, h("span", {class: "strong"}, src.name), now),
+          h("ul", {class: "check-lines small muted"}, ...(src.lines || []).map(line => h("li", {}, line))));
+      }), (st.sources || []).length ? null : h("p", {class: "small muted"}, "확인한 소스가 없습니다."),
+        h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 소스 설정"));
     }
 
     async function load(offset, append) {
@@ -737,7 +765,7 @@
     set(listBox, h("p", {class: "muted"}, "불러오는 중입니다."));
     drawSide(); drawFilters();
     load();
-    return h("div", {class: "mbox-wrap"}, statusLine, root);
+    return h("div", {class: "mbox-wrap"}, statusBar, root);
   }
 
   // Stored mail similar to a text, ranked on this computer. Each row opens the mail view.
@@ -2008,33 +2036,27 @@
   }
   const SOURCE_SENDING = "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다";
 
-  function sourceStatusLine(src) {
-    const st = src.status;
-    if (!st) return h("p", {class: "small muted"}, "아직 가져오지 않았습니다.");
-    return st.ok
-      ? h("p", {class: "small"}, "마지막 가져오기 " + stamp(st.at) + " · " + st.summary)
-      : h("p", {class: "small danger-text"}, "가져오지 못했습니다: " + st.message);
-  }
-
   function mailSourcesCard(c, s) {
     const rows = (c.sources || []).map(src => {
       const preview = previewBlock("/api/mail-sources/" + encodeURIComponent(src.id) + "/preview");
       const result = h("p", {class: "small muted", role: "status"});
-      const run = button("지금 가져오기", {size: "sm"});
+      const checkBox = h("ul", {class: "check-lines small"}, ...(src.check_lines || []).map(line => h("li", {}, line)));
+      const run = button("지금 확인", {size: "sm"});
       run.addEventListener("click", () => busy(run, async () => {
-        const before = src.status ? src.status.at : null;
-        await api("/api/mail-sources/" + encodeURIComponent(src.id) + "/run", "POST", {});
-        result.textContent = "가져오는 중입니다.";
+        const before = src.check ? src.check.at : null;
+        await api("/api/mail/check", "POST", {source_id: src.id});
+        result.textContent = "확인하는 중입니다.";
         for (let i = 0; i < 30; i++) {
           await new Promise(r => setTimeout(r, 2000));
           const row = (await api("/api/connectors")).find(r => r.id === c.id);
           const now = row && (row.sources || []).find(x => x.id === src.id);
-          if (now && now.status && now.status.at !== before) {
-            result.textContent = now.status.ok ? "가져오기 완료: " + now.status.summary : "가져오지 못했습니다: " + now.status.message;
+          if (now && now.check && now.check.at !== before) {
+            set(checkBox, ...now.check_lines.map(line => h("li", {}, line)));
+            result.textContent = "";
             return;
           }
         }
-        result.textContent = "응답이 늦습니다. 백그라운드에서 계속 시도합니다.";
+        result.textContent = "응답이 늦습니다. 계속 확인합니다.";
       }));
       const edit = button("수정", {size: "sm", onClick: () => sourceForm(c, s, src)});
       const forget = button("메일 지우기", {size: "sm"});
@@ -2060,8 +2082,7 @@
           src.team ? h("span", {class: "badge neutral"}, "팀 " + src.team) : null,
           src.enabled ? null : h("span", {class: "badge state paused"}, "꺼짐")),
         h("p", {class: "small muted"}, src.filter_summary),
-        h("p", {class: "small muted"}, "이 컴퓨터에 저장된 메일 " + (src.indexed || 0) + "건"),
-        sourceStatusLine(src),
+        checkBox,
         h("div", {class: "row source-actions"}, preview.run, run, edit, forget, remove),
         result, preview.out);
     });

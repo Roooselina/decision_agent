@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import datetime
+import email.header
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
@@ -271,7 +272,17 @@ class Gmail(_GoogleBase):
 
     @staticmethod
     def _headers_of(message: dict) -> dict[str, str]:
-        return {h["name"].lower(): h["value"] for h in message.get("payload", {}).get("headers", [])}
+        """Header values as text; RFC 2047 encoded words ("=?utf-8?b?...?=") are decoded."""
+        out = {}
+        for header in message.get("payload", {}).get("headers", []):
+            value = header.get("value", "")
+            if "=?" in value:
+                try:
+                    value = str(email.header.make_header(email.header.decode_header(value)))
+                except (ValueError, LookupError):
+                    pass
+            out[header["name"].lower()] = value
+        return out
 
     @staticmethod
     def _date_of(message: dict, today: datetime.date) -> str:

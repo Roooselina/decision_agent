@@ -99,14 +99,23 @@ def address_of(sender: str) -> str:
 
 
 def sender_matches(sender: str, patterns: list[str]) -> bool:
-    """kim@x.com matches that address; @x.com and x.com match the domain and its subdomains."""
+    """kim@x.com matches that address; @x.com and x.com match the domain and its subdomains.
+
+    A pattern without "@" and "." is a name and matches the display name, as Gmail's from:
+    does, so the local check never drops what the server search returned.
+    """
     address = address_of(sender)
     if not address:
         return False
     domain = address.rsplit("@", 1)[-1]
+    name = email.utils.parseaddr(sender)[0].casefold()
     for raw in patterns:
         pattern = raw.strip().casefold()
         if not pattern:
+            continue
+        if "@" not in pattern and "." not in pattern:
+            if pattern in name:
+                return True
             continue
         if "@" in pattern and not pattern.startswith("@"):
             if address == pattern:

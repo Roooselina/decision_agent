@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import email.utils
 import hashlib
 import json
 import os
@@ -95,6 +96,31 @@ class MailSource(BaseModel):
         if self.analysis is not None:
             return self.analysis
         return "off" if self.scope == "all_mail" else "all"
+
+    @field_validator("senders", "exclude_senders", mode="before")
+    @classmethod
+    def _addresses(cls, value):
+        """One address per entry, as Gmail and the local filter both read it.
+
+        "민재 <kim@x.kr>" keeps the address, "a@x.kr, b@y.kr" becomes two entries, addresses
+        are lower case. A plain name ("민재") or a domain stays as typed.
+        """
+        if not isinstance(value, list):
+            return value
+        out: list[str] = []
+        for entry in value:
+            if not isinstance(entry, str):
+                out.append(entry)
+                continue
+            for piece in re.split(r"[,;\n]", entry):
+                piece = piece.strip()
+                if not piece:
+                    continue
+                address = email.utils.parseaddr(piece)[1]
+                cleaned = address.casefold() if "@" in address else piece
+                if cleaned not in out:
+                    out.append(cleaned)
+        return out
 
     @field_validator("name", "team")
     @classmethod

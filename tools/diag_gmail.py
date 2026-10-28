@@ -1,11 +1,16 @@
 """Read-only Gmail diagnostic for Decision Agent.
 
 Run from the repo folder:  python tools/diag_gmail.py [keyword]
+                     or:    python tools/diag_gmail.py --source SOURCE_ID
 
 It uses the login the program already saved. It prints which Google account is connected, which
 labels exist, what the configured label returns, and whether a mail with the keyword exists in
 this account at all. Only counts, label names, dates and subjects are printed to this console.
 Nothing is stored, sent, labeled, or marked as read. Tokens and secrets are never printed.
+
+With --source it runs one mail source as the program would and prints the same numbers as the
+source panel: the exact Gmail query, how many mails matched, how many would be read, and why
+the others are skipped. The local mail index is only read (to know which mails are stored).
 """
 
 from __future__ import annotations
@@ -80,7 +85,49 @@ def run(manager: ConnectorManager, keyword: str) -> int:
     return 0
 
 
+def run_source(manager: ConnectorManager, source_id: str, maildb=None) -> int:
+    """The source panel's numbers for one source, computed now. Nothing is stored."""
+    from decision_agent.desktop import mailsources
+
+    settings = manager.get_settings()
+    source = next((s for s in settings.mail_sources if s.id == source_id), None)
+    if source is None:
+        known = ", ".join(s.id for s in settings.mail_sources) or "(none)"
+        print(f"no source {source_id!r}; sources: {known}")
+        return 1
+    if maildb is None:
+        from decision_agent.desktop.maildb import MailDB
+        from decision_agent.desktop.paths import mail_db_path
+
+        maildb = MailDB(mail_db_path())
+    conn = manager.instance(source.connector)
+    problems = conn.problems()
+    if problems:
+        print("settings problems:", "; ".join(problems))
+        return 1
+    query = mailsources.query_for(source, settings, maildb)
+    print(f"source           : {source.name} ({source.id}), enabled={source.enabled}")
+    print(f"query            : {mailsources.query_text(source, query)}")
+    try:
+        outcome = conn.fetch_source(query, manager.today(), maildb.ids(source.id))
+    except ConnectorError as exc:
+        print("ERROR:", exc)
+        return 2
+    counts = mailsources.fetch_counts(outcome, query)
+    print(f"matched          : {counts['matched']}")
+    print(f"would read       : {counts['loaded']} (of which from the same threads: {counts['thread']})")
+    print(f"skipped, stored  : {counts['known']}")
+    print(f"skipped, rule    : {counts['excluded']}")
+    print(f"skipped, empty   : {counts['empty']}")
+    print(f"not a decision   : {counts['not_decision']} (stored, not analysed)")
+    print(f"left for later   : {counts['deferred']}")
+    print(f"stored now       : {maildb.count(source.id)}")
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) > 2 and sys.argv[1] == "--source":
+        return run_source(ConnectorManager(load_settings), sys.argv[2])
     keyword = sys.argv[1] if len(sys.argv) > 1 else "포럼"
     return run(ConnectorManager(load_settings), keyword)
 

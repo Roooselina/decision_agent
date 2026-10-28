@@ -261,7 +261,9 @@ def test_failures_back_off_honour_retry_after_and_a_revoked_login_stops(mailbox)
     assert not poll.ok and poll.failures == 1 and poll.next_due == now[0] + 120.0
     poll = poller.check(source(controller))
     assert poll.failures == 2 and poll.next_due == now[0] + 240.0
-    assert "다시 시도 중" in poller.status()["line"]
+    assert "다시 시도합니다" in poller.status()["line"]
+    # The failure is recorded for the source panel too, in plain words.
+    assert any(line.startswith("오류: ") for line in poller.status()["sources"][0]["lines"])
     from decision_agent.connectors.http import HttpResponse
 
     def limited(method, url, **kwargs):
@@ -276,7 +278,8 @@ def test_failures_back_off_honour_retry_after_and_a_revoked_login_stops(mailbox)
     poll = poller.check(source(controller))
     assert poll.stopped and "다시 로그인" in poll.message
     assert poller.run_due() == 0
-    assert poller.status()["line"] == "확인 멈춤 · 다시 로그인이 필요합니다"
+    line = poller.status()["line"]
+    assert line.startswith("메일을 가져오지 못했습니다. ") and "다시 로그인" in line
     gmail.restore_history()
     poller.trigger()
     assert poller.run_due() == 1 and poller.polls["team"].ok
