@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+<title>데모 메일 보내기 도우미</title>
+<style>
+  :root { --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5f6878; --line: #dfe3ea; --accent: #2f6fed; --mine: #eef3fe; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #15181e; --card: #1e232b; --text: #e6e9ef; --muted: #9aa3b2; --line: #313844; --accent: #6b9bff; --mine: #1f2a40; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 "Malgun Gothic", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; }
+  p { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .accounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+  label { display: block; font-size: 13px; color: var(--muted); }
+  input { width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 10px 0; min-width: 0; }
+  .card.mine { background: var(--mine); }
+  .head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+  .who { font-weight: 600; overflow-wrap: anywhere; }
+  .subject { font-weight: 600; margin-top: 6px; overflow-wrap: anywhere; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--bg); font-family: inherit; font-size: 14px; line-height: 1.5; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button, a.button { display: inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+  a.button[aria-disabled="true"] { border-color: var(--line); color: var(--muted); pointer-events: none; }
+  .status { min-height: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>데모 메일 보내기 도우미</h1>
+  <p class="muted">앱 비밀번호 없이 BookSwap 데모 메일 17통을 손으로 보낼 때 씁니다. 주소는 이 화면에만 있고 어디에도 저장되지 않습니다.</p>
+  <p class="muted">스레드의 첫 메일은 "새 메일 쓰기"로 보내고, 나머지는 받은 편지함에서 앞 메일을 열어 답장을 누른 뒤 본문을 붙여 넣으세요. 순서대로 보내야 대화로 묶입니다.</p>
+  <div class="accounts">
+    <label>내 메일 (ME, 앱이 읽는 계정)<input id="me" type="email" autocomplete="off" spellcheck="false"></label>
+    <label>다른 계정 (OTHER, 팀원 역할)<input id="other" type="email" autocomplete="off" spellcheck="false"></label>
+    <label>세 번째 계정 (THIRD, 교수님 역할, 선택)<input id="third" type="email" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <p id="status" class="status muted"></p>
+  <div id="threads"></div>
+</main>
+<script>
+(() => {
+  "use strict";
+  const DATA = /*THREADS_JSON*/null;
+  const ADDRESS = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const fields = ["me", "other", "third"].map(id => document.getElementById(id));
+  const status = document.getElementById("status");
+  const links = [];
+  const whoLines = [];
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function accounts() {
+    const [me, other, third] = fields.map(f => f.value.trim());
+    return {me, other, third};
+  }
+
+  function valid(a) {
+    return ADDRESS.test(a.me) && ADDRESS.test(a.other) && (!a.third || ADDRESS.test(a.third))
+      && a.me.toLowerCase() !== a.other.toLowerCase();
+  }
+
+  function accountFor(role, a) {
+    if (role === "me") return a.me;
+    if (role === "third" && a.third) return a.third;
+    return a.other;
+  }
+
+  async function copy(text, button) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const area = el("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+    button.textContent = "복사했습니다";
+    setTimeout(() => { button.textContent = "본문 복사"; }, 1500);
+  }
+
+  function render() {
+    const box = document.getElementById("threads");
+    DATA.threads.forEach(thread => {
+      box.appendChild(el("h2", "", thread.id + "  " + thread.subject));
+      thread.messages.forEach((m, index) => {
+        const sender = DATA.people[m.from];
+        const receiver = DATA.people[m.to];
+        const card = el("div", "card" + (m.from === "me" ? " mine" : ""));
+        const head = el("div", "head");
+        head.appendChild(el("span", "muted", thread.id + "-" + (index + 1)));
+        const who = el("span", "who");
+        head.appendChild(who);
+        card.appendChild(head);
+        whoLines.push({node: who, sender, receiver});
+        const subject = index === 0 || thread.subject.startsWith("Re:") ? thread.subject : "Re: " + thread.subject;
+        card.appendChild(el("p", "subject", "제목: " + subject));
+        card.appendChild(el("p", "muted", index === 0
+          ? "새 메일로 보냅니다. 링크가 보내는 계정으로 Gmail 쓰기 창을 엽니다."
+          : "받은 편지함에서 앞 메일을 열고 답장을 누른 뒤 본문을 붙여 넣으세요."));
+        card.appendChild(el("pre", "", m.body));
+        const actions = el("div", "actions");
+        const copyButton = el("button", "", "본문 복사");
+        copyButton.type = "button";
+        copyButton.addEventListener("click", () => copy(m.body, copyButton));
+        actions.appendChild(copyButton);
+        if (index === 0) {
+          const link = el("a", "button", "새 메일 쓰기 열기");
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.setAttribute("aria-disabled", "true");
+          links.push({link, sender, receiver, subject, body: m.body});
+          actions.appendChild(link);
+        }
+        card.appendChild(actions);
+        box.appendChild(card);
+      });
+    });
+  }
+
+  function update() {
+    const a = accounts();
+    const ok = valid(a);
+    status.textContent = ok ? "주소가 확인되었습니다. 위에서부터 순서대로 보내세요."
+      : "내 메일과 다른 계정 주소를 입력하면 쓰기 링크가 열립니다.";
+    whoLines.forEach(({node, sender, receiver}) => {
+      const from = accountFor(sender.account, a) || "(주소 입력 필요)";
+      const to = accountFor(receiver.account, a) || "(주소 입력 필요)";
+      node.textContent = sender.name + " (" + from + ")  ->  " + receiver.name + " (" + to + ")";
+    });
+    links.forEach(({link, sender, receiver, subject, body}) => {
+      if (!ok) {
+        link.removeAttribute("href");
+        link.setAttribute("aria-disabled", "true");
+        return;
+      }
+      const params = new URLSearchParams({
+        authuser: accountFor(sender.account, a), view: "cm", fs: "1",
+        to: accountFor(receiver.account, a), su: subject, body: body,
+      });
+      link.href = "https://mail.google.com/mail/?" + params.toString();
+      link.setAttribute("aria-disabled", "false");
+    });
+  }
+
+  render();
+  fields.forEach(f => f.addEventListener("input", update));
+  update();
+})();
+</script>
+</body>
+</html>

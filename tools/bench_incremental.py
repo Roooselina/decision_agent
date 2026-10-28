@@ -137,10 +137,12 @@ def main() -> None:
     sim.text_topic[text] = "ci"
     step("4  add a meeting with one new decision on an existing topic",
          lambda: write("meetings/2026-10-26_meeting_new.md", f"## 2026-10-26 회의\n\n### 결정 사항\n- {text}\n"))
+    # demo_big has requirements_auth.md; other demos append to their first requirement file.
+    target = "requirements/requirements_auth.md"
+    if not (work / target).is_file():
+        target = min(p.relative_to(work).as_posix() for p in (work / "requirements").glob("*.md"))
     step("5  append one line to an existing requirement file",
-         lambda: write("requirements/requirements_auth.md",
-                       (work / "requirements" / "requirements_auth.md").read_text(encoding="utf-8")
-                       + "- 로그인 실패는 5회까지 허용한다\n"))
+         lambda: write(target, (work / target).read_text(encoding="utf-8") + "- 로그인 실패는 5회까지 허용한다\n"))
     step("6  one mail delivered by a connector (set_external)",
          lambda: engine.set_external("gmail", {"mail": message_document(
              "회의 결과", "2026-10-27", "a@b.c", ["오늘 회의에서 CI는 CircleCI로 바꾸기로 한다"])}))

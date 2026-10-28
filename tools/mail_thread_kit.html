@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+<title>데모 메일 보내기 도우미</title>
+<style>
+  :root { --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5f6878; --line: #dfe3ea; --accent: #2f6fed; --mine: #eef3fe; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #15181e; --card: #1e232b; --text: #e6e9ef; --muted: #9aa3b2; --line: #313844; --accent: #6b9bff; --mine: #1f2a40; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 "Malgun Gothic", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; }
+  p { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .accounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+  label { display: block; font-size: 13px; color: var(--muted); }
+  input { width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin: 10px 0; min-width: 0; }
+  .card.mine { background: var(--mine); }
+  .head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+  .who { font-weight: 600; overflow-wrap: anywhere; }
+  .subject { font-weight: 600; margin-top: 6px; overflow-wrap: anywhere; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--bg); font-family: inherit; font-size: 14px; line-height: 1.5; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button, a.button { display: inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-size: 14px; text-decoration: none; cursor: pointer; }
+  a.button[aria-disabled="true"] { border-color: var(--line); color: var(--muted); pointer-events: none; }
+  .status { min-height: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>데모 메일 보내기 도우미</h1>
+  <p class="muted">앱 비밀번호 없이 BookSwap 데모 메일 17통을 손으로 보낼 때 씁니다. 주소는 이 화면에만 있고 어디에도 저장되지 않습니다.</p>
+  <p class="muted">스레드의 첫 메일은 "새 메일 쓰기"로 보내고, 나머지는 받은 편지함에서 앞 메일을 열어 답장을 누른 뒤 본문을 붙여 넣으세요. 순서대로 보내야 대화로 묶입니다.</p>
+  <div class="accounts">
+    <label>내 메일 (ME, 앱이 읽는 계정)<input id="me" type="email" autocomplete="off" spellcheck="false"></label>
+    <label>다른 계정 (OTHER, 팀원 역할)<input id="other" type="email" autocomplete="off" spellcheck="false"></label>
+    <label>세 번째 계정 (THIRD, 교수님 역할, 선택)<input id="third" type="email" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <p id="status" class="status muted"></p>
+  <div id="threads"></div>
+</main>
+<script>
+(() => {
+  "use strict";
+  const DATA = {"about": "Five mail threads (17 messages) of the BookSwap capstone demo for the mailbox ME. OTHER plays the professor and the teammates; THIRD, when given, plays the professor. Addresses here are examples; tools/seed_mail_threads.py takes the real ones as arguments.", "me": "me", "people": {"me": {"name": "이은정", "account": "me", "example": "eunjung@example.com"}, "prof": {"name": "박서연 교수님", "account": "third", "example": "seoyeon.park@example.ac.kr"}, "minjae": {"name": "민재", "account": "other", "example": "minjae@example.com"}, "junho": {"name": "준호", "account": "other", "example": "junho@example.com"}, "haeun": {"name": "하은", "account": "other", "example": "haeun@example.com"}}, "threads": [{"id": "T1", "subject": "최종 발표 일정 확정 부탁드립니다", "expect": "stale: milestones M5, team_calendar 최종 발표, team_calendar 리허설", "messages": [{"from": "prof", "to": "me", "date": "2026-10-26T09:12", "body": "은정 학생, 안녕하세요.\n\n학과에서 11월 10일 오후에 졸업작품 심사가 잡혀서 그날 최종 발표 시간대가 겹치게 되었습니다.\n최종 발표를 11월 17일 화요일로 옮길 수 있을까요? 그날이 어렵다면 11월 24일도 가능합니다.\n팀원들과 상의해서 편한 날짜를 알려 주세요.\n\n--\n박서연"}, {"from": "me", "to": "prof", "date": "2026-10-26T13:40", "body": "교수님, 안녕하세요. 이은정입니다.\n\n팀원들에게 물어봤는데 다섯 명 모두 11월 17일 화요일이 괜찮다고 합니다.\n리허설은 발표 전날인 11월 16일 월요일에 하면 어떨까 합니다.\n이렇게 진행해도 괜찮을지 여쭙습니다.\n\n--\n이은정 드림"}, {"from": "prof", "to": "me", "date": "2026-10-27T10:05", "body": "네, 좋습니다.\n\n최종 발표는 11월 17일 오후 2시, 리허설은 11월 16일로 확정합니다. 중간 점검은 10월 29일 그대로입니다.\n장소는 기존과 같이 공학관 대강당입니다.\n\n--\n박서연"}, {"from": "me", "to": "prof", "date": "2026-10-27T11:20", "body": "교수님, 빠르게 정리해 주셔서 감사합니다.\n팀 일정표와 마일스톤 문서, 팀 캘린더는 이번 주 안에 바꿔 두겠습니다.\n중간 점검 때 뵙겠습니다.\n\n--\n이은정 드림"}]}, {"id": "T2", "subject": "배포 서버 비용 문의", "expect": "stale: deploy_guide 운영 서버 Lightsail", "messages": [{"from": "minjae", "to": "me", "date": "2026-10-26T21:30", "body": "은정아, 서버 얘기 하나만.\n\nLightsail로 옮기고 나서 보니까 OS 업데이트, 디스크, 인증서 갱신까지 전부 내가 손으로 관리해야 하더라.\n요금도 쓰든 안 쓰든 매달 고정으로 나가고.\nRender 같은 서비스는 깃허브에 푸시하면 알아서 빌드하고 배포까지 해주는데, 그쪽이 우리한테 더 편하지 않을까?\n\n--\n민재"}, {"from": "me", "to": "minjae", "date": "2026-10-26T22:10", "body": "오 편하긴 하겠다.\n근데 하나 걱정되는 게, 발표 중에 서버가 잠들어 있다가 첫 요청에서 한참 걸리면 어떡해?\n시연 도중에 로딩만 30초 돌면 진짜 곤란할 것 같아서.\n\n--\n은정"}, {"from": "minjae", "to": "me", "date": "2026-10-27T08:45", "body": "찾아봤는데 무료 플랜은 15분 동안 요청이 없으면 잠들어서 첫 요청이 느린 게 맞아.\n월 7달러 유료 플랜은 안 잠들어서 그 문제가 없고.\n지원금으로 Lightsail 내던 거 생각하면 오히려 조금 싸.\n\n--\n민재"}, {"from": "me", "to": "minjae", "date": "2026-10-27T09:30", "body": "좋아, 그 정도면 고민할 필요 없겠다.\n그럼 배포는 Render 유료 플랜으로 하자. Lightsail은 이번 주 안에 정리할게.\n옮기고 나면 배포 가이드도 같이 고쳐 줘.\n\n--\n은정"}]}, {"id": "T3", "subject": "Re: 결제 방식 확인", "expect": "no finding; the quoted Toss sentence in message 2 must not count as a decision", "messages": [{"from": "haeun", "to": "me", "date": "2026-10-26T16:20", "body": "언니, 디자인 마무리하다가 확인할 게 있어서요.\n결제는 토스페이먼츠로 앱 안에서 처리하는 걸로 아직 진행 중인 거 맞죠?\n결제 화면 시안을 마저 그려야 할지 몰라서 여쭤봐요.\n\n--\n하은"}, {"from": "me", "to": "haeun", "date": "2026-10-26T17:05", "body": "아니야, 그건 10월 8일 회의에서 이미 바뀌었어.\n결제는 MVP에서 빠졌고 사용자끼리 계좌이체로 직접 거래하는 방식이야. 앱은 판매자 계좌 정보만 보여줘.\n그날 하은이 과제 때문에 회의록을 못 봤을 수도 있겠다. 결제 화면 시안은 안 그려도 돼!\n\n--\n은정\n\n2026년 10월 26일 (월) 오후 4:20, 하은님이 작성:\n> 언니, 디자인 마무리하다가 확인할 게 있어서요.\n> 결제는 토스페이먼츠로 앱 안에서 처리하는 걸로 아직 진행 중인 거 맞죠?\n> 결제 화면 시안을 마저 그려야 할지 몰라서 여쭤봐요."}, {"from": "haeun", "to": "me", "date": "2026-10-26T17:30", "body": "아 맞다 그날 제가 빠졌었네요 ㅠㅠ\n알겠어요, 디자인에서 결제 화면은 빼고 거래 안내 화면만 다듬을게요.\n\n--\n하은"}]}, {"id": "T4", "subject": "디자인 시안 A/B 의견", "expect": "no finding, nothing is decided", "messages": [{"from": "haeun", "to": "me", "date": "2026-10-27T14:00", "body": "금요일 회의에서 못 정한 메인 메뉴 시안 다시 보내요.\n\nA안: 하단 탭 5개 (홈, 검색, 등록, 쪽지, 내 정보)\nB안: 상단 햄버거 메뉴와 홈 화면의 큰 등록 버튼\n\n사용자 다섯 명한테 보여줬더니 세 명이 A, 두 명이 B를 골랐어요.\n어느 쪽이 나은지 의견 주세요.\n\n--\n하은"}, {"from": "me", "to": "haeun", "date": "2026-10-27T15:10", "body": "나는 A 쪽이 더 마음에 들어. 요즘 앱들이랑 비슷해서 처음 보는 사람도 바로 쓸 것 같아.\n근데 구현하는 건 준호니까 준호 의견도 들어보고 싶어.\n준호야, 이 메일 보면 답장 부탁해!\n\n--\n은정"}, {"from": "junho", "to": "me", "date": "2026-10-27T18:40", "body": "솔직히 B가 구현은 훨씬 쉬워요. 탭마다 화면 상태를 유지하는 게 은근히 손이 많이 가서요.\n그래도 A도 일주일 정도면 할 수 있을 것 같아요.\n둘 다 장단점이 있으니까 금요일 회의에서 정하자.\n\n--\n준호"}]}, {"id": "T5", "subject": "이번 주 구현 현황과 중간 점검 자료", "expect": "no finding; deadline hints for 2026-10-28 and 2026-10-29", "messages": [{"from": "junho", "to": "me", "date": "2026-10-28T09:15", "body": "이번 주 프론트 구현 현황 정리해서 보내요.\n\n- 구글 학교 계정 로그인 완료\n- 검색 70%, 초성 검색은 아직\n- 1:1 쪽지 화면 작업 중\n- 사진 업로드는 5장까지, 압축 포함 완료\n\n그리고 중간 점검(10월 29일) 슬라이드는 10월 28일 오늘 밤 12시까지 공유 폴더에 올려야 하는 거 잊지 마세요.\n\n--\n준호"}, {"from": "me", "to": "junho", "date": "2026-10-28T10:00", "body": "정리 고마워!\n혹시 테스트 계획에 쪽지 기능 케이스가 다 들어가 있는지 확인해 줄 수 있어?\n도윤이 보강한다고 했는데 발표 전에 한 번 더 보고 싶어서.\n\n--\n은정"}, {"from": "junho", "to": "me", "date": "2026-10-28T10:40", "body": "네, 슬라이드는 오늘 밤에 올릴게요.\n테스트 계획도 그때 같이 열어서 쪽지 케이스 빠진 거 있는지 확인해 볼게요.\n\n--\n준호"}]}]};
+  const ADDRESS = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const fields = ["me", "other", "third"].map(id => document.getElementById(id));
+  const status = document.getElementById("status");
+  const links = [];
+  const whoLines = [];
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function accounts() {
+    const [me, other, third] = fields.map(f => f.value.trim());
+    return {me, other, third};
+  }
+
+  function valid(a) {
+    return ADDRESS.test(a.me) && ADDRESS.test(a.other) && (!a.third || ADDRESS.test(a.third))
+      && a.me.toLowerCase() !== a.other.toLowerCase();
+  }
+
+  function accountFor(role, a) {
+    if (role === "me") return a.me;
+    if (role === "third" && a.third) return a.third;
+    return a.other;
+  }
+
+  async function copy(text, button) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const area = el("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+    button.textContent = "복사했습니다";
+    setTimeout(() => { button.textContent = "본문 복사"; }, 1500);
+  }
+
+  function render() {
+    const box = document.getElementById("threads");
+    DATA.threads.forEach(thread => {
+      box.appendChild(el("h2", "", thread.id + "  " + thread.subject));
+      thread.messages.forEach((m, index) => {
+        const sender = DATA.people[m.from];
+        const receiver = DATA.people[m.to];
+        const card = el("div", "card" + (m.from === "me" ? " mine" : ""));
+        const head = el("div", "head");
+        head.appendChild(el("span", "muted", thread.id + "-" + (index + 1)));
+        const who = el("span", "who");
+        head.appendChild(who);
+        card.appendChild(head);
+        whoLines.push({node: who, sender, receiver});
+        const subject = index === 0 || thread.subject.startsWith("Re:") ? thread.subject : "Re: " + thread.subject;
+        card.appendChild(el("p", "subject", "제목: " + subject));
+        card.appendChild(el("p", "muted", index === 0
+          ? "새 메일로 보냅니다. 링크가 보내는 계정으로 Gmail 쓰기 창을 엽니다."
+          : "받은 편지함에서 앞 메일을 열고 답장을 누른 뒤 본문을 붙여 넣으세요."));
+        card.appendChild(el("pre", "", m.body));
+        const actions = el("div", "actions");
+        const copyButton = el("button", "", "본문 복사");
+        copyButton.type = "button";
+        copyButton.addEventListener("click", () => copy(m.body, copyButton));
+        actions.appendChild(copyButton);
+        if (index === 0) {
+          const link = el("a", "button", "새 메일 쓰기 열기");
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.setAttribute("aria-disabled", "true");
+          links.push({link, sender, receiver, subject, body: m.body});
+          actions.appendChild(link);
+        }
+        card.appendChild(actions);
+        box.appendChild(card);
+      });
+    });
+  }
+
+  function update() {
+    const a = accounts();
+    const ok = valid(a);
+    status.textContent = ok ? "주소가 확인되었습니다. 위에서부터 순서대로 보내세요."
+      : "내 메일과 다른 계정 주소를 입력하면 쓰기 링크가 열립니다.";
+    whoLines.forEach(({node, sender, receiver}) => {
+      const from = accountFor(sender.account, a) || "(주소 입력 필요)";
+      const to = accountFor(receiver.account, a) || "(주소 입력 필요)";
+      node.textContent = sender.name + " (" + from + ")  ->  " + receiver.name + " (" + to + ")";
+    });
+    links.forEach(({link, sender, receiver, subject, body}) => {
+      if (!ok) {
+        link.removeAttribute("href");
+        link.setAttribute("aria-disabled", "true");
+        return;
+      }
+      const params = new URLSearchParams({
+        authuser: accountFor(sender.account, a), view: "cm", fs: "1",
+        to: accountFor(receiver.account, a), su: subject, body: body,
+      });
+      link.href = "https://mail.google.com/mail/?" + params.toString();
+      link.setAttribute("aria-disabled", "false");
+    });
+  }
+
+  render();
+  fields.forEach(f => f.addEventListener("input", update));
+  update();
+})();
+</script>
+</body>
+</html>
