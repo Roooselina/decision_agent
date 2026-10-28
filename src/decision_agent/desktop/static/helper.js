@@ -96,7 +96,7 @@
     const beat = alive();
     const head = el("div", {class: "p-head"},
       el("span", {class: "p-dot " + (d.state || "normal")}),
-      el("strong", {class: "p-title"}, "Decision Agent"),
+      el("strong", {class: "p-title"}, (data && data.product) || ""),
       el("span", {class: "p-state " + (d.state || "normal")}, d.state_label),
       el("button", {type: "button", class: "p-close", "aria-label": "접기", title: "접기", onclick: close}, "닫기"));
     const meta = el("div", {class: "p-meta"},
@@ -106,7 +106,7 @@
     const doing = d.awaiting_confirm
       ? el("button", {type: "button", class: "p-doing p-confirm", title: "앱 홈에서 계속할지 선택합니다", onclick: () => act("home")}, d.doing || "확인 대기")
       : el("p", {class: "p-doing"}, d.doing || "");
-    const demo = d.demo ? el("p", {class: "p-demo"}, "시연용 모드, 실제 검사가 아닙니다.") : null;
+    const demo = d.demo ? el("p", {class: "p-demo"}, "데모 모드입니다. 실제 검사가 아닙니다.") : null;
     const todoHead = el("div", {class: "p-row"}, el("strong", {}, "내가 할 일" + (d.badge ? " " + d.badge + "건" : "")),
       el("button", {type: "button", class: "p-link", onclick: () => act("details")}, "자세히"));
     const todos = d.todos.length

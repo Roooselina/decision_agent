@@ -20,7 +20,7 @@
         r.decisions.length === 0 ? h("p", {class: "small muted"}, "비슷한 결정이 없습니다.")
           : h("div", {class: "list"}, ...r.decisions.map(d => h("div", {class: "list-item"}, h("span", {class: "chip"}, d.date || "-"), h("div", {class: "list-main"}, d.text))))),
       h("section", {class: "card stack-sm"}, h("h3", {}, "영향받을 수 있는 항목"),
-        h("p", {class: "small muted"}, "글자 유사도로만 찾았고 판정은 하지 않았습니다."),
+        h("p", {class: "small muted"}, "글자 비교로만 찾았습니다. AI 확인은 하지 않았습니다."),
         r.artifacts.length === 0 ? h("p", {class: "small muted"}, "관련 항목을 찾지 못했습니다.")
           : h("div", {class: "list"}, ...r.artifacts.map(a => h("div", {class: "list-item"}, a.label ? labelBadge(a.label) : null,
             h("div", {class: "list-main"}, h("span", {}, a.text), h("span", {class: "list-sub"}, a.source_doc)))))));
@@ -65,7 +65,7 @@
   }
 
   set(root, 
-    h("div", {class: "quick-head"}, h("img", {src: "/static/icon.svg", alt: "", width: "24", height: "24"}), h("h2", {}, "빠른 점검")),
+    h("div", {class: "quick-head"}, h("h2", {}, "빠른 점검")),
     status,
     h("section", {class: "card stack-sm"}, h("label", {class: "field-label", for: "quick-text"}, "방금 정한 결정"), text,
       h("div", {class: "row"}, find, save),

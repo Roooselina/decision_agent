@@ -132,12 +132,12 @@ class MailSource(BaseModel):
         if not self.name:
             raise ValueError("이름을 입력하세요.")
         if self.gmail_query and self.connector != "gmail":
-            raise ValueError("Gmail 검색식은 Gmail 소스에서만 쓸 수 있습니다.")
+            raise ValueError("Gmail 검색식은 Gmail 메일 연결에서만 쓸 수 있습니다.")
         if self.scope == "all_mail":
             if not self.all_mail_confirmed_at:
                 raise ValueError(ALL_MAIL_CONFIRM)
             if len(self.labels) > 1:
-                raise ValueError("전체 메일 소스는 폴더나 라벨 하나만 고를 수 있습니다.")
+                raise ValueError("전체 메일 연결은 폴더나 라벨 하나만 고를 수 있습니다.")
             return self
         narrowing = self.senders or self.subject_keywords or self.gmail_query
         if self.connector == "gmail":
@@ -235,7 +235,7 @@ class AppSettings(BaseModel):
     def _unique_sources(cls, value: list[MailSource]) -> list[MailSource]:
         ids = [source.id for source in value]
         if len(ids) != len(set(ids)):
-            raise ValueError("메일 소스 id가 겹칩니다.")
+            raise ValueError("메일 연결 id가 겹칩니다.")
         return value
 
     @field_validator("profile_color")

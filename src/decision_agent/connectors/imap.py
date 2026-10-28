@@ -42,9 +42,9 @@ def message_text(message: email.message.EmailMessage) -> str:
 class ImapMail(Connector):
     id = "imap_mail"
     label = "메일 (IMAP)"
-    description = "IMAP을 지원하는 메일(네이버, 다음, 회사 메일 등)에서 메일 소스로 정한 폴더를 읽습니다."
+    description = "IMAP 메일(네이버, 다음, 회사 메일 등)에서 메일 연결로 정한 폴더를 읽습니다."
     reads = (
-        "메일 소스에서 정한 폴더를 읽기 전용으로 열어 최근 메일의 제목, 날짜, 보낸 사람, 본문 텍스트만 가져옵니다. "
+        "메일 연결에서 정한 폴더를 읽기 전용으로 열어 제목, 날짜, 보낸 사람, 본문만 가져옵니다. "
         "읽음 표시를 바꾸지 않고, 메일을 보내거나 지우지 않습니다. 앱 비밀번호 사용을 권장합니다."
     )
     guide = (
@@ -56,7 +56,7 @@ class ImapMail(Connector):
         OptionSpec("host", "IMAP 서버", help="예: imap.naver.com, imap.gmail.com", required=True),
         OptionSpec("port", "포트", "number", 993),
         OptionSpec("username", "계정", required=True),
-        OptionSpec("folder", "읽을 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
+        OptionSpec("folder", "읽을 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 연결에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )

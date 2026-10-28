@@ -185,7 +185,7 @@ def test_gmail_without_a_label_or_source_reads_nothing():
     http = FakeHttp()
     gmail = Gmail({"client_id": "c"}, context(http))
     assert not any("라벨" in p for p in gmail.problems())
-    with pytest.raises(ConnectorError, match="메일 소스"):
+    with pytest.raises(ConnectorError, match="메일 연결"):
         gmail.fetch(TODAY)
     assert http.calls == []
 

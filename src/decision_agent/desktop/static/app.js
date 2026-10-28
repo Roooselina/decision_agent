@@ -5,7 +5,7 @@
   const {h, set, icon, api, button, busy, badge, field, input, textarea, select, toggle, segmented, callout,
     progressBar, skeleton, emptyState, errorState, toast, modal, confirmDialog, drawer, anyLayerOpen,
     copyText, applyTheme, fmtTime, relTime, stateInfo, stateBadge, transmissionBadge, labelBadge, KINDS,
-    providerName, providerKind, agentState} = DA;
+    providerName, providerKind, agentState, PRODUCT_NAME} = DA;
 
   const S = {status: null, settings: null, offline: false};
   const REFRESH_MS = 4000;
@@ -52,7 +52,7 @@
     if (force) {
       lastSig = "";
       set(view, page(route.title, route.lead, null, skeleton(5), skeleton(3)));
-      document.title = route.title + " - Decision Agent";
+      document.title = route.title + " - " + PRODUCT_NAME;
     }
     let data;
     try {
@@ -89,7 +89,7 @@
   // ---------------------------------------------------------------- chrome
 
   // Sidebar: "작업 공간", the four screens, then "빠른 점검" and one status line
-  // ("로컬 AI · 정상", "시연용 모드", "로컬 AI · 오류", ...).
+  // ("로컬 AI · 정상", "데모 모드", "로컬 AI · 오류", ...).
   const NAV_ICONS = {home: "home", results: "list", mail: "mail", folders: "folder", settings: "settings"};
 
   function renderNav() {
@@ -114,8 +114,8 @@
     const judge = providerName(st.provider.id);
     const state = agentState(st);
     if (state === "demo" || (st.provider.local_only && state !== "failed")) {
-      if (state === "paused") return ["paused", "pause-bars", "시연용 모드 · 일시 중지"];
-      return ["demo", "alert-circle", "시연용 모드"];
+      if (state === "paused") return ["paused", "pause-bars", "데모 모드 · 일시 중지"];
+      return ["demo", "alert-circle", "데모 모드"];
     }
     const info = DA.STATES[state] || DA.STATES.incomplete;
     const cls = {ok: "ok", busy: "busy", paused: "paused", error: "error", attention: "demo"}[info.cls] || "ok";
@@ -219,7 +219,7 @@
       if (st.registered_folders === 0) {
         return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))], h("section", {class: "card"}, emptyState({
           icon: "folder-plus", title: "확인할 폴더를 추가하세요",
-          text: "회의록, 요구사항, 작업 표, 테스트 계획, 일정이 있는 프로젝트 폴더를 고르면 결정이 바뀌었는데 반영되지 않은 항목을 찾아 알려 줍니다. 선택한 폴더와 그 안의 모든 폴더를 포함합니다.",
+          text: "회의록과 요구사항이 있는 프로젝트 폴더를 고르세요. 하위 폴더도 포함됩니다.",
           action: button("폴더 추가", {variant: "primary", onClick: () => startAddFolder()}),
         })));
       }
@@ -315,8 +315,8 @@
     let done = 0, total = 0, text = "";
     for (const f of st.folders) {
       const p = f.progress;
-      if (p.phase === "checking" && p.topics_total) { done += p.topics_done; total += p.topics_total; text = "판정"; }
-      else if (p.phase === "extracting" && p.extract_total) { done += p.extract_done; total += p.extract_total; text = text === "판정" ? text : "결정 추출"; }
+      if (p.phase === "checking" && p.topics_total) { done += p.topics_done; total += p.topics_total; text = "확인"; }
+      else if (p.phase === "extracting" && p.extract_total) { done += p.extract_done; total += p.extract_total; text = text === "확인" ? text : "결정 추출"; }
       else if (p.files_total) { done += p.files_done; total += p.files_total; text = text || "문서"; }
     }
     const waiting = st.folders.some(f => f.progress.phase === "awaiting_confirm" || f.pending_confirm) ? " · 확인 대기" : "";
@@ -325,7 +325,7 @@
     return {pct: Math.round(done * 100 / total), text: label + waiting};
   }
 
-  // The "문서 확인 AI AGENT" card (Figma 15:44 and the 문서 확인 상태 카드 variants).
+  // The status card with the product name (Figma 15:44 and its state variants).
   function agentCard(st) {
     const state = agentState(st);
     const info = stateInfo(st.overall, st.paused);
@@ -339,7 +339,7 @@
     const rescan = h("button", {type: "button", class: "btn ghost icon-only sm", title: "지금 확인하기", "aria-label": "지금 확인하기",
       onclick: (e) => busy(e.currentTarget, async () => { await api("/api/rescan", "POST", {}); toast("지금 확인을 시작했습니다.", "info"); await refreshAll(); })},
     icon("refresh", "sm"));
-    const head = h("div", {class: "agent-head"}, mainIcon, h("h2", {class: "agent-title"}, "문서 확인 AI AGENT"),
+    const head = h("div", {class: "agent-head"}, mainIcon, h("h2", {class: "agent-title"}, PRODUCT_NAME),
       h("div", {class: "agent-badge"}, rescan, stateBadge(st.overall, null, st.paused)));
     const folders = st.paused ? "0개 · 등록 " + st.registered_folders + "개" : st.registered_folders + "개";
     const metaBlock = (label, value, extra) => h("div", {class: "agent-meta"}, h("span", {class: "agent-label"}, label),
@@ -356,10 +356,10 @@
         await api("/api/pause", "POST", {paused: false}); await refreshAll(); })});
     } else if (state === "failed") {
       right = h("span", {class: "agent-note danger", title: info.detail || ""}, aiErrorText(info.detail));
-      action = button("연결 설정 확인", {variant: "primary", onClick: () => go("settings", {tab: "connect", section: "judge"})});
+      action = button("연결 설정 확인", {variant: "primary", onClick: () => go("settings", {tab: "check", section: "judge"})});
     } else if (demo) {
-      sub = h("p", {class: "agent-sub"}, "시연용 판정기로 동작 중입니다. 실제 문서 검사가 수행되지 않습니다.");
-      action = button("AI 설정", {onClick: () => go("settings", {tab: "connect", section: "judge"})});
+      sub = h("p", {class: "agent-sub"}, "데모 확인 방식으로 점검합니다. 실제 검사가 아닙니다.");
+      action = button("AI 설정", {onClick: () => go("settings", {tab: "check", section: "judge"})});
     } else {
       const r = st.last_result;
       const sends = st.provider.sends_externally;
@@ -383,7 +383,7 @@
 
   // Model calls of the last finished check, per folder, with the calls by kind of work folded away.
   const TASK_NAMES = {DECISION_EXTRACT: "결정 추출", DECISION_EXTRACT_BATCH: "결정 추출", RELATION_CLASSIFY: "관계 분류", RELATION_CLASSIFY_BATCH: "관계 분류",
-    IMPACT_SELECT: "영향 대상 선택", CONSISTENCY: "일치 판정", CONSISTENCY_BATCH: "일치 판정", QUESTION_GENERATE: "확인 질문",
+    IMPACT_SELECT: "영향 대상 선택", CONSISTENCY: "일치 확인", CONSISTENCY_BATCH: "일치 확인", QUESTION_GENERATE: "확인 질문",
     QUESTION_GAIN: "확인 질문", QUESTION_GAIN_BATCH: "확인 질문", TOOL_SELECT: "도구 선택"};
   function taskRows(byTask) {
     const sums = new Map();
@@ -396,10 +396,10 @@
   function usageText(c) {
     const local = c.local_answers ? ", AI 없이 확인한 줄 " + c.local_answers + "건" : "";
     if (typeof c.judged_lines !== "number") {
-      return "이번 점검: 모델 호출 " + c.llm_calls + "회, AI 없이 확인한 줄 " + (c.local_answers || 0) + "건";
+      return "이번 점검: AI 요청 " + c.llm_calls + "회, AI 없이 확인한 줄 " + (c.local_answers || 0) + "건";
     }
     return "이번 점검: 새로 판단한 줄 " + c.judged_lines + ", 이전 결과 재사용 " + (c.reused_lines || 0) +
-      ", 모델 호출 " + c.llm_calls + "회" + local;
+      ", AI 요청 " + c.llm_calls + "회" + local;
   }
   function usageBlock(st) {
     const done = st.folders.filter(f => f.completion && typeof f.completion.llm_calls === "number" && providerKind(f.completion.provider_id) !== "demo");
@@ -410,7 +410,7 @@
       const rows = taskRows(c.calls_by_task);
       return h("div", {class: "usage-folder"},
         h("p", {class: "usage-line"}, (many ? folderName(f.root) + " · " : "") + usageText(c)),
-        rows.length ? h("details", {class: "usage-details"}, h("summary", {}, "호출 내역", icon("chevron-right", "sm")),
+        rows.length ? h("details", {class: "usage-details"}, h("summary", {}, "AI 요청 내역", icon("chevron-right", "sm")),
           h("ul", {class: "usage-list"}, ...rows.map(([name, n]) => h("li", {}, h("span", {}, name), h("span", {class: "usage-n"}, n + "회"))))) : null);
     }));
   }
@@ -498,7 +498,7 @@
       if (!data.items.length) {
         set(list, h("p", {class: "muted small home-mail-empty"}, data.sources
           ? "아직 받은 메일이 없습니다. 새 메일이 오면 여기에 자동으로 나타납니다."
-          : "메일 소스가 없습니다. 설정에서 메일을 연결하세요."));
+          : "메일 연결이 없습니다. 설정에서 추가하세요."));
         return;
       }
       set(list, ...data.items.map(t => h("button", {type: "button", role: "listitem",
@@ -611,8 +611,8 @@
 
     function drawList() {
       if (!data.sources) {
-        set(listBox, h("div", {class: "mbox-empty"}, h("p", {}, "소스가 없습니다."),
-          h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 소스 추가")));
+        set(listBox, h("div", {class: "mbox-empty"}, h("p", {}, "메일 연결이 없습니다."),
+          h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 연결 추가")));
         return;
       }
       if (!data.total) {
@@ -645,8 +645,8 @@
         return h("div", {class: "mbox-source"},
           h("div", {class: "mbox-source-head"}, h("span", {class: "strong"}, src.name), now),
           h("ul", {class: "check-lines small muted"}, ...(src.lines || []).map(line => h("li", {}, line))));
-      }), (st.sources || []).length ? null : h("p", {class: "small muted"}, "확인한 소스가 없습니다."),
-        h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 소스 설정"));
+      }), (st.sources || []).length ? null : h("p", {class: "small muted"}, "확인한 메일 연결이 없습니다."),
+        h("button", {type: "button", class: "link small", onclick: () => go("settings", {tab: "connect", focus: "gmail"})}, "메일 연결 설정"));
     }
 
     async function load(offset, append) {
@@ -703,7 +703,7 @@
           h("button", {type: "button", class: "btn sm conv-back", onclick: back}, "목록으로"),
           h("h2", {class: "conv-subject"}, t.subject),
           labels, ...found,
-          t.analysis === "점검 안 함" ? h("p", {class: "small muted"}, "이 소스는 AI 분석을 하지 않습니다. 저장과 검색만 합니다.") : null),
+          t.analysis === "점검 안 함" ? h("p", {class: "small muted"}, "이 메일 연결은 AI로 점검하지 않습니다.") : null),
         h("div", {class: "conv-msgs"}, ...messages),
         relatedBlock("비슷한 메일", t.subject + " " + (latest.body || "").slice(0, 400), {exclude: latest.id, hideEmpty: true}));
     }
@@ -727,7 +727,7 @@
             ...m.hints.map(x => shortDate(x.date) + (x.kind === "deadline" ? " 마감" : "") + "  ")) : null,
           m.included ? h("p", {class: "small muted"}, "이 메일은 분석에 포함됩니다.") : h("button", {type: "button", class: "link small",
             onclick: async (e) => {
-              const ok = await confirmDialog({title: "이 메일을 분석에 포함", message: "이 메일 본문을 결정 점검에 사용합니다. 외부 AI를 쓰는 경우 본문이 전송될 수 있습니다.", confirmLabel: "포함"});
+              const ok = await confirmDialog({title: "이 메일을 분석에 포함", message: "이 메일 본문을 점검에 사용합니다. 외부 AI를 쓰면 본문이 전송됩니다.", confirmLabel: "포함"});
               if (!ok) return;
               await busy(e.currentTarget, () => api("/api/mail/" + encodeURIComponent(m.uid) + "/include", "POST", {}));
               toast("다음 점검부터 이 메일을 분석합니다.", "success");
@@ -831,7 +831,7 @@
         toast("메일을 확인하는 중입니다. 새 메일은 자동으로 나타납니다.", "info");
       })});
       const book = button("주소록", {size: "sm", icon: "user", onClick: () => go("settings", {tab: "connect", focus: "contacts"})});
-      return page("메일", "메일은 자동으로 새로 고쳐집니다. 검색과 읽기, 라벨은 이 컴퓨터에서만 처리하고 AI를 쓰지 않습니다.", [check, book],
+      return page("메일", "메일은 자동으로 새로 고쳐집니다. 검색과 라벨은 이 컴퓨터에서만 처리합니다.", [check, book],
         h("section", {class: "card mail-page"}, mailPage()));
     },
   };
@@ -960,7 +960,7 @@
     const items = [...open.slice(0, 2).map(findingNode), ...questions.map(questionNode), ...open.slice(2).map(findingNode)];
     return h("section", {class: "card home-card todo-card", "aria-label": "내가 할 일"},
       h("div", {class: "home-card-head"}, h("h2", {}, "내가 할 일"),
-        demo ? h("span", {class: "todo-count demo"}, "시연 데이터") : h("span", {class: "todo-count"}, "확인 대기 " + total + "건")),
+        demo ? h("span", {class: "todo-count demo"}, "데모 데이터") : h("span", {class: "todo-count"}, "확인 대기 " + total + "건")),
       total === 0 && !flash
         ? h("div", {class: "todo-empty"}, icon("check", "todo-empty-icon"), h("strong", {}, "현재 처리할 항목이 없습니다."))
         : h("div", {class: "todo-list"}, ...items),
@@ -977,7 +977,7 @@
   function openQuestion(q) {
     const options = (q.options && q.options.length ? q.options : ["예", "아니오"]).slice(0, 4);
     let chosen = null;
-    const extra = input({placeholder: "추가 내용을 입력하십시오", "aria-label": "추가 내용", maxlength: "500"});
+    const extra = input({placeholder: "추가 내용을 입력하세요", "aria-label": "추가 내용", maxlength: "500"});
     const optionBox = h("div", {class: "q-options", role: "radiogroup", "aria-label": "답변 선택지"});
     const drawOptions = () => set(optionBox, ...options.map(o => h("button", {type: "button", class: "q-option" + (o === chosen ? " selected" : ""),
       role: "radio", "aria-checked": String(o === chosen), onclick: () => { chosen = chosen === o ? null : o; drawOptions(); }}, o)));
@@ -1114,7 +1114,7 @@
           folders.length > 1 ? selectControl([["all", "모든 폴더"], ...folders.map(f => [f, folderName(f)])], RS.folder, "폴더", (v) => { RS.folder = v; redraw(); }) : null,
           owners.length ? selectControl([["all", "모든 담당자"], ...owners.map(o => [o, o])], RS.owner, "담당자", (v) => { RS.owner = v; redraw(); }) : null,
           teams.length ? selectControl([["all", "모든 팀"], ...teams.map(t => [t, t])], RS.team, "팀", (v) => { RS.team = v; redraw(); }) : null,
-          sources.length ? selectControl([["all", "모든 출처"], ...sources.map(x => [x, x])], RS.source, "메일 소스", (v) => { RS.source = v; redraw(); }) : null,
+          sources.length ? selectControl([["all", "모든 출처"], ...sources.map(x => [x, x])], RS.source, "메일 연결", (v) => { RS.source = v; redraw(); }) : null,
           selectControl([["severity", "심각한 순"], ["recent", "최근 발견 순"], ["name", "결정 이름 순"]], RS.sort, "정렬", (v) => { RS.sort = v; redraw(); })));
       search.addEventListener("input", () => { RS.q = search.value; redraw(); });
       // A new filter starts again from the first page.
@@ -1227,7 +1227,7 @@
       return h("div", {class: "page results-page"},
         h("div", {class: "page-head"}, h("h1", {}, "점검 결과"),
           h("div", {class: "search", role: "search"}, icon("search"), search)),
-        h("div", {class: "result-toolbar"}, tabs, demo ? h("span", {class: "demo-note"}, icon("alert-circle", "sm"), "시연용 판정기 결과입니다. 실제 검사가 아닙니다.") : null, more),
+        h("div", {class: "result-toolbar"}, tabs, demo ? h("span", {class: "demo-note"}, icon("alert-circle", "sm"), "데모 확인 방식의 결과입니다. 실제 검사가 아닙니다.") : null, more),
         h("div", {class: "result-columns"}, listCard, detail));
     },
   };
@@ -1244,7 +1244,7 @@
   // Lines the local pre-filter answered without a model call. It only ever answers CONSISTENT.
   function isLocal(f) { return f.label === "CONSISTENT" && String(f.evidence || "").includes("AI 확인 없이"); }
   function localBadge() {
-    return h("span", {class: "badge neutral local-badge", title: "새 결정의 값이 이미 들어 있고 이전 값은 없어 AI 확인 없이 일치로 분류했습니다."}, "로컬 확인");
+    return h("span", {class: "badge neutral local-badge", title: "새 값이 이미 있고 이전 값은 없어 AI 없이 일치로 분류했습니다."}, "로컬 확인");
   }
 
   function detailPanel(f, rows) {
@@ -1275,7 +1275,7 @@
       copyMsg.addEventListener("click", async () => { await copyText(d.message, "메시지를 복사했습니다."); copyMsg.textContent = "복사 완료"; });
       set(draftBox, h("div", {class: "draft-box"},
         d.revised_text ? h("p", {class: "draft-text"}, d.revised_text)
-          : h("p", {class: "draft-note"}, d.model_used ? (d.note || "제안할 수정 문장을 만들지 못했습니다.") : "시연용 판정기에서는 수정 문장을 만들지 않습니다. 담당자에게 보낼 메시지만 만듭니다."),
+          : h("p", {class: "draft-note"}, d.model_used ? (d.note || "제안할 수정 문장을 만들지 못했습니다.") : "데모 확인 방식에서는 수정 문장을 만들지 않습니다. 담당자에게 보낼 메시지만 만듭니다."),
         copyMain,
         h("p", {class: "draft-message"}, d.message),
         d.revised_text ? copyMsg : null));
@@ -1317,7 +1317,7 @@
       h("details", {class: "detail-tech"}, h("summary", {}, "자세히 보기"),
         h("dl", {class: "kv"},
           h("dt", {}, "종류"), h("dd", {}, KINDS[f.kind] || f.kind),
-          h("dt", {}, "표본 일치율"), h("dd", {title: "같은 판단을 여러 번 했을 때 같은 답이 나온 비율입니다. 보정된 확률이 아닙니다."}, confidence),
+          h("dt", {}, "표본 일치율"), h("dd", {title: "같은 확인을 여러 번 했을 때 같은 답이 나온 비율입니다."}, confidence),
           h("dt", {}, "처음 발견"), h("dd", {}, fmtTime(f.first_seen)),
           h("dt", {}, "마지막 확인"), h("dd", {}, fmtTime(f.last_seen)),
           h("dt", {}, "폴더"), h("dd", {class: "mono", title: f.root}, folderName(f.root)))),
@@ -1361,7 +1361,7 @@
       if (cards.length === 0) {
         return page("폴더 관리", null, actions, h("section", {class: "card folder-empty dashed"},
           icon("folder", "folder-empty-icon"), h("strong", {}, "등록된 폴더가 없습니다."),
-          h("p", {}, "문서가 저장된 폴더를 선택하십시오. 하위 폴더는 자동으로 포함됩니다."),
+          h("p", {}, "문서가 있는 폴더를 고르세요. 하위 폴더도 포함됩니다."),
           button("폴더 선택", {variant: "primary", onClick: () => startAddFolder()})), manual);
       }
       return page("폴더 관리", null, actions, ...cards.map(c => folderCard(c, busy)), manual);
@@ -1382,7 +1382,7 @@
     if (!c.exists) {
       return h("section", {class: "card folder-error"}, icon("alert-circle", "folder-error-icon"),
         h("strong", {}, "등록된 폴더를 찾을 수 없습니다."),
-        h("p", {}, "폴더가 이동되었거나 접근 권한이 변경되었는지 확인하십시오."),
+        h("p", {}, "폴더가 옮겨졌거나 권한이 바뀌었는지 확인하세요."),
         h("p", {class: "small muted", title: c.root}, folderName(c.root)),
         h("div", {class: "row"}, button("폴더 다시 선택", {variant: "primary", onClick: () => startAddFolder(async () => {
           await api("/api/folders/remove", "POST", {path: c.root});
@@ -1392,7 +1392,7 @@
     const excluded = new Set(data ? data.excluded : c.excluded);
     const total = data ? data.tree.total_readable : c.files_ok;
     const included = data ? countIncluded(data.tree, excluded) : c.files_ok;
-    const STATE = {watching: busy ? ["busy", "loader", "확인 중"] : ["ok", "check", "정상"], paused: ["paused", "pause-bars", "일시 중지"]};
+    const STATE = {watching: busy ? ["busy", "loader", "확인 중"] : ["ok", "check", "감시 중"], paused: ["paused", "pause-bars", "일시 중지"]};
     const [cls, iconName, text] = STATE[c.watch] || STATE.watching;
     const badgeNode = h("span", {class: "badge state " + cls}, icon(iconName), text);
     const live = S.status ? S.status.folders.find(f => f.root === c.root) : null;
@@ -1456,8 +1456,7 @@
       c.is_target ? h("p", {class: "folder-target"}, icon("link", "sm"), "메일, 캘린더, 메모, 가져온 파일을 이 폴더와 함께 분석합니다.") : null,
       data ? tree : h("p", {class: "small muted"}, "하위 폴더를 불러오지 못했습니다."),
       data && data.truncated ? h("p", {class: "small muted"}, "폴더가 많아 일부만 표시했습니다.") : null,
-      h("p", {class: "folder-note"}, "포함 여부를 변경하면 다음 점검부터 적용됩니다."),
-      h("p", {class: "folder-note"}, "다른 위치의 폴더도 추가할 수 있습니다. 폴더를 이 창에 끌어다 놓아도 됩니다."));
+      h("p", {class: "folder-note"}, "포함 여부를 바꾸면 다음 점검부터 적용됩니다."));
   }
 
   function folderMenu(wrap, c) {
@@ -1517,7 +1516,7 @@
   function previewBody(p) {
     if (!p.ok) {
       return [callout("danger", "x-circle", "이 폴더는 추가할 수 없습니다", p.reason),
-        h("p", {class: "small muted"}, "드라이브 루트, 사용자 폴더 전체, 시스템 폴더, 이 앱의 데이터 폴더는 개인정보 보호를 위해 등록할 수 없습니다. 프로젝트 폴더를 골라 주세요.")];
+        h("p", {class: "small muted"}, "드라이브 루트, 사용자 폴더 전체, 시스템 폴더, 이 앱의 데이터 폴더는 등록할 수 없습니다. 프로젝트 폴더를 고르세요.")];
     }
     const rel = p.relation;
     const unsupported = Object.values(p.unsupported).reduce((a, b) => a + b, 0);
@@ -1526,7 +1525,7 @@
     if (rel.kind === "contained") out.push(callout("danger", "x-circle", "이미 포함되어 있습니다", "등록된 폴더 " + folderName(rel.folders[0]) + " 안에 있어 이미 읽고 있습니다."));
     else if (rel.kind === "duplicate") out.push(callout("info", "info", "이미 등록된 폴더입니다", null));
     else if (rel.kind === "parent") out.push(callout("info", "folder", "이미 등록된 폴더를 포함하는 상위 폴더입니다",
-      h("div", {class: "stack-sm"}, h("p", {}, "합치면 아래 폴더가 이 폴더 하나로 바뀝니다. 기존에 제외한 하위 폴더 설정은 유지됩니다."),
+      h("div", {class: "stack-sm"}, h("p", {}, "합치면 아래 폴더가 이 폴더 하나로 바뀝니다. 제외한 하위 폴더는 그대로 둡니다."),
         h("ul", {}, ...rel.folders.map(f => h("li", {title: f}, folderName(f)))))));
     out.push(h("p", {class: "muted"}, "선택한 폴더의 하위 폴더를 포함합니다.", h("br"), "포함 여부는 폴더 관리에서 변경할 수 있습니다."));
     out.push(h("p", {class: "small muted"}, "읽을 수 있는 문서 " + p.readable + "개 · 하위 폴더 " + p.subfolders + "개" + (unsupported ? " · 읽지 않는 형식 " + unsupported + "개" : "")));
@@ -1562,7 +1561,7 @@
     try { p = await api("/api/folders/preview", "POST", {path}); } catch (e) { toast(e.message, "danger"); return; }
     if (!p.ok) {
       modal({title: "선택할 수 없는 위치", plain: true, icon: "alert-circle",
-        body: h("div", {class: "stack-sm"}, h("p", {class: "muted"}, "드라이브 전체와 시스템 폴더는 등록할 수 없습니다.", h("br"), "프로젝트 문서가 있는 폴더를 선택하십시오."),
+        body: h("div", {class: "stack-sm"}, h("p", {class: "muted"}, "드라이브 전체와 시스템 폴더는 등록할 수 없습니다.", h("br"), "프로젝트 문서가 있는 폴더를 고르세요."),
           h("p", {class: "small muted"}, p.reason)),
         actions: [{label: "다른 폴더 선택", variant: "primary", onClick: () => { setTimeout(() => startAddFolder(onAdded), 0); }}, {label: "취소"}]});
       return;
@@ -1597,7 +1596,7 @@
     drawNotes();
     modal({title: "파일 가져오기", plain: true, wide: true,
       body: h("div", {class: "stack"},
-        h("p", {class: "muted"}, "확인 폴더 밖의 회의록이나 일정 파일(.ics 포함)을 한 번 읽어 점검에 포함합니다. 원본은 수정하지 않고 파일 자체도 저장하지 않으며, 읽은 텍스트만 앱 데이터에 남습니다."),
+        h("p", {class: "muted"}, "감시 폴더 밖의 회의록이나 일정 파일을 한 번 읽어 점검에 포함합니다. 원본은 바꾸지 않습니다."),
         file,
         h("details", {class: "detail-tech"}, h("summary", {}, "저장한 메모"), notesBox)),
       actions: [{label: "가져오기", variant: "primary", onClick: async () => {
@@ -1641,8 +1640,8 @@
       if (r.path) { openPreview(r.path); return; }
     }
     toast(S.status && S.status.ui_mode === "window"
-      ? "끌어다 놓은 항목에서 폴더를 찾지 못했습니다. 폴더를 끌어다 놓거나 '폴더 추가'를 누르세요."
-      : "브라우저 화면에서는 끌어다 놓은 폴더의 위치를 알 수 없습니다. '폴더 추가'를 눌러 선택하세요.", "warning");
+      ? "폴더를 찾지 못했습니다. 폴더를 끌어다 놓거나 '폴더 추가'를 누르세요."
+      : "브라우저에서는 끌어다 놓은 폴더를 읽을 수 없습니다. '폴더 추가'를 누르세요.", "warning");
   }
 
   function buildDropVeil() {
@@ -1743,7 +1742,7 @@
           h("div", {class: "stack-sm"}, h("h4", {}, "준비 방법"), h("ol", {}, ...c.guide.map(g => h("li", {}, g)))));
         nav("다음", () => true);
       } else if (name === "인증 정보") {
-        set(body, h("p", {class: "muted"}, "서비스에서 받은 값을 입력하세요. 이 프로그램에는 어떤 클라이언트 ID나 비밀 값도 들어 있지 않습니다."),
+        set(body, h("p", {class: "muted"}, "서비스에서 받은 값을 입력하세요."),
           ...credFields, ...secretInputs.map(s => s.node),
           credFields.length + secretInputs.length === 0 ? callout("neutral", "info", null, "입력할 인증 정보가 없습니다.") : null);
         nav("다음", async () => {
@@ -1765,7 +1764,7 @@
         const state = h("div", {});
         const drawState = () => set(state, connected
           ? callout("success", "check-circle", "계정이 연결되었습니다", "다음 단계에서 읽을 범위를 고르세요.")
-          : callout("neutral", "info", "아직 로그인하지 않았습니다", "아래 버튼을 누르면 기본 브라우저에서 서비스 로그인 페이지가 열립니다. 로그인을 마치면 이 화면이 자동으로 바뀝니다."));
+          : callout("neutral", "info", "아직 로그인하지 않았습니다", "버튼을 누르면 브라우저에서 로그인 페이지가 열립니다."));
         drawState();
         const login = button(connected ? "계정 다시 연결" : "브라우저에서 로그인", {variant: "primary", icon: "external"});
         login.addEventListener("click", () => busy(login, async () => {
@@ -1778,10 +1777,10 @@
             if (row && row.connected) { connected = true; }
           }
           drawState();
-          if (!connected) throw new Error("로그인을 확인하지 못했습니다. 브라우저에서 로그인을 마쳤는지 확인하고 다시 시도하세요.");
+          if (!connected) throw new Error("로그인을 확인하지 못했습니다. 브라우저에서 로그인을 마친 뒤 다시 시도하세요.");
         }));
         set(body, state, h("div", {}, login),
-          h("p", {class: "small muted"}, "로그인은 서비스의 공식 페이지에서 이루어지며, 이 앱은 비밀번호를 보지 않습니다. 받은 토큰은 자격 증명 관리자에만 저장됩니다."));
+          h("p", {class: "small muted"}, "비밀번호는 이 앱에 전달되지 않습니다. 받은 토큰은 자격 증명 관리자에만 저장됩니다."));
         nav("다음", () => {
           if (!connected) throw new Error("먼저 로그인을 마치세요.");
           return true;
@@ -1789,7 +1788,7 @@
       } else if (name === "범위 선택") {
         const labels = (c.label_names || []).length ? h("p", {class: "small muted"}, "있는 라벨: " + c.label_names.join(", ")) : null;
         const mailNote = MAIL_IDS.includes(c.id)
-          ? callout("info", "info", "읽을 범위는 메일 소스에서 정합니다", "연결을 마친 뒤 설정 화면의 '메일 소스'에서 '소스 추가'를 눌러 라벨, 폴더, 보낸 사람, 제목 키워드로 범위를 정하세요.")
+          ? callout("info", "info", "읽을 범위는 메일 연결에서 정합니다", "연결을 마친 뒤 '메일 연결 추가'를 눌러 라벨, 보낸 사람, 제목으로 범위를 정하세요.")
           : null;
         set(body, h("p", {class: "muted"}, "지정한 범위만 읽습니다. 범위를 좁힐수록 개인 정보가 덜 들어옵니다."),
           ...scopeFields, labels, mailNote, scopeFields.length || mailNote ? null : callout("neutral", "info", null, "따로 고를 범위가 없습니다."), periodic);
@@ -1878,7 +1877,7 @@
     if (files.length === 0) return card(null, null, null, emptyState({icon: "file", title: "읽은 파일이 없습니다", text: "폴더를 추가하면 읽은 파일이 여기에 표시됩니다.", neutral: true}));
     return card(null, null, null, h("div", {class: "stack"},
       h("div", {class: "toolbar"}, h("div", {class: "search-local"}, icon("search", "sm"), q)),
-      h("p", {class: "small muted"}, "분류되지 않은 파일은 폴더에 .decision_agent.json을 만들어 kind_overrides로 종류를 지정할 수 있습니다."),
+      h("p", {class: "small muted"}, "분류되지 않은 파일은 폴더의 .decision_agent.json에서 kind_overrides로 종류를 정할 수 있습니다."),
       h("div", {class: "table-wrap"}, h("table", {class: "table"},
         h("thead", {}, h("tr", {}, ...["파일", "형식", "상태", "분류", "회의 항목", "산출물", "참고"].map(x => h("th", {scope: "col"}, x)))), body))));
   }
@@ -1892,9 +1891,9 @@
       return card(folderName(f.root), f.root, null, h("div", {class: "stack-sm"},
         c ? (c.verified
           ? callout("success", "check-circle", "실제 모델로 끝까지 점검했습니다", fmtTime(c.at) + " · " + c.provider_id + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건")
-          : callout("warning", "alert", "시연용 모드, 실제 검사가 아닙니다.", fmtTime(c.at) + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건"))
+          : callout("warning", "alert", "데모 모드입니다. 실제 검사가 아닙니다.", fmtTime(c.at) + " · 파일 " + c.files_ok + "개, 결정 " + c.topics + "건"))
           : callout("neutral", "clock", "아직 완료된 점검이 없습니다", null),
-        judges ? h("p", {class: "small muted"}, "판정기별 결정 수: " + judges) : null,
+        judges ? h("p", {class: "small muted"}, "확인 방식별 결정 수: " + judges) : null,
         f.scan_stats ? h("p", {class: "small muted"}, "폴더 안 파일 " + f.scan_stats.seen + "개 확인" + (skipped ? " · 건너뜀: " + skipped : "")) : null,
         fail ? callout("danger", "x-circle", "마지막 문제 (" + fmtTime(fail.at) + ")", fail.message) : null));
     }));
@@ -1904,6 +1903,8 @@
 
   // Figma 15:340 / 16:1185: two tabs, "연결 및 AI" and "알림 및 데이터".
   const SET = {tab: "connect", test: null};
+  // Settings grouped by task. Model and cost options are under 고급.
+  const SET_TABS = [["connect", "연결"], ["check", "점검"], ["alerts", "알림"], ["advanced", "고급"]];
   const CALENDAR_IDS = ["google_calendar", "outlook_calendar"];
   const MAIL_IDS = ["gmail", "outlook_mail", "imap_mail"];
 
@@ -1926,16 +1927,25 @@
   ROUTES.settings = {
     title: "설정", auto: false,
     async load(params) {
-      if (params.has("tab")) SET.tab = params.get("tab") === "data" ? "data" : "connect";
+      if (params.has("tab")) {
+        const tab = params.get("tab");
+        SET.tab = SET_TABS.some(([id]) => id === tab) ? tab : tab === "data" ? "advanced" : "connect";
+      }
       const [s, rows, auto, access] = await Promise.all([api("/api/settings"), api("/api/connectors"), api("/api/autostart"), api("/api/access")]);
       S.settings = s;
       return {s, rows, auto, access, st: S.status || await api("/api/status")};
     },
     render(data, params) {
-      const tabs = h("div", {class: "set-tabs", role: "tablist"}, ...[["connect", "연결 및 AI"], ["data", "알림 및 데이터"]].map(([id, label]) =>
+      const tabs = h("div", {class: "set-tabs", role: "tablist"}, ...SET_TABS.map(([id, label]) =>
         h("button", {type: "button", class: "set-tab", role: "tab", "aria-selected": String(SET.tab === id),
           onclick: () => { SET.tab = id; lastSig = ""; renderRoute(false); }}, label)));
-      const body = SET.tab === "data" ? dataTab(data) : connectTab(data);
+      const parts = dataTab(data);
+      const body = {
+        connect: () => connectTab(data),
+        check: () => [aiCard(data.s, data.st), privacyCard(data.s, data.st)],
+        alerts: () => [parts.alerts],
+        advanced: () => [costCard(data.s), parts.running, parts.profile, parts.data, parts.advanced],
+      }[SET.tab]();
       const node = h("div", {class: "page settings-page"}, h("div", {class: "page-head"}, h("h1", {}, "설정")), tabs, ...body);
       const focus = params.get("focus") || params.get("section");
       if (focus) setTimeout(() => {
@@ -1984,9 +1994,9 @@
     const others = rows.filter(r => !CALENDAR_IDS.includes(r.id));
     const targetName = s.connector_target || s.allowed_folders[0] || "";
     const intro = h("div", {class: "set-note"}, icon("shield-check", "sm"),
-      h("span", {}, "모든 연결은 읽기 전용입니다. 보내기, 삭제, 읽음 표시, 만들기 기능이 없고, 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
+      h("span", {}, "모든 연결은 읽기 전용입니다. 비밀 값은 Windows 자격 증명 관리자에만 저장됩니다."),
       targetName ? h("span", {class: "set-target", title: targetName}, "함께 분석할 폴더: " + folderName(targetName)) : null);
-    return [intro, ...cal.map(c => serviceCard(c, s)), aiCard(s, st), costCard(s), privacyCard(s, st),
+    return [intro, ...cal.map(c => serviceCard(c, s)),
       h("h2", {class: "set-section"}, "다른 연결"), ...others.map(c => serviceCard(c, s)), contactsCard()];
   }
 
@@ -2015,7 +2025,7 @@
       h("div", {class: "source-top"}, h("h2", {}, "주소록"),
         h("div", {class: "row"}, button("CSV 가져오기", {size: "sm", onClick: importContacts}),
           button("사람 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => contactForm(null)}))),
-      h("p", {class: "small muted"}, "보낸 사람을 팀과 역할로 묶습니다. 이 컴퓨터에만 저장되고 AI로 보내지 않습니다. 소스의 보낸 사람에 team:팀이름 으로 쓰면 그 팀 주소로 바뀝니다."),
+      h("p", {class: "small muted"}, "보낸 사람을 팀과 역할로 묶습니다. 이 컴퓨터에만 저장됩니다. 보낸 사람 칸에 team:팀이름을 쓰면 그 팀 주소로 바뀝니다."),
       list);
     api("/api/contacts").then(data => {
       const rows = data.contacts.map(c => h("li", {class: "contact-row"},
@@ -2053,7 +2063,7 @@
   function importContacts() {
     const file = h("input", {type: "file", accept: ".csv,text/csv"});
     modal({title: "주소록 CSV 가져오기", plain: true,
-      body: h("div", {class: "stack-sm"}, h("p", {class: "small muted"}, "열 순서: 이름, 주소, 팀. 첫 줄이 머리글이어도 됩니다. 형식이 맞지 않는 줄은 건너뜁니다."), file),
+      body: h("div", {class: "stack-sm"}, h("p", {class: "small muted"}, "열 순서: 이름, 주소, 팀. 첫 줄은 머리글이어도 됩니다."), file),
       actions: [{label: "취소"}, {label: "가져오기", variant: "primary", onClick: async () => {
         if (!file.files || !file.files[0]) throw new Error("CSV 파일을 고르세요.");
         const text = await file.files[0].text();
@@ -2062,7 +2072,7 @@
         renderRoute(true);
       }}]});
   }
-  const SOURCE_SENDING = "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다";
+  const SOURCE_SENDING = "이 메일 연결의 본문은 외부 AI로 전송될 수 있습니다";
 
   function mailSourcesCard(c, s) {
     const rows = (c.sources || []).map(src => {
@@ -2097,10 +2107,10 @@
       }));
       const remove = button("삭제", {size: "sm", variant: "danger-outline"});
       remove.addEventListener("click", () => busy(remove, async () => {
-        const ok = await confirmDialog({title: "메일 소스 삭제", message: "'" + src.name + "' 소스와 이 소스에서 가져온 메일 사본을 지웁니다. 메일함의 메일은 그대로입니다.", confirmLabel: "삭제", danger: true});
+        const ok = await confirmDialog({title: "메일 연결 삭제", message: "'" + src.name + "' 메일 연결과 여기서 가져온 메일 사본을 지웁니다. 메일함의 메일은 그대로입니다.", confirmLabel: "삭제", danger: true});
         if (!ok) return;
         await api("/api/mail-sources/" + encodeURIComponent(src.id), "DELETE");
-        toast("메일 소스를 삭제했습니다.", "success");
+        toast("메일 연결을 삭제했습니다.", "success");
         renderRoute(true);
       }));
       return h("li", {class: "source-row"},
@@ -2114,11 +2124,11 @@
         h("div", {class: "row source-actions"}, preview.run, run, edit, forget, remove),
         result, preview.out);
     });
-    const add = button("소스 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => sourceForm(c, s, null)});
+    const add = button("메일 연결 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => sourceForm(c, s, null)});
     return h("section", {class: "card set-card mail-sources", id: "sources-" + c.id},
-      h("div", {class: "source-top"}, h("h2", {}, "메일 소스"), add),
-      h("p", {class: "small muted"}, "메일함에서 무엇을 읽을지 소스별로 정합니다. 소스마다 용도, 팀, 프로젝트 폴더를 고를 수 있습니다."),
-      rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "아직 소스가 없습니다. '소스 추가'를 눌러 라벨이나 보낸 사람으로 읽을 범위를 정하세요."));
+      h("div", {class: "source-top"}, h("h2", {}, "메일 연결"), add),
+      h("p", {class: "small muted"}, "메일함에서 무엇을 읽을지 정합니다."),
+      rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "메일 연결이 없습니다. '메일 연결 추가'를 누르세요."));
   }
 
   function linesOf(t) { return t.value.split("\n").map(x => x.trim()).filter(Boolean); }
@@ -2173,24 +2183,24 @@
     const exKeywords = listArea(v.exclude_subject_keywords, "제외할 제목 단어");
     const query = input({value: v.gmail_query || "", maxlength: "100", placeholder: "예: has:attachment"});
     const days = input({type: "number", min: "1", max: "365", value: String(v.days_back)});
-    const enabled = toggle("이 소스 사용", v.enabled, "끄면 이 소스에서 가져온 메일 사본을 분석에서 뺍니다.");
+    const enabled = toggle("사용", v.enabled, "끄면 이 메일 연결의 메일을 점검에서 뺍니다.");
     drawScope();
     const body = h("div", {class: "stack"},
       field("이름", name, null, {required: true}),
       h("div", {class: "field"}, h("span", {class: "field-label"}, "읽을 범위"), scopeCtl), scopeBox,
-      field("AI 분석", analysis, "저장한 메일 중 어떤 메일을 AI로 점검할지 고릅니다. '분석 안 함'이면 모델이 메일을 보지 않습니다."),
-      field("용도", purpose, "메일을 어떤 자료로 볼지 고릅니다. 결정 근거는 회의록처럼, 나머지는 할 일, 요구사항, 일정 항목으로 읽습니다."),
+      field("AI 분석", analysis, "저장한 메일 중 AI로 점검할 메일을 고릅니다."),
+      field("용도", purpose, "결정 근거는 회의록처럼, 나머지는 할 일, 요구사항, 일정으로 읽습니다."),
       field("팀", team, "선택. 결과 화면에서 팀으로 거를 수 있습니다."),
-      field("프로젝트 폴더", target, "이 소스의 메일을 함께 분석할 감시 폴더입니다."),
+      field("프로젝트 폴더", target, "이 메일을 함께 점검할 폴더입니다."),
       field(isGmail ? "라벨" : "폴더", labels, isGmail ? "이 중 하나라도 붙은 메일을 읽습니다." : "INBOX만 고르면 보낸 사람이나 제목 키워드도 정해야 합니다."), pick,
       field("보낸 사람", senders, "이 중 한 사람이라도 보낸 메일만 읽습니다."),
       field("제목 키워드", keywords, "제목에 이 중 하나라도 들어간 메일만 읽습니다."),
       h("details", {class: "result-more"}, h("summary", {}, "제외 조건과 고급 설정"),
         h("div", {class: "stack"}, field("제외할 보낸 사람", exSenders), field("제외할 제목 키워드", exKeywords),
           isGmail ? field("Gmail 검색식 (고급)", query, "Gmail 검색창 문법입니다. 다른 조건과 함께 적용됩니다.") : null)),
-      field("과거 일수", days, "처음 가져올 때 며칠 전 메일까지 읽을지 정합니다. 이미 가져온 메일은 180일 동안 남겨 둡니다."),
+      field("과거 일수", days, "처음 가져올 때 며칠 전 메일까지 읽을지 정합니다."),
       enabled, sendingLine);
-    modal({title: src ? "메일 소스 수정" : "메일 소스 추가", wide: true, plain: true, body,
+    modal({title: src ? "메일 연결 수정" : "메일 연결 추가", wide: true, plain: true, body,
       actions: [{label: "취소"}, {label: "저장", variant: "primary", onClick: async () => {
         const payload = {
           name: name.value.trim(), connector: c.id, purpose: purpose.value, team: team.value.trim(), target: target.value,
@@ -2206,7 +2216,7 @@
         if (isGmail) payload.gmail_query = query.value.trim();
         if (src) payload.id = src.id;
         await api("/api/mail-sources", "POST", payload);
-        toast(src ? "메일 소스를 저장했습니다." : "메일 소스를 추가했습니다. '지금 가져오기'로 바로 읽을 수 있습니다.", "success");
+        toast(src ? "메일 연결을 저장했습니다." : "메일 연결을 추가했습니다. 메일은 자동으로 가져옵니다.", "success");
         renderRoute(true);
       }}]});
   }
@@ -2228,7 +2238,7 @@
     const state = c.enabled && configured ? ["ok", "연결됨"] : (configured ? ["off", "자동 가져오기 꺼짐"] : ["none", "연결 안 됨"]);
     const line = c.enabled && configured
       ? "읽기 범위: " + c.reads + (last ? " · 마지막 가져오기 " + last : "") + (st && st.ok && st.summary ? " (" + st.summary + ")" : "")
-      : (configured ? "읽기 범위: " + c.reads : (isCal ? "관련 일정을 확인하려면 캘린더를 연결하십시오." : c.reads));
+      : (configured ? "읽기 범위: " + c.reads : (isCal ? "관련 일정을 보려면 캘린더를 연결하세요." : c.reads));
     return h("section", {class: "card svc-card", id: "set-" + c.id},
       icon(SERVICE_ICON[c.id] || "link", "svc-icon"),
       h("div", {class: "svc-main"}, h("h2", {}, c.label), h("p", {class: "svc-state " + state[0]}, state[1]), h("p", {class: "svc-line"}, line),
@@ -2275,14 +2285,14 @@
       }}, {label: "닫기"}]});
   }
 
-  // Figma "AI 판정 방식": 시연용 / 외부 AI / 로컬 AI, key "저장됨", connection test.
+  // Figma "확인 방식": 시연용 / 외부 AI / 로컬 AI, key "저장됨", connection test.
   function aiCard(s, st) {
     const now = st ? providerKind(st.provider.id) : "demo";
     const chosen = {mock: "demo", anthropic: "external", ollama: "local"}[s.provider] || now;
     const choice = (kind, title, sub) => h("button", {type: "button", class: "ai-choice" + (chosen === kind ? " selected" : ""),
       "aria-pressed": String(chosen === kind), onclick: async (e) => busy(e.currentTarget, async () => {
         const provider = {demo: "mock", external: "anthropic", local: "ollama"}[kind];
-        await saveSettings({provider}, kind === "demo" ? "시연용 판정기로 바꿨습니다. 실제 검사가 아닙니다." : "판정 방식을 바꿨습니다. 새 방식으로 다시 점검합니다.");
+        await saveSettings({provider}, kind === "demo" ? "데모 확인 방식으로 바꿨습니다. 실제 검사가 아닙니다." : "확인 방식을 바꿨습니다. 다시 점검합니다.");
         SET.test = null;
         await refreshAll();
       })},
@@ -2303,7 +2313,7 @@
       rows.push(h("div", {class: "ai-row"}, h("span", {class: "muted"}, "주소: " + s.ollama_url),
         h("button", {type: "button", class: "link", onclick: () => textDialog("Ollama 주소", s.ollama_url, "http://127.0.0.1:11434", (v) => saveSettings({ollama_url: v}, "주소를 저장했습니다."))}, "변경")));
     } else {
-      rows.push(h("div", {class: "ai-row"}, h("span", {class: "warn-text"}, "시연용 판정기는 예시 문서의 어휘만 압니다. 실제 검사가 아닙니다.")));
+      rows.push(h("div", {class: "ai-row"}, h("span", {class: "warn-text"}, "데모 확인 방식은 예시 문서의 단어만 압니다. 실제 검사가 아닙니다.")));
     }
     const test = button("연결 테스트", {});
     const result = h("div", {class: "ai-result"});
@@ -2313,14 +2323,14 @@
       if (r) line = h("p", {class: r.ok ? "ok-text" : "danger-text"}, icon(r.ok ? "check" : "alert-circle", "sm"), r.message);
       else if (chosen === "external" && !s.allow_external_send) line = h("p", {class: "warn-text"}, icon("alert-circle", "sm"), "외부 전송 동의 필요");
       else if (st && st.provider && !st.provider.local_only) line = h("p", {class: "ok-text"}, icon("check", "sm"), (chosen === "local" ? "로컬 AI" : "외부 AI") + " 연결 설정됨 · 연결 테스트로 확인하세요");
-      else if (chosen !== "demo" && st) line = h("p", {class: "warn-text", title: st.provider.reason}, icon("alert-circle", "sm"), "아직 시연용 판정기로 동작합니다: " + st.provider.reason);
+      else if (chosen !== "demo" && st) line = h("p", {class: "warn-text", title: st.provider.reason}, icon("alert-circle", "sm"), "아직 데모 확인 방식입니다: " + st.provider.reason);
       set(result, line);
     };
     test.addEventListener("click", () => busy(test, async () => { SET.test = await api("/api/provider/test", "POST"); drawResult(); }));
     drawResult();
-    return h("section", {class: "card ai-card", id: "set-judge"}, h("h2", {}, "AI 판정 방식"),
+    return h("section", {class: "card ai-card", id: "set-judge"}, h("h2", {}, "확인 방식"),
       h("div", {class: "ai-choices"},
-        choice("demo", "시연용", "실제 문서 검사 안 함"),
+        choice("demo", "데모", "실제 문서 검사 안 함"),
         choice("external", "외부 AI", "관련 내용을 외부로 전송"),
         choice("local", "로컬 AI", (chosen === "local" ? "현재 선택 · " : "") + "내 컴퓨터에서 처리")),
       h("div", {class: "ai-bottom"}, h("div", {class: "ai-rows"}, ...rows), test), result);
@@ -2333,7 +2343,7 @@
   function keyDialog() {
     const key = input({type: "password", autocomplete: "off", placeholder: "sk-ant-...", "aria-label": "API 키", autofocus: true});
     modal({title: "외부 AI API 키", plain: true,
-      body: h("div", {class: "stack"}, key, h("p", {class: "small muted"}, "키는 Windows 자격 증명 관리자에만 저장되고 화면, 설정 파일, 로그에 나타나지 않습니다. 저장한 뒤에는 '저장됨'만 보입니다.")),
+      body: h("div", {class: "stack"}, key, h("p", {class: "small muted"}, "키는 Windows 자격 증명 관리자에만 저장됩니다.")),
       actions: [{label: "저장", variant: "primary", onClick: async () => {
         if (key.value.trim().length < 8) throw new Error("API 키를 입력하세요.");
         await api("/api/secret/api-key", "POST", {value: key.value.trim()});
@@ -2347,9 +2357,9 @@
   // Nothing is saved until "저장": each saved profile or model change starts a full re-check,
   // so clicking through the options must not spend calls.
   const COST_OPTIONS = [
-    ["precise", "정밀", "모든 줄을 두 번 이상 확인합니다. 호출이 가장 많습니다."],
-    ["balanced", "균형 (기본)", "일치로 보이는 줄은 한 번만 확인하고, 에이전트의 도구 선택은 AI에게 묻지 않습니다."],
-    ["saver", "절약", "모든 줄을 한 번만 확인합니다. 호출이 가장 적지만 놓치거나 잘못 잡는 경우가 늘 수 있습니다."],
+    ["precise", "정밀", "모든 줄을 두 번 이상 확인합니다. AI 요청이 가장 많습니다."],
+    ["balanced", "균형 (기본)", "일치로 보이는 줄은 한 번만 확인합니다."],
+    ["saver", "절약", "모든 줄을 한 번만 확인합니다. AI 요청이 가장 적지만 놓치는 경우가 늘 수 있습니다."],
   ];
   function costCard(s) {
     let profile = s.cost_profile;
@@ -2359,7 +2369,7 @@
       radio.addEventListener("change", () => { profile = v; nodes.forEach(x => x.classList.toggle("selected", x === n)); drawHint(); });
       return n;
     });
-    const choices = h("div", {class: "choice-grid", role: "radiogroup", "aria-label": "점검 정밀도"}, ...nodes);
+    const choices = h("div", {class: "choice-grid", role: "radiogroup", "aria-label": "정확도 설정"}, ...nodes);
     const cheap = input({value: s.cheap_model_name || "", placeholder: "예: claude-haiku-5-5"});
     const limit = input({type: "number", min: "0", step: "1", value: String(s.confirm_over_calls)});
     const hint = h("p", {class: "warn-text small cost-hint", role: "status"});
@@ -2371,7 +2381,7 @@
     const save = button("저장", {variant: "primary", size: "sm"});
     save.addEventListener("click", () => busy(save, async () => {
       const n = Number(limit.value);
-      if (!Number.isInteger(n) || n < 0) { toast("확인 기준 호출 수는 0 이상의 정수로 입력하세요.", "danger"); return; }
+      if (!Number.isInteger(n) || n < 0) { toast("확인 기준 AI 요청 수는 0 이상의 정수로 입력하세요.", "danger"); return; }
       const payload = {};
       if (profile !== s.cost_profile) payload.cost_profile = profile;
       if (cheap.value.trim() !== (s.cheap_model_name || "")) payload.cheap_model_name = cheap.value.trim();
@@ -2383,19 +2393,19 @@
     drawHint();
     return h("section", {class: "card set-card", id: "set-cost"}, h("h2", {}, "AI 사용량 절약"),
       h("div", {class: "stack"},
-        field("점검 정밀도", choices),
-        field("저가 모델 이름 (선택)", cheap, "비워 두면 위의 모델 하나로 전부 처리합니다. 값을 넣으면 읽기와 분류는 이 모델이, 일치 판정은 위의 모델이 처리합니다."),
-        field("확인 기준 호출 수", limit, "예상 호출 수가 이 값을 넘으면 점검 전에 확인을 받습니다. 0이면 묻지 않습니다."),
+        field("정확도 설정", choices),
+        field("저가 모델 이름 (선택)", cheap, "비워 두면 위의 모델 하나로 처리합니다. 넣으면 읽기와 분류는 이 모델이 처리합니다."),
+        field("확인 기준 AI 요청 수", limit, "예상 AI 요청 수가 이 값을 넘으면 먼저 묻습니다. 0이면 묻지 않습니다."),
         hint, h("div", {}, save), mailTriage(s)));
   }
 
   function mailTriage(s) {
     const sw = switchCtl(s.mail_prefilter, async (want) => {
-      await saveSettings({mail_prefilter: want}, want ? "결정 표현이 없는 메일은 AI로 보내지 않습니다." : "결정 근거 소스의 메일을 모두 AI로 보냅니다.");
+      await saveSettings({mail_prefilter: want}, want ? "결정 표현이 없는 메일은 AI로 보내지 않습니다." : "결정 근거 메일을 모두 AI로 보냅니다.");
       return true;
     }, "메일 사전 분류");
     return h("div", {class: "privacy-row"}, h("div", {class: "stack-sm"}, h("span", {class: "set-label"}, "메일 사전 분류"),
-      h("p", {class: "set-help"}, "용도가 결정 근거인 메일 중 결정, 확정, 변경, 취소 같은 표현이나 목록이 없는 메일은 AI로 보내지 않고 건너뜁니다. 건너뛴 수는 소스 상태에 표시됩니다.")), sw);
+      h("p", {class: "set-help"}, "결정, 확정, 변경 같은 표현이 없는 메일은 AI로 보내지 않습니다.")), sw);
   }
 
   function textDialog(title, value, placeholder, save) {
@@ -2438,7 +2448,7 @@
             h("li", {}, "받는 곳: Anthropic API" + (s.model_name ? " (" + s.model_name + ")" : "")),
             h("li", {}, "보내는 내용: 점검할 결정 문장과 관련 문서 항목의 문장, 연결에서 가져온 관련 내용"),
             h("li", {}, "보내지 않는 것: 관련 없는 파일 전체, 비밀번호와 토큰 같은 비밀 값")),
-          h("p", {class: "small muted"}, "API 키와 모델 이름까지 있어야 실제로 전송됩니다. 언제든지 다시 끌 수 있습니다.")),
+          h("p", {class: "small muted"}, "API 키와 모델 이름이 있어야 전송됩니다.")),
         actions: [{label: "동의하고 켜기", variant: "primary", onClick: () => { answered = true; resolve(true); }},
           {label: "취소", onClick: () => { answered = true; resolve(false); }}]});
     });
@@ -2448,7 +2458,7 @@
 
   function dataTab({s, auto, access, st}) {
     const nameValue = h("span", {class: "set-text"}, s.display_name || "이름 없음");
-    const profile = h("section", {class: "card set-card"}, h("h2", {}, "프로필"),
+    const profile = h("section", {class: "card set-card"}, h("h2", {}, "내 정보"),
       setRow("표시 이름", nameValue, h("button", {type: "button", class: "link", onclick: () => textDialog("표시 이름", s.display_name, "표시 이름",
         (v) => saveSettings({display_name: v}, "표시 이름을 저장했습니다."))}, "변경")),
       h("p", {class: "set-help"}, "이 정보는 이 컴퓨터에만 저장됩니다."));
@@ -2478,9 +2488,9 @@
           }}, x.split("+").map(k => k.length <= 3 ? k.toUpperCase() : k[0].toUpperCase() + k.slice(1)).join(" + ")))) : null) : null,
       setRow("방해 금지 시간", switchCtl(s.quiet_hours_enabled, async (v) => { await saveSettings({quiet_hours_enabled: v}); quietStart.disabled = quietEnd.disabled = !v; }, "방해 금지 시간"),
         quietStart, h("span", {class: "muted"}, "–"), quietEnd),
-      h("p", {class: "set-help"}, "방해 금지 시간에는 알림을 띄우지 않고 도우미 버튼도 흔들리지 않습니다. 생긴 일은 받은 알림 목록과 배지 숫자에 남습니다. 같은 오류는 반복해서 알리지 않습니다."),
+      h("p", {class: "set-help"}, "방해 금지 시간에는 알림을 띄우지 않습니다. 생긴 일은 알림 목록에 남습니다."),
       setRow("회의 전 알림", switchCtl(s.meeting_reminder_enabled, async (v) => { await saveSettings({meeting_reminder_enabled: v}); reminder.disabled = !v; }, "회의 전 알림"), reminder),
-      h("p", {class: "set-help"}, "곧 시작할 회의와 연결된 반영 안 됨 항목이 있으면 알려 줍니다. 캘린더 연결이 필요합니다."));
+      h("p", {class: "set-help"}, "곧 시작할 회의와 관련된 반영 안 됨 항목을 알립니다. 캘린더 연결이 필요합니다."));
 
     const interval = select(["1", "5", "10", "15", "30", "60"].map(v => [v, v + "분마다"]), String(s.connector_interval_minutes), {class: "select set-select", "aria-label": "메일과 일정 가져오기 간격"});
     interval.addEventListener("change", () => saveSettings({connector_interval_minutes: Number(interval.value)}, "가져오기 간격을 저장했습니다."));
@@ -2491,11 +2501,11 @@
     autoSw.input.disabled = !auto.supported;
     const running = h("section", {class: "card set-card"}, h("h2", {}, "실행"),
       setRow("Windows 시작 시 자동 실행", autoSw, auto.supported ? null : h("span", {class: "small muted"}, "Windows에서만 지원합니다.")),
-      setRow("빠른 점검(묶음 판정)", switchCtl(s.batch_size > 1, (v) => saveSettings({batch_size: v ? 8 : 1}, v ? "여러 항목을 한 번에 판정합니다." : "항목을 한 건씩 판정합니다."), "빠른 점검(묶음 판정)")),
-      h("p", {class: "set-help"}, "켜면 같은 결정에 대한 항목을 묶어서 한 번에 판정해 호출 수가 줄어듭니다. 결과가 의심되면 끄고 다시 점검해 비교하세요."),
+      setRow("묶어서 확인", switchCtl(s.batch_size > 1, (v) => saveSettings({batch_size: v ? 8 : 1}, v ? "여러 항목을 한 번에 확인합니다." : "항목을 한 건씩 확인합니다."), "묶어서 확인")),
+      h("p", {class: "set-help"}, "같은 결정의 항목을 묶어 한 번에 확인합니다. AI 요청 수가 줄어듭니다."),
       setRow("바탕화면 도우미 버튼", switchCtl(s.helper_enabled, (v) => saveSettings({helper_enabled: v}, v ? "도우미 버튼을 표시합니다." : "도우미 버튼을 숨겼습니다. 트레이에서 계속 확인합니다."), "도우미 버튼")),
       setRow("메일과 일정 가져오기", interval),
-      h("p", {class: "set-help"}, "창을 닫아도 도우미 버튼과 트레이에서 계속 확인합니다. 완전히 끄려면 트레이 메뉴의 '종료'를 누르세요."));
+      h("p", {class: "set-help"}, "창을 닫아도 트레이에서 계속 확인합니다. 끄려면 트레이 메뉴에서 '종료'를 누르세요."));
 
     const data = h("section", {class: "card set-card"}, h("h2", {}, "데이터"),
       h("div", {class: "set-links"},
@@ -2505,8 +2515,8 @@
         }}, "진단 정보 복사")),
       h("button", {type: "button", class: "link big danger-text strong", onclick: purgeFlow}, "모든 데이터 삭제"));
 
-    const advanced = h("details", {class: "card set-advanced"}, h("summary", {}, "고급 설정", icon("chevron-right", "sm")), advancedBody(s, access));
-    return [profile, alerts, running, data, advanced];
+    const advanced = h("section", {class: "card set-card"}, h("h2", {}, "기타"), advancedBody(s, access));
+    return {profile, alerts, running, data, advanced};
   }
 
   function hotkeyDialog(s, hk) {
@@ -2542,16 +2552,16 @@
       h("div", {class: "field-row"}, field("점검 방식", mode), field("현재 릴리스", release, "결정의 적용 범위를 판단할 때 씁니다."),
         field("저장이 멈춘 뒤 기다릴 시간(초)", debounce, "쓰는 동안은 기다렸다가 저장이 멈추면 반영합니다."),
         field("최대 대기 시간(초)", debounceMax, "계속 저장되어도 이 시간이 지나면 반영합니다."),
-        field("주기 확인 간격(분)", rescan, "변경 알림이 없어도 이 간격으로 폴더를 확인합니다. 바뀐 것이 없으면 AI를 호출하지 않습니다. 0이면 끕니다."),
-        field("파일 최대 크기(MB)", maxMb), field("점검 1회 AI 호출 한도", maxCalls)),
+        field("주기 확인 간격(분)", rescan, "변경 알림이 없어도 이 간격으로 폴더를 확인합니다. 0이면 끕니다."),
+        field("파일 최대 크기(MB)", maxMb), field("점검 1회 AI 요청 한도", maxCalls)),
       h("div", {}, saveBtn(() => save({analysis_mode: mode.value, debounce_seconds: Number(debounce.value || 0), debounce_max_seconds: Number(debounceMax.value || 120),
         rescan_minutes: Number(rescan.value || 0), current_release: release.value.trim() || null, max_file_mb: Number(maxMb.value || 25),
         max_llm_calls_per_cycle: Number(maxCalls.value || 400)}))),
       h("h3", {}, "제외 규칙"),
-      field("제외 패턴 (한 줄에 하나)", excludes, "모든 폴더에 적용됩니다. 특정 하위 폴더만 빼려면 폴더 관리에서 체크를 해제하세요."),
+      field("제외 패턴 (한 줄에 하나)", excludes, "모든 폴더에 적용됩니다."),
       h("div", {}, saveBtn(() => save({exclude_patterns: excludes.value.split("\n").map(x => x.trim()).filter(Boolean)}))),
       h("h3", {}, "의미 검색 보강 (선택)"),
-      field("임베딩 모델", embed, "로컬 AI(Ollama)로 글자 유사도가 놓친 후보를 보충합니다."),
+      field("임베딩 모델", embed, "로컬 AI(Ollama)로 글자 비교가 놓친 관련 문서를 찾습니다."),
       h("div", {}, saveBtn(() => save({embedding_model: embed.value.trim()}))),
       h("h3", {}, "화면"), h("div", {}, theme),
       h("h3", {}, "접근 범위"),
@@ -2576,7 +2586,7 @@
   function purgeConfirm() {
     const confirmInput = input({placeholder: PURGE_CONFIRM, autofocus: true, "aria-label": "확인 문구"});
     return modal({title: "데이터 삭제 최종 확인", plain: true,
-      body: h("div", {class: "stack"}, h("p", {class: "muted"}, "삭제를 진행하려면 '" + PURGE_CONFIRM + "'를 입력하십시오."), confirmInput),
+      body: h("div", {class: "stack"}, h("p", {class: "muted"}, "삭제하려면 '" + PURGE_CONFIRM + "'를 입력하세요."), confirmInput),
       actions: [{label: "모든 데이터 삭제", variant: "danger-outline", onClick: async () => {
         if (confirmInput.value.trim() !== PURGE_CONFIRM) throw new Error("'" + PURGE_CONFIRM + "'를 정확히 입력하세요.");
         await api("/api/data/purge", "POST", {confirm: confirmInput.value.trim()});
@@ -2613,7 +2623,7 @@
   }
 
   function onbStepper() {
-    const names = ["폴더 선택", "판정 방식", "완료"];
+    const names = ["폴더 선택", "확인 방식", "완료"];
     return h("div", {class: "stepper"}, ...names.flatMap((n, i) => [i ? h("span", {class: "step-sep"}) : null,
       h("span", {class: "step" + (ONB.step === i + 1 ? " active" : "") + (ONB.step > i + 1 ? " done" : "")},
         h("span", {class: "step-num"}, ONB.step > i + 1 ? icon("check", "sm") : String(i + 1)), n)]));
@@ -2626,8 +2636,8 @@
       const value = (iconName, title, text) => h("div", {class: "value"}, icon(iconName, "lg"), h("strong", {}, title), h("span", {class: "small muted"}, text));
       DA.append(cardNode, [
         h("div", {class: "row"}, h("img", {src: "/static/icon.svg", alt: "", width: "48", height: "48"})),
-        h("div", {class: "stack-sm"}, h("div", {class: "onb-title"}, "Decision Agent에 오신 것을 환영합니다"),
-          h("p", {class: "muted"}, "회의에서 결정이 바뀌었는데 요구사항, 작업 표, 테스트 계획, 일정에 반영되지 않은 항목을 찾아 알려 드립니다. 세 단계면 시작할 수 있습니다.")),
+        h("div", {class: "stack-sm"}, h("div", {class: "onb-title"}, PRODUCT_NAME),
+          h("p", {class: "muted"}, "결정이 바뀌었는데 문서에 반영되지 않은 곳을 찾습니다.")),
         h("div", {class: "value-list"},
           value("eye", "읽기만 합니다", "고른 폴더의 파일을 읽기만 하고 수정, 삭제, 새로 만들기를 하지 않습니다."),
           value("lock", "이 컴퓨터에만 저장", "설정, 결과, 키는 이 컴퓨터에만 남습니다. 회원 가입이 없습니다."),
@@ -2667,7 +2677,7 @@
         button("확인", {onClick: () => { if (manualPath.value.trim()) showPreview(manualPath.value.trim()); }}));
       DA.append(cardNode, [onbStepper(),
         h("div", {class: "stack-sm"}, h("h2", {}, "감시할 프로젝트 폴더를 고르세요"),
-          h("p", {class: "muted"}, "가장 위의 폴더 하나만 고르면 그 안의 모든 하위 폴더가 자동으로 포함됩니다. 폴더를 고르면 바로 점검을 시작합니다.")),
+          h("p", {class: "muted"}, "가장 위의 폴더를 고르면 하위 폴더도 포함됩니다.")),
         h("div", {class: "row"}, pick, button("경로 직접 입력", {variant: "ghost", onClick: () => { manual.hidden = false; manualPath.focus(); }})),
         manual, area,
         h("div", {class: "onb-foot"}, button("이전", {variant: "ghost", onClick: () => { ONB.step = 0; drawOnboarding(); }}), h("span", {class: "small muted"}, "다른 폴더는 나중에 '폴더' 화면에서 더 추가할 수 있습니다."))]);
@@ -2681,7 +2691,7 @@
         provider === "anthropic" ? field("API 키", key, "Windows 자격 증명 관리자에만 저장됩니다.") : null,
         provider === "anthropic" || provider === "ollama" ? field("모델 이름", model) : null,
         provider === "anthropic" ? ext : null,
-        provider === "auto" || provider === "mock" ? callout("warning", "alert", "데모 판정기는 실제 검사가 아닙니다", "먼저 둘러보기에는 충분하지만, 실제 문서를 검사하려면 나중에 '내 정보'에서 판정 방식을 바꾸세요.") : null);
+        provider === "auto" || provider === "mock" ? callout("warning", "alert", "데모 확인 방식은 실제 검사가 아닙니다", "실제 문서를 점검하려면 설정의 '점검'에서 확인 방식을 바꾸세요.") : null);
       const choices = h("div", {class: "choice-grid"});
       const opts = [["auto", "데모로 먼저 둘러보기", "외부 전송 없음. 나중에 바꿀 수 있습니다.", "eye"],
         ["anthropic", "Anthropic", "API 키와 모델 이름 필요. 문서가 외부로 전송됩니다.", "cloud"],
@@ -2709,8 +2719,8 @@
         drawOnboarding();
       }));
       DA.append(cardNode, [onbStepper(),
-        h("div", {class: "stack-sm"}, h("h2", {}, "판정 방식을 고르세요"),
-          h("p", {class: "muted"}, "실제 모델이 끝까지 점검했을 때만 '검사 완료'로 표시합니다. 데모 판정기 결과는 '실제 검사가 아닙니다'로 구분해 보여 드립니다.")),
+        h("div", {class: "stack-sm"}, h("h2", {}, "확인 방식을 고르세요"),
+          h("p", {class: "muted"}, "실제 모델이 끝까지 점검했을 때만 '검사 완료'로 표시합니다. 데모 확인 방식은 실제 검사가 아닙니다.")),
         choices, extra,
         h("div", {class: "onb-foot"}, h("span", {class: "small muted"}, "선택한 폴더: " + (ONB.folder || "-")), next)]);
     } else {
@@ -2718,7 +2728,7 @@
       const p = st && st.folders[0] ? st.folders[0].progress : null;
       DA.append(cardNode, [onbStepper(),
         h("div", {class: "stack-sm"}, h("h2", {}, "준비가 끝났습니다"),
-          h("p", {class: "muted"}, "폴더를 점검하고 있습니다. 창을 닫아도 트레이 아이콘에서 계속 감시하고, 결정이 바뀌었는데 반영되지 않은 항목이 생기면 알려 드립니다.")),
+          h("p", {class: "muted"}, "폴더를 점검하고 있습니다. 창을 닫아도 트레이에서 계속 확인합니다.")),
         st ? h("div", {class: "row"}, stateBadge(st.overall, "lg"), transmissionBadge(st.provider)) : null,
         p && (p.files_total || p.topics_total) ? h("div", {class: "grid grid-2"}, progressBar(p.files_done, p.files_total, "읽은 파일"), progressBar(p.topics_done, p.topics_total, "점검한 결정")) : null,
         h("div", {class: "onb-foot"}, h("span", {class: "small muted"}, "단축키 Ctrl+Alt+D로 회의 중 빠른 점검 창을 열 수 있습니다."),

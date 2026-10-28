@@ -453,9 +453,9 @@ def test_settings_and_results_screens_draw_sources_as_text_only():
     from decision_agent.desktop.webpage import all_sources
 
     app_js = all_sources()["app.js"]
-    for text in ("메일 소스", "소스 추가", "미리보기", "지금 가져오기", "수정", "삭제", "결정 근거", "할 일 요청",
-                 "요구사항 변경", "이 소스의 메일 본문은 외부 AI로 전송될 수 있습니다", "/api/mail-sources",
-                 "모든 팀", "메일 소스", "출처: ", "메일 사전 분류"):
+    for text in ("메일 연결", "메일 연결 추가", "미리보기", "지금 확인", "수정", "삭제", "결정 근거", "할 일 요청",
+                 "요구사항 변경", "이 메일 연결의 본문은 외부 AI로 전송될 수 있습니다", "/api/mail-sources",
+                 "모든 팀", "출처: ", "메일 사전 분류"):
         assert text in app_js, text
     assert not re.search(r"innerHTML|outerHTML|insertAdjacentHTML|document\.write", app_js)
 

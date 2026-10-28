@@ -337,7 +337,7 @@ def test_profile_settings_are_editable_and_validated(web):
 def test_inbox_records_the_first_completion(web):
     client, _, _, _ = web
     items = client.get("/api/notifications", headers=HEADERS).json()
-    assert any("데모 판정기" in i["text"] for i in items)
+    assert any("데모 확인 방식" in i["text"] for i in items)
 
 
 def test_diagnostics_contain_no_secret_values(web, keys):

@@ -1,18 +1,18 @@
 /* Desktop helper window. The window itself is transparent; only the round button or the
    panel card is painted. */
 :root {
-  --h-text: #111827;
-  --h-muted: #6b7280;
-  --h-line: #e5e7eb;
+  --h-text: #202124;
+  --h-muted: #5f6368;
+  --h-line: #dadce0;
   --h-card: #ffffff;
-  --h-primary: #2563eb;
-  --h-bad: #dc2626;
-  --h-warn: #ea580c;
-  --h-ok: #059669;
-  font-family: "Pretendard", "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
+  --h-primary: #1a73e8;
+  --h-bad: #d93025;
+  --h-warn: #b06000;
+  --h-ok: #188038;
+  font-family: "Segoe UI", "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --h-text: #f3f4f6; --h-muted: #9ca3af; --h-line: #374151; --h-card: #1f2937; }
+  :root { --h-text: #e8eaed; --h-muted: #9aa0a6; --h-line: #5f6368; --h-card: #303134; --h-primary: #8ab4f8; }
 }
 /* The window is cut to a circle or a rounded card by a window region; the corners outside it
    are not drawn. */
@@ -26,7 +26,7 @@ html, body {
 /* round button */
 .orb {
   position: relative; width: 56px; height: 56px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.85);
-  background: #2563eb; color: #fff; cursor: pointer; padding: 0;
+  background: var(--h-primary); color: #fff; cursor: pointer; padding: 0;
   display: flex; align-items: center; justify-content: center;
 }
 .orb:focus-visible { outline: 3px solid #93c5fd; outline-offset: 0; }
@@ -59,7 +59,7 @@ html, body {
 /* panel */
 .panel, .menu {
   box-sizing: border-box; width: 100%; height: 100%; background: var(--h-card); color: var(--h-text);
-  border: 1px solid var(--h-line); border-radius: 14px; font-size: 13px;
+  border: 1px solid var(--h-line); border-radius: 8px; font-size: 13px;
 }
 .panel { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
 .p-head { display: flex; align-items: center; gap: 8px; }
@@ -73,11 +73,11 @@ html, body {
 .p-state.error { color: var(--h-bad); }
 .p-close { border: 0; background: none; color: var(--h-muted); cursor: pointer; font-size: 12px; padding: 2px 4px; }
 .p-meta { display: flex; gap: 10px; align-items: center; font-size: 12px; }
-.p-beat.ok { color: var(--h-ok); font-weight: 600; }
-.p-beat.bad { color: var(--h-bad); font-weight: 600; }
+.p-beat.ok { color: var(--h-ok); font-weight: 500; }
+.p-beat.bad { color: var(--h-bad); font-weight: 500; }
 .p-muted { color: var(--h-muted); }
 .p-doing { margin: 0; padding: 8px 10px; border-radius: 8px; background: rgba(37, 99, 235, 0.08); }
-.p-confirm { border: 0; font: inherit; text-align: left; color: var(--h-warn); font-weight: 600; cursor: pointer; background: rgba(234, 88, 12, 0.1); }
+.p-confirm { border: 0; font: inherit; text-align: left; color: var(--h-warn); font-weight: 500; cursor: pointer; background: rgba(234, 88, 12, 0.1); }
 .p-confirm:hover { background: rgba(234, 88, 12, 0.16); }
 .p-demo { margin: 0; font-size: 12px; color: var(--h-warn); }
 .p-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }

@@ -160,17 +160,17 @@ class GoogleCalendar(_GoogleBase):
 class Gmail(_GoogleBase):
     id = "gmail"
     label = "Gmail"
-    description = "메일 소스에서 정한 라벨, 보낸 사람, 제목 키워드에 맞는 메일을 읽습니다."
+    description = "메일 연결에서 정한 라벨, 보낸 사람, 제목에 맞는 메일을 읽습니다."
     reads = (
-        "메일 소스에서 정한 범위에 맞는 최근 메일의 제목, 날짜, 보낸 사람, 본문 텍스트만 읽습니다. "
-        "Google의 읽기 권한은 메일 전체 범위이지만 이 프로그램은 소스에서 정한 범위만 조회합니다. "
+        "메일 연결에서 정한 범위의 제목, 날짜, 보낸 사람, 본문만 읽습니다. "
+        "Google의 읽기 권한은 메일 전체에 미치지만 이 앱은 정한 범위만 조회합니다. "
         "메일을 보내거나 지우거나 읽음 표시를 바꾸지 않습니다."
     )
     guide = GOOGLE_GUIDE
     scope = GMAIL_SCOPE
     options = (
         OptionSpec("client_id", "클라이언트 ID", required=True),
-        OptionSpec("label", "읽을 라벨 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
+        OptionSpec("label", "읽을 라벨 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 연결에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )

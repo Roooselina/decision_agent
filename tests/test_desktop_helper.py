@@ -345,10 +345,10 @@ def test_new_issue_shakes_only_outside_quiet_hours():
 
 def test_state_label_is_honest_about_demo_and_missing_folders():
     controller = FakeController()
-    controller.status = lambda: status(overall={"state": "demo", "label": "시연용 모드, 실제 검사가 아닙니다."})
+    controller.status = lambda: status(overall={"state": "demo", "label": "데모 모드입니다. 실제 검사가 아닙니다."})
     helper, _ = make_helper(controller)
     data = helper.state()
-    assert data["state_label"] == "시연용 모드" and data["demo"] is True
+    assert data["state_label"] == "데모 모드" and data["demo"] is True
     controller.status = lambda: status(overall={"state": "no_folders", "label": ""})
     assert helper.state()["state_label"] == "폴더 없음"
     controller.status = lambda: status(paused=True)

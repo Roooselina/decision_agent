@@ -86,7 +86,7 @@ SUPERVISE_SECONDS = 30.0
 MAIL_ANALYSIS_DELAY = 30.0
 # Job text of a connectors run that leaves the mail sources to the mail poller.
 NO_MAIL = "-mail"
-PARTIAL_LABEL = "일부만 점검했습니다. 호출 한도를 늘리거나 다시 점검하세요."
+PARTIAL_LABEL = "일부만 점검했습니다. AI 요청 한도를 늘리거나 다시 점검하세요."
 # Settings that only change how the program shows itself. Saving them does not restart the
 # watchers or check the folders again.
 LIGHT_FIELDS = frozenset(
@@ -664,7 +664,7 @@ class DecisionAgentApp:
         for source in self.settings.mail_sources:
             if source.id == source_id:
                 return source
-        raise UserError("메일 소스를 찾지 못했습니다.")
+        raise UserError("메일 연결을 찾지 못했습니다.")
 
     def source_target(self, source: MailSource) -> str | None:
         """The folder whose analysis receives the source's mail (its own, else the default)."""
@@ -718,9 +718,9 @@ class DecisionAgentApp:
         sources = list(self.settings.mail_sources)
         previous = next((s for s in sources if s.id == source_id), None) if source_id else None
         if source_id and previous is None:
-            raise UserError("메일 소스를 찾지 못했습니다.")
+            raise UserError("메일 연결을 찾지 못했습니다.")
         if previous is None and len(sources) >= MAX_MAIL_SOURCES:
-            raise UserError(f"메일 소스는 {MAX_MAIL_SOURCES}개까지 만들 수 있습니다.")
+            raise UserError(f"메일 연결은 {MAX_MAIL_SOURCES}개까지 만들 수 있습니다.")
         if previous is None:
             source_id = new_source_id(str(data.get("name") or ""), {s.id for s in sources})
         confirmed = data.pop("all_mail_confirm", False) is True
@@ -1350,9 +1350,9 @@ class DecisionAgentApp:
         files = info.get("files_ok", 0)
         topics = info.get("topics", 0)
         if self.bundle.local_only:
-            title = "처음 점검을 마쳤습니다" if previous is None else "데모 판정기로 다시 점검했습니다"
+            title = "처음 점검을 마쳤습니다" if previous is None else "데모 확인 방식으로 다시 점검했습니다"
             body = (
-                f"파일 {files}개, 결정 {topics}건. 데모 판정기라 실제 검사가 아닙니다. "
+                f"파일 {files}개, 결정 {topics}건. 데모 확인 방식이라 실제 검사가 아닙니다. "
                 f"반영 안 됨 {total_new}건."
             )
         else:
@@ -1431,7 +1431,7 @@ class DecisionAgentApp:
         runtime.db.meta_put("confirm_notified", "1")
         return (
             "점검 확인이 필요합니다",
-            f"예상 호출 약 {waiting['estimated_calls']}회. 앱을 열어 계속할지 선택해 주세요.",
+            f"예상 AI 요청 약 {waiting['estimated_calls']}회. 앱에서 계속할지 고르세요.",
         )
 
     # data for the UI and the tray
@@ -1930,10 +1930,10 @@ class DecisionAgentApp:
             f"Python: {sys.version.split()[0]}",
             f"화면 방식: {self.ui_mode} {self.ui_reason}".rstrip(),
             (
-                f"판정기: {self.bundle.provider_id} (로컬 전용: {self.bundle.local_only}, "
+                f"확인 방식: {self.bundle.provider_id} (로컬 전용: {self.bundle.local_only}, "
                 f"외부 전송: {self.bundle.sends_externally})"
             ),
-            f"판정기 설명: {self.bundle.reason}",
+            f"확인 방식 설명: {self.bundle.reason}",
             f"API 키: {'저장됨' if secret_store.get_api_key() else '없음'}",
             f"외부 전송 스위치: {'켜짐' if self.settings.allow_external_send else '꺼짐'}",
             f"모델 이름: {self.settings.model_name or '(없음)'}",

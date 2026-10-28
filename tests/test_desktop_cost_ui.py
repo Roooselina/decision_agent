@@ -101,7 +101,7 @@ def test_the_gate_toast_is_shown_once_per_wait(tmp_path):
     app, toasts, root = waiting_app(tmp_path)
     try:
         gate = [b for t, b in toasts if t == GATE_TOAST]
-        assert len(gate) == 1 and re.fullmatch(r"예상 호출 약 \d+회\. 앱을 열어 계속할지 선택해 주세요\.", gate[0])
+        assert len(gate) == 1 and re.fullmatch(r"예상 AI 요청 약 \d+회\. 앱에서 계속할지 고르세요\.", gate[0])
         # Automatic checks that stop at the same gate again stay quiet.
         app.rescan(root)
         assert app.wait_idle(60)
@@ -116,7 +116,7 @@ def test_helper_shows_the_wait_and_opens_home():
     waiting = {"estimated_calls": 520, "calls_so_far": 40, "topics": 12, "limit": 400}
     st = status(overall={"state": "awaiting_confirm", "label": "확인 대기"}, folders=[{"pending_confirm": waiting, "progress": {}}])
     assert helper_state(st) == "attention"
-    assert doing_line(st, []) == "확인 대기: 예상 호출 약 520회"
+    assert doing_line(st, []) == "확인 대기: 예상 AI 요청 약 520회"
     controller = FakeController()
     controller.status = lambda: st
     opened = []
@@ -130,9 +130,9 @@ def test_helper_shows_the_wait_and_opens_home():
 def test_screens_draw_the_new_fields_as_text_only():
     sources = all_sources()
     app_js, helper_js = sources["app.js"], sources["helper.js"]
-    for text in ("AI 사용량 절약", "점검 정밀도", "저가 모델 이름 (선택)", "확인 기준 호출 수", "다음 점검 때 전체를 다시 점검합니다",
+    for text in ("AI 사용량 절약", "정확도 설정", "저가 모델 이름 (선택)", "확인 기준 AI 요청 수", "다음 점검 때 전체를 다시 점검합니다",
                  "허용하고 계속", "나중에", "중단", "지금 점검", "/api/confirm", "/api/folders/later", "/api/folders/stop",
-                 "이번 점검: 모델 호출 ", "호출 내역", "로컬 확인", "AI 확인 없이", "영향 대상 선택", "도구 선택", "기타"):
+                 "이번 점검: AI 요청 ", "AI 요청 내역", "로컬 확인", "AI 확인 없이", "영향 대상 선택", "도구 선택", "기타"):
         assert text in app_js, text
     assert "확인 대기" in sources["common.js"] and 'act("home")' in helper_js
     for name in ("app.js", "common.js", "helper.js"):

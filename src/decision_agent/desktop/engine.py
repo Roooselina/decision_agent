@@ -730,7 +730,7 @@ class ProjectEngine:
                     }
                     self.db.meta_put("pending_confirm", json.dumps(report.pending_confirm))
                     self.progress.activity.add(
-                        f"점검에 약 {estimated}회의 모델 호출이 예상되어 확인을 기다립니다."
+                        f"점검에 AI 요청이 약 {estimated}회 예상되어 확인을 기다립니다."
                     )
                     report.calls_by_task = dict(self.counter.by_task)
                     report.llm_calls = self.counter.calls

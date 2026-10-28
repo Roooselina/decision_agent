@@ -22,6 +22,7 @@ from decision_agent.desktop.autostart import Autostart
 from decision_agent.desktop.engine import ProjectEngine
 from decision_agent.desktop.helper import HelperActions, HelperWindow
 from decision_agent.desktop.hotkey import HotkeyListener, hotkey_status
+from decision_agent.desktop.names import PRODUCT_NAME
 from decision_agent.desktop.notify import CallbackNotifier, ChainNotifier, make_notifier
 from decision_agent.desktop.paths import activity_path, app_home, log_path, state_db_path
 from decision_agent.desktop.providers import build_provider
@@ -124,7 +125,7 @@ def run_command(args: argparse.Namespace) -> int:
             print("이미 실행 중입니다. 열려 있는 창을 앞으로 가져옵니다.")
             return 0
         if not first_instance:
-            print("이미 실행 중인 Decision Agent가 응답하지 않습니다. 잠시 후 다시 시도하세요.", file=sys.stderr)
+            print(f"이미 실행 중인 {PRODUCT_NAME}이 응답하지 않습니다. 잠시 후 다시 시도하세요.", file=sys.stderr)
             return 1
         print(f"포트 {port}를 사용할 수 없습니다. 다른 프로그램이 사용 중일 수 있습니다.", file=sys.stderr)
         return 1

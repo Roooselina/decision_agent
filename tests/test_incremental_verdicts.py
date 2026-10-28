@@ -260,7 +260,7 @@ def test_completion_record_and_home_line_show_reuse(tmp_path):
     engine.analyze(force=True)
     assert engine.completion()["judged_lines"] == 0 and engine.completion()["reused_lines"] > 0
     app_js = all_sources()["app.js"]
-    for text in ("새로 판단한 줄 ", "이전 결과 재사용 ", ", 모델 호출 "):
+    for text in ("새로 판단한 줄 ", "이전 결과 재사용 ", ", AI 요청 "):
         assert text in app_js, text
 
 

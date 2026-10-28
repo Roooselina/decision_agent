@@ -127,10 +127,10 @@ class OutlookCalendar(_MicrosoftBase):
 class OutlookMail(_MicrosoftBase):
     id = "outlook_mail"
     label = "Outlook 메일"
-    description = "메일 소스에서 정한 폴더의 메일을 읽습니다."
+    description = "메일 연결에서 정한 폴더의 메일을 읽습니다."
     reads = (
-        "메일 소스에서 정한 폴더의 최근 메일 제목, 날짜, 보낸 사람, 본문 텍스트만 읽습니다 (Mail.Read). "
-        "Microsoft의 읽기 권한은 메일 전체 범위이지만 이 프로그램은 소스에서 정한 폴더만 조회합니다. "
+        "메일 연결에서 정한 폴더의 제목, 날짜, 보낸 사람, 본문만 읽습니다 (Mail.Read). "
+        "Microsoft의 읽기 권한은 메일 전체에 미치지만 이 앱은 정한 폴더만 조회합니다. "
         "메일을 보내거나 지우거나 읽음 표시를 바꾸지 않습니다."
     )
     guide = MICROSOFT_GUIDE
@@ -138,7 +138,7 @@ class OutlookMail(_MicrosoftBase):
     options = (
         OptionSpec("client_id", "애플리케이션(클라이언트) ID", required=True),
         OptionSpec("tenant", "테넌트", default="common"),
-        OptionSpec("folder", "읽을 메일 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 소스에서 정합니다."),
+        OptionSpec("folder", "읽을 메일 폴더 이름", help="이전 버전 설정입니다. 읽을 범위는 메일 연결에서 정합니다."),
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )

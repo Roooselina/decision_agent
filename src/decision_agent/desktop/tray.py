@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from decision_agent.desktop.app import DecisionAgentApp
 from decision_agent.desktop.autostart import Autostart
+from decision_agent.desktop.names import PRODUCT_NAME
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def tray_state(status: dict) -> str:
 
 
 def tray_title(status: dict) -> str:
-    return f"결정 변경 점검 - 반영 안 됨 {status['inconsistent']}건, 질문 {status['questions']}건"
+    return f"{PRODUCT_NAME} - 반영 안 됨 {status['inconsistent']}건, 질문 {status['questions']}건"
 
 
 def make_icon_image(state: str, size: int = 64):
@@ -127,11 +128,11 @@ class TrayApp:
         spec: list[MenuSpec] = [
             MenuSpec(status_line, None, enabled=False),
             MenuSpec("", separator=True),
-            MenuSpec("대시보드 열기", self.open_ui, default=True),
-            MenuSpec("빠른 점검 (회의 중 메모)", self.open_quick or self.open_ui),
-            MenuSpec("지금 다시 점검", controller.rescan),
+            MenuSpec("열기", self.open_ui, default=True),
+            MenuSpec("빠른 점검", self.open_quick or self.open_ui),
+            MenuSpec("지금 점검", controller.rescan),
             MenuSpec("일시 중지", toggle_pause, checked=lambda: controller.paused),
-            MenuSpec("감시 폴더 추가...", add_folder),
+            MenuSpec("폴더 추가", add_folder),
         ]
         if self.autostart is not None and self.autostart.supported:
             autostart = self.autostart
@@ -246,7 +247,7 @@ def pick_folder_dialog() -> str | None:
         root = tkinter.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        chosen = filedialog.askdirectory(title="감시할 폴더 선택")
+        chosen = filedialog.askdirectory(title="폴더 추가")
         root.destroy()
         return chosen or None
     except Exception:  # noqa: BLE001 - no display or Tk failure

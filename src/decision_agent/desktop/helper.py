@@ -21,9 +21,11 @@ import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from decision_agent.desktop.names import PRODUCT_NAME
+
 log = logging.getLogger(__name__)
 
-HELPER_TITLE = "Decision Agent 도우미"
+HELPER_TITLE = f"{PRODUCT_NAME} 도우미"
 ICON_SIZE = 56
 PANEL_SIZE = (320, 440)
 MENU_SIZE = (200, 232)
@@ -160,11 +162,11 @@ def doing_line(status: dict, pending: list[dict]) -> str:
     for folder in status.get("folders", []):
         waiting = folder.get("pending_confirm")
         if waiting and not status.get("busy"):
-            return f"확인 대기: 예상 호출 약 {waiting['estimated_calls']}회"
+            return f"확인 대기: 예상 AI 요청 약 {waiting['estimated_calls']}회"
     for folder in status.get("folders", []):
         p = folder.get("progress") or {}
         if p.get("phase") == "checking" and p.get("topics_total"):
-            return f"판정 {p['topics_done']}/{p['topics_total']}"
+            return f"확인 {p['topics_done']}/{p['topics_total']}"
         if p.get("phase") == "extracting" and p.get("extract_total"):
             return f"결정 추출 {p['extract_done']}/{p['extract_total']}"
         if p.get("phase") == "reading" and p.get("files_total"):
@@ -209,10 +211,11 @@ def snapshot(controller: Any, now: float | None = None) -> dict:
     if overall.get("state") == "no_folders" and state == "paused" and not status.get("paused"):
         label = "폴더 없음"
     elif overall.get("state") == "demo" and state == "normal":
-        label = "시연용 모드"
+        label = "데모 모드"
     elif overall.get("state") == "awaiting_confirm" and state == "attention":
         label = "확인 대기"
     return {
+        "product": PRODUCT_NAME,
         "state": state,
         "state_label": label,
         "color": COLORS[state],

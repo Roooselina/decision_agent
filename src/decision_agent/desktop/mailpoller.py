@@ -248,7 +248,7 @@ class MailPoller:
             if new:
                 line += f" · 새 메일 {new}통"
             if failing:
-                line += " · 일부 소스 확인 실패, 다시 시도합니다"
+                line += " · 일부 메일 연결 확인 실패, 다시 시도합니다"
         else:
             line = "확인 대기 중"
         return {"line": line, "running": self.running, "interval": self.interval(), "sources": rows}

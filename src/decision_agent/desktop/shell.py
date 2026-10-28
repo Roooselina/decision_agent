@@ -8,12 +8,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from decision_agent.desktop.names import PRODUCT_NAME
 from decision_agent.desktop.uistate import MIN_HEIGHT, MIN_WIDTH, load_ui_state, save_ui_state
 
 log = logging.getLogger(__name__)
 
-APP_TITLE = "Decision Agent - 결정 변경 점검"
-QUICK_TITLE = "빠른 점검 - Decision Agent"
+APP_TITLE = PRODUCT_NAME
+QUICK_TITLE = f"빠른 점검 - {PRODUCT_NAME}"
 QUICK_SIZE = (480, 640)
 MUTEX_NAME = "DecisionAgentSingleInstance"
 WEBVIEW2_CLIENT = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"

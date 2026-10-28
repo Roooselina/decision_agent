@@ -82,7 +82,7 @@ MAIL_STATS = (
     "known", "deferred", "stored_only",
 )
 NO_SUBJECT = "(제목 없음)"
-NO_SCOPE = "읽을 범위가 없습니다. 설정에서 메일 소스를 추가하세요."
+NO_SCOPE = "읽을 범위가 없습니다. 설정에서 메일 연결을 추가하세요."
 
 
 def new_mail_stats() -> dict[str, int]:

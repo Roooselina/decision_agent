@@ -525,7 +525,7 @@ def create_web_app(
     @app.post("/api/mail/check", dependencies=auth)
     def mail_check(body: CheckBody):
         if not controller.check_mail_now(body.source_id):
-            raise HTTPException(status_code=400, detail="메일 소스를 먼저 추가하세요.")
+            raise HTTPException(status_code=400, detail="메일 연결을 먼저 추가하세요.")
         return {"ok": True}
 
     @app.get("/api/mail/threads", dependencies=auth)

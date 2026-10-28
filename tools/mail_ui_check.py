@@ -1,4 +1,4 @@
-"""Headless check of the mail screens: the home mail card and the mail page.
+"""Headless check of the screens: home, mail, folders, settings and quick check.
 
 Runs the app with a temporary home, a generated copy of demo_capstone and a fake Gmail account
 holding the five demo threads (tools/fake_gmail.py), lets the real mail poller read them, then
@@ -6,6 +6,7 @@ opens the screens in Chromium at 900, 1200 and 1600 pixels in light and dark the
 
 Checks, failing with a list of problems:
 - no element of the home mail card extends outside the card, and no two home cards overlap
+- on every screen, no two visible controls (buttons, links, inputs) overlap
 - no horizontal page overflow
 - no console errors or uncaught page errors
 - the conversation of thread T2 shows four messages, two of them mine
@@ -63,6 +64,43 @@ OVERLAP_JS = """
   return hits;
 }
 """
+
+
+# Visible controls whose boxes intersect (not nested in each other) on the current screen.
+CONTROLS_OVERLAP_JS = """
+() => {
+  const nodes = Array.from(document.querySelectorAll('button, a, input, select, textarea'))
+    .filter(el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+      return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none'
+        && r.bottom > 0 && r.top < window.innerHeight; });
+  // The visible part of an element: clipped by every scrolling or clipping ancestor.
+  const visible = (el) => {
+    let r = el.getBoundingClientRect();
+    r = {left: r.left, right: r.right, top: r.top, bottom: r.bottom};
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const s = getComputedStyle(p);
+      if (/(auto|scroll|hidden)/.test(s.overflowY + s.overflowX)) {
+        const c = p.getBoundingClientRect();
+        r = {left: Math.max(r.left, c.left), right: Math.min(r.right, c.right), top: Math.max(r.top, c.top), bottom: Math.min(r.bottom, c.bottom)};
+      }
+    }
+    return r;
+  };
+  const hits = [];
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const a = nodes[i], b = nodes[j];
+    if (a.contains(b) || b.contains(a)) continue;
+    const r = visible(a), q = visible(b);
+    if (r.right <= r.left || r.bottom <= r.top || q.right <= q.left || q.bottom <= q.top) continue;
+    if (r.left < q.right - 2 && q.left < r.right - 2 && r.top < q.bottom - 2 && q.top < r.bottom - 2) {
+      hits.push((a.textContent || a.className || a.tagName).trim().slice(0, 20) + " / " + (b.textContent || b.className || b.tagName).trim().slice(0, 20));
+    }
+  }
+  return hits.slice(0, 5);
+}
+"""
+SCREENS = [("folders", "#/folders"), ("settings-connect", "#/settings?tab=connect"), ("settings-check", "#/settings?tab=check"),
+           ("settings-alerts", "#/settings?tab=alerts"), ("settings-advanced", "#/settings?tab=advanced"), ("results", "#/results")]
 
 
 def free_port() -> int:
@@ -147,6 +185,8 @@ def main() -> int:
                         problems.append(f"[{tag}] home card shows {rows} threads, expected 5")
                     if page.locator(".mail-card select, .mail-card input, .mail-card details").count():
                         problems.append(f"[{tag}] home mail card still has filter controls")
+                    for hit in page.evaluate(CONTROLS_OVERLAP_JS):
+                        problems.append(f"[{tag}] home: overlapping controls: {hit}")
                     page.screenshot(path=str(out / f"{tag}-home.png"))
                     page.goto(f"http://127.0.0.1:{port}/#/mail")
                     page.wait_for_selector(".trow", timeout=20000)
@@ -159,7 +199,22 @@ def main() -> int:
                         problems.append(f"[{tag}] T2 conversation does not show 4 messages with 2 of mine")
                     if page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):
                         problems.append(f"[{tag}] horizontal overflow on the mail page")
+                    for hit in page.evaluate(CONTROLS_OVERLAP_JS):
+                        problems.append(f"[{tag}] mail: overlapping controls: {hit}")
                     page.screenshot(path=str(out / f"{tag}-mail-thread.png"))
+                    for name, route in SCREENS:
+                        page.goto(f"http://127.0.0.1:{port}/{route}")
+                        page.wait_for_timeout(900)
+                        if page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):
+                            problems.append(f"[{tag}] horizontal overflow on {name}")
+                        for hit in page.evaluate(CONTROLS_OVERLAP_JS):
+                            problems.append(f"[{tag}] {name}: overlapping controls: {hit}")
+                        page.screenshot(path=str(out / f"{tag}-{name}.png"), full_page=True)
+                    page.goto(f"http://127.0.0.1:{port}/quick")
+                    page.wait_for_timeout(800)
+                    if page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):
+                        problems.append(f"[{tag}] horizontal overflow on quick")
+                    page.screenshot(path=str(out / f"{tag}-quick.png"))
                     context.close()
             browser.close()
     finally:

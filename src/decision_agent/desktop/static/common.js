@@ -4,6 +4,8 @@
 "use strict";
 
 const DA = (() => {
+  // The product name, in one place.
+  const PRODUCT_NAME = "결정 변경 점검";
   const TOKEN = window.DA_BOOT.token;
   const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -455,7 +457,7 @@ const DA = (() => {
   // verified: only a real model that checked everything is shown as 정상 / 검사 완료.
   const STATES = {
     verified: {kind: "success", cls: "ok", icon: "check", short: "정상"},
-    demo: {kind: "warning", cls: "demo", icon: "alert-circle", short: "시연용 모드"},
+    demo: {kind: "warning", cls: "demo", icon: "alert-circle", short: "데모 모드"},
     failed: {kind: "danger", cls: "error", icon: "alert-circle", short: "오류"},
     retrying: {kind: "warning", cls: "attention", icon: "alert-circle", short: "확인 필요"},
     partial: {kind: "warning", cls: "attention", icon: "alert-circle", short: "일부만 점검"},
@@ -520,13 +522,13 @@ const DA = (() => {
 
   function providerName(id) {
     if (!id) return "-";
-    return {demo: "시연용 판정기", local: "로컬 AI", external: "외부 AI"}[providerKind(id)];
+    return {demo: "데모 확인 방식", local: "로컬 AI", external: "외부 AI"}[providerKind(id)];
   }
 
   return {
     h, set, append, icon, api, ApiError, button, busy, badge, field, input, textarea, select, toggle, segmented, callout,
     progressBar, skeleton, emptyState, errorState, toast, modal, confirmDialog, drawer, anyLayerOpen, copyText,
     applyTheme, initTheme, fmtTime, relTime, stateInfo, stateBadge, transmissionBadge, labelBadge, LABELS, KINDS,
-    providerName, providerKind, agentState, STATES,
+    providerName, providerKind, agentState, STATES, PRODUCT_NAME,
   };
 })();

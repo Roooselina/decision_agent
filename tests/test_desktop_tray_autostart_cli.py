@@ -72,14 +72,14 @@ def test_tray_menu_actions():
     )
     menu = {m.label if isinstance(m.label, str) else "status": m for m in tray.menu_spec() if not m.separator}
     assert menu["status"].enabled is False and "반영 안 됨" in menu["status"].label()
-    assert menu["대시보드 열기"].default is True
-    menu["대시보드 열기"].action()
-    menu["지금 다시 점검"].action()
+    assert menu["열기"].default is True
+    menu["열기"].action()
+    menu["지금 점검"].action()
     menu["일시 중지"].action()
     assert controller.paused and menu["일시 중지"].checked()
     menu["일시 중지"].action()
     assert not controller.paused
-    menu["감시 폴더 추가..."].action()
+    menu["폴더 추가"].action()
     assert controller.added == ["/some/folder"]
     assert menu["Windows 시작 시 자동 실행"].checked() is False
     menu["Windows 시작 시 자동 실행"].action()
@@ -239,7 +239,7 @@ def test_tray_has_quick_check_and_digest_entries():
     )
     tray.notify = lambda title, message: toasts.append((title, message))
     menu = {m.label: m for m in tray.menu_spec() if not m.separator and isinstance(m.label, str)}
-    menu["빠른 점검 (회의 중 메모)"].action()
+    menu["빠른 점검"].action()
     menu["오늘 요약 만들기"].action()
     assert opened == ["quick", "digest"] and toasts == [("오늘 요약", "불일치 1건")]
 
@@ -248,7 +248,7 @@ def test_tray_quick_entry_falls_back_to_the_dashboard():
     opened = []
     tray = TrayApp(FakeController(), open_ui=lambda: opened.append("ui"), quit_app=lambda: None)
     menu = {m.label: m for m in tray.menu_spec() if not m.separator and isinstance(m.label, str)}
-    menu["빠른 점검 (회의 중 메모)"].action()
+    menu["빠른 점검"].action()
     assert opened == ["ui"] and "오늘 요약 만들기" not in menu
 
 
