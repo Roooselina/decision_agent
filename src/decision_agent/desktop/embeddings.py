@@ -10,6 +10,7 @@ import numpy as np
 from decision_agent.connectors.http import Http, HttpError, UrllibHttp
 from decision_agent.desktop.state import StateDB
 from decision_agent.models import Artifact
+from decision_agent.ranking import stable_order
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def make_extra_ranker(embedder: OllamaEmbedder) -> Callable[[str, list[Artifact]
         norms[norms == 0] = 1.0
         unit = vectors / norms[:, None]
         sims = unit[1:] @ unit[0]
-        order = np.argsort(-sims)
+        order = stable_order(sims, [a.id for a in artifacts])
         return [artifacts[i] for i in order[:MAX_EXTRA] if sims[i] >= MIN_SIMILARITY]
 
     return rank

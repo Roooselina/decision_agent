@@ -9,6 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from decision_agent.config import DEFAULT_SETTINGS, effective_k
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import Artifact, Decision, DecisionRelation
+from decision_agent.ranking import stable_order
 from decision_agent.scope import scope_overlaps
 from decision_agent.storage import SQLiteStore
 
@@ -50,7 +51,7 @@ def _rank_candidates(
     matrix = _vectorizer().fit_transform([a.text for a in artifacts] + [query])
     sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
     result: list[Artifact] = []
-    for i in sims.argsort()[::-1]:
+    for i in stable_order(sims, [a.id for a in artifacts]):
         if sims[i] <= 0.0:
             break
         artifact = artifacts[i]

@@ -7,6 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from decision_agent.config import DEFAULT_SETTINGS
+from decision_agent.ranking import stable_order
 
 
 def _vectorizer() -> TfidfVectorizer:
@@ -22,7 +23,7 @@ def rank_similar(query: str, texts: list[str], limit: int = 8, minimum: float = 
         return []
     matrix = _vectorizer().fit_transform(texts + [query])
     sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
-    order = sims.argsort()[::-1][:limit]
+    order = stable_order(sims, [f"{i:08d}" for i in range(len(texts))])[:limit]
     return [(int(i), float(sims[i])) for i in order if sims[i] >= minimum]
 
 
