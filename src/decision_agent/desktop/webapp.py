@@ -511,14 +511,15 @@ def create_web_app(
         return {"ok": True}
 
     @app.get("/api/mail/threads", dependencies=auth)
-    def thread_list(box: str = "all", label: str = "", q: str = "", since: str = "", sender: str = "",
-                    limit: int = 50, offset: int = 0):
+    def thread_list(box: str = "all", label: str = "", q: str = "", since: str = "", until: str = "",
+                    sender: str = "", limit: int = 50, offset: int = 0):
         if box not in {"all", "inbox", "sent"}:
             raise HTTPException(status_code=400, detail="편지함 이름이 올바르지 않습니다.")
-        if since and not DATE_PARAM.match(since):
-            raise HTTPException(status_code=400, detail="날짜는 YYYY-MM-DD 형식이어야 합니다.")
+        for value in (since, until):
+            if value and not DATE_PARAM.match(value):
+                raise HTTPException(status_code=400, detail="날짜는 YYYY-MM-DD 형식이어야 합니다.")
         return controller.thread_list({
-            "box": box, "label": label[:80], "q": q[:200], "since": since, "sender": sender[:100],
+            "box": box, "label": label[:80], "q": q[:200], "since": since, "until": until, "sender": sender[:100],
             "limit": max(1, min(50, limit)), "offset": max(0, offset),
         })
 

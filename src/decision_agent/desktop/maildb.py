@@ -411,6 +411,14 @@ class MailDB:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def deadline_thread_keys(self) -> set[str]:
+        with self.lock:
+            rows = self.conn.execute(
+                "SELECT DISTINCT m.thread_key FROM mail_hints h JOIN mail_index m ON m.uid = h.uid "
+                "WHERE h.kind='deadline'"
+            ).fetchall()
+        return {r["thread_key"] for r in rows}
+
     def deadline_uids(self) -> set[str]:
         with self.lock:
             rows = self.conn.execute("SELECT DISTINCT uid FROM mail_hints WHERE kind='deadline'").fetchall()

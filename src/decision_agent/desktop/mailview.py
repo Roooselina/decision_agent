@@ -12,9 +12,10 @@ import sqlite3
 
 from sklearn.metrics.pairwise import cosine_similarity
 
+from decision_agent.connectors.base import unique_name
 from decision_agent.connectors.mailfilter import sender_matches
 from decision_agent.desktop import quick as quick_module
-from decision_agent.desktop.maildb import MailDB
+from decision_agent.desktop.maildb import MailDB, thread_uid
 from decision_agent.desktop.mailsources import CONNECTOR_LABELS, PURPOSE_LABELS
 from decision_agent.desktop.settings import MailSource
 
@@ -164,6 +165,7 @@ def read_mail(maildb: MailDB, sources: list[MailSource], uid: str) -> dict | Non
     # Dates found in the mail ("메일 속 날짜"): hints only, never used by the analysis.
     item["hints"] = maildb.hints(uid)
     item["deadline"] = any(h["kind"] == "deadline" for h in item["hints"])
+    item["thread"] = thread_uid(row["thread_key"]) if row["thread_key"] else ""
     return item
 
 
@@ -214,7 +216,12 @@ def related_mail(
 
     timeline=True returns them by date ascending, to show how a topic developed by mail.
     """
-    rows = [r for r in maildb.all_rows() if r["uid"] != exclude]
+    rows = maildb.all_rows()
+    if exclude:
+        # Mail of the same conversation is not "similar mail", it is the conversation itself.
+        own = maildb.get(exclude)
+        key = own["thread_key"] if own is not None else ""
+        rows = [r for r in rows if r["uid"] != exclude and not (key and r["thread_key"] == key)]
     if not text.strip() or not rows:
         return []
     # A mail scores by its best unit (the subject or one body line): a long mail that holds
@@ -266,17 +273,11 @@ def _chips(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str,
     chips: list[dict] = []
 
     def add(text: str, kind: str, color: str = "", key: str = "") -> None:
-        if text and not any(c["text"] == text and c["kind"] == kind for c in chips):
+        if text and not any(c["text"] == text for c in chips):
             chips.append({"text": text, "kind": kind, "color": color, "key": key})
 
     source_ids = json.loads(thread["source_ids"] or "[]")
-    for sid in source_ids:
-        source = sources.get(sid)
-        if source is not None:
-            add(source.team, "team", key=f"team:{source.team}")
-            add(PURPOSE_LABELS.get(source.purpose, ""), "purpose", key=f"purpose:{source.purpose}")
-    for name in json.loads(thread["labels"] or "[]"):
-        add(name, "gmail", key=f"gmail:{name}")
+    # My own labels first: they are what the user chose to see; then team, purpose, Gmail.
     ids = set(thread_links.get(thread["thread_key"], set()))
     for sid in source_ids:
         ids |= source_links.get(sid, set())
@@ -284,6 +285,13 @@ def _chips(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str,
         label = local.get(label_id)
         if label is not None:
             add(label["name"], "local", label["color"], f"local:{label_id}")
+    for sid in source_ids:
+        source = sources.get(sid)
+        if source is not None:
+            add(source.team, "team", key=f"team:{source.team}")
+            add(PURPOSE_LABELS.get(source.purpose, ""), "purpose", key=f"purpose:{source.purpose}")
+    for name in json.loads(thread["labels"] or "[]"):
+        add(name, "gmail", key=f"gmail:{name}")
     return chips
 
 
@@ -292,6 +300,27 @@ def _analysis_badge(source_ids: list[str], sources: dict[str, MailSource]) -> st
     if known and all(s.effective_analysis == "off" for s in known):
         return "점검 안 함"
     return "점검됨"
+
+
+def mail_doc_path(source: MailSource, row: sqlite3.Row) -> str:
+    """The analysis document path of one stored mail (as mail_document names it)."""
+    name = unique_name(f"{row['date']} {row['subject'].strip()}", row["msg_id"])
+    return f"@{source.connector}.{source.id}/{name}"
+
+
+def _thread_decisions(maildb: MailDB, thread: sqlite3.Row, sources: dict[str, MailSource],
+                      decisions: dict[str, list[dict]]) -> list[dict]:
+    """Decided topics whose latest decision came from a mail of this thread."""
+    found: dict[str, dict] = {}
+    if not decisions:
+        return []
+    for row in maildb.thread_rows_by_key(thread["thread_key"]):
+        source = sources.get(row["source_id"])
+        if source is None:
+            continue
+        for item in decisions.get(mail_doc_path(source, row), []):
+            found.setdefault(item["topic"], item)
+    return list(found.values())
 
 
 def _thread_item(thread: sqlite3.Row, sources: dict[str, MailSource], local: dict[str, dict],
@@ -312,18 +341,32 @@ def _thread_item(thread: sqlite3.Row, sources: dict[str, MailSource], local: dic
     }
 
 
-def list_threads(maildb: MailDB, sources: list[MailSource], params: dict) -> dict:
-    """Threads for the mail page and the home card, with the counts of the label sidebar."""
+def list_threads(maildb: MailDB, sources: list[MailSource], params: dict,
+                 decisions: dict[str, list[dict]] | None = None) -> dict:
+    """Threads for the mail page and the home card, with the counts of the label sidebar.
+
+    decisions maps an analysis document path to the topics it decided (latest decision);
+    a thread whose mail decided something shows "결정 N건".
+    """
     by_id = {s.id: s for s in sources}
     local = {label["id"]: label for label in maildb.labels()}
     links = maildb.label_links()
     rows = maildb.threads()
-    items = [_thread_item(r, by_id, local, links) for r in rows]
+    deadlines = maildb.deadline_thread_keys()
+    items = []
+    for row in rows:
+        item = _thread_item(row, by_id, local, links)
+        item["deadline"] = row["thread_key"] in deadlines
+        found = _thread_decisions(maildb, row, by_id, decisions or {})
+        if found:
+            item["analysis"] = f"결정 {len(found)}건"
+        items.append(item)
     received = {r["tid"] for r in rows if r["count"] > 0 and _has_received(maildb, r)}
     box = str(params.get("box") or "all")
     label = str(params.get("label") or "")
     q = str(params.get("q") or "").strip().casefold()
     since = str(params.get("since") or "")
+    until = str(params.get("until") or "")
     sender = str(params.get("sender") or "").strip().casefold()
 
     def keep(item: dict) -> bool:
@@ -334,6 +377,8 @@ def list_threads(maildb: MailDB, sources: list[MailSource], params: dict) -> dic
         if label and not any(c["key"] == label for c in item["chips"]):
             return False
         if since and item["date"] < since:
+            return False
+        if until and item["date"] > until:
             return False
         if sender and not any(sender in p.casefold() for p in item["participants"]):
             return False
@@ -398,7 +443,8 @@ def _body_matches(maildb: MailDB, tid: str, needle: str) -> bool:
     return any(needle in (r["body"] or "").casefold() for r in maildb.thread_rows_by_key(thread["thread_key"]))
 
 
-def read_thread(maildb: MailDB, sources: list[MailSource], tid: str) -> dict | None:
+def read_thread(maildb: MailDB, sources: list[MailSource], tid: str,
+                decisions: dict[str, list[dict]] | None = None) -> dict | None:
     """One conversation, oldest first, with quoted text and signatures kept apart."""
     thread = maildb.thread(tid)
     if thread is None:
@@ -423,9 +469,13 @@ def read_thread(maildb: MailDB, sources: list[MailSource], tid: str) -> dict | N
             "quoted": row["quoted"],
             "signature": row["signature"],
             "unread": bool(row["unread"]),
+            "included": bool(row["include"]),
+            "uid": row["uid"],
             "hints": maildb.hints(row["uid"]),
             "source": by_id[row["source_id"]].name if row["source_id"] in by_id else "",
         })
     item["messages"] = messages
     item["local_labels"] = sorted(links[0].get(thread["thread_key"], set()))
+    item["decisions"] = _thread_decisions(maildb, thread, by_id, decisions or {})
+    item["deadline"] = thread["thread_key"] in maildb.deadline_thread_keys()
     return item

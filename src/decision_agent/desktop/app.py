@@ -1115,14 +1115,35 @@ class DecisionAgentApp:
 
     # conversations and local labels (stored in the mail index only, never in the account)
 
+    def mail_decisions(self) -> dict[str, list[dict]]:
+        """Analysis document path -> topics whose latest decision came from that document,
+        with the number of open findings, so a thread can link to what it decided."""
+        found: dict[str, list[dict]] = {}
+        open_by_topic: dict[tuple[str, str], int] = {}
+        for key, runtime in self._each():
+            for row in runtime.db.list_findings():
+                if row["label"] == "INCONSISTENT":
+                    open_by_topic[(key, row["topic"])] = open_by_topic.get((key, row["topic"]), 0) + 1
+            with runtime.db.lock:
+                topics = runtime.db.conn.execute("SELECT topic FROM topics").fetchall()
+            for row in topics:
+                summary = self._topic_summary(runtime, row["topic"])
+                path = str(summary.get("source") or "")
+                if path.startswith(EXTERNAL_PREFIX):
+                    found.setdefault(path, []).append({
+                        "topic": row["topic"], "label": self._topic_label(runtime, row["topic"]),
+                        "text": summary.get("latest", ""), "findings": open_by_topic.get((key, row["topic"]), 0),
+                    })
+        return found
+
     def thread_list(self, params: dict) -> dict:
-        result = mailview.list_threads(self.maildb, list(self.settings.mail_sources), params)
+        result = mailview.list_threads(self.maildb, list(self.settings.mail_sources), params, self.mail_decisions())
         result["state"] = self.mail_state()
         result["sources"] = len(self.settings.mail_sources)
         return result
 
     def thread_read(self, tid: str) -> dict:
-        item = mailview.read_thread(self.maildb, list(self.settings.mail_sources), tid)
+        item = mailview.read_thread(self.maildb, list(self.settings.mail_sources), tid, self.mail_decisions())
         if item is None:
             raise UserError("대화를 찾지 못했습니다.")
         return item

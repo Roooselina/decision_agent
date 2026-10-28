@@ -200,13 +200,15 @@ class MailPoller:
             mailsources.save_status(runtime.db, source, status)
         maildb.meta_put(state_key, json.dumps(new_state))
         poll.ok, poll.message, poll.failures = True, "", 0
-        poll.new = new
+        # The first fetch of a source only fills the index; "new" means arrived since then.
+        first = not state
+        poll.new = 0 if first else new
         poll.checked_at = datetime.datetime.now().strftime("%H:%M")
         poll.next_due = self.clock() + self.interval()
         log.info("mail poller: one source checked, %d new", new)
         if docs_changed and source.effective_analysis != "off":
             app.schedule_mail_analysis(target)
-        if new and wants_toast(source):
+        if poll.new and wants_toast(source):
             app.mail_arrived(source, new)
 
     # status for the pages

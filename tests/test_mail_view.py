@@ -112,8 +112,12 @@ def test_screens_have_the_mail_view_and_render_text_only():
     sources = all_sources()
     app_js = sources["app.js"]
     for text in ('"캘린더"', '"메일"', "da.home.panel", "localStorage", "이 메일을 분석에 포함", "이 날 받은 메일 ",
-                 "주소록에 있는 사람", "묶지 않음", "마감 있음", "/api/mail?"):
+                 "마감 있음", "/api/mail/threads", "/api/mail/state", "받은 편지", "보낸 편지", "내 라벨", "+ 라벨",
+                 "메일 열기", "목록으로", "점검 안 함", "지금 확인", "주소록"):
         assert text in app_js, text
+    # The home mail card is a plain list: no filter popover, select or input inside it.
+    home_card = app_js[app_js.index("function homeMailCard"): app_js.index("function mailQuery")]
+    assert "필터와 묶기" not in app_js and not re.search(r"selectControl|input\(|<details|\"details\"", home_card)
     # Storage is optional: every access is wrapped so the page works without it.
     assert "try { return localStorage.getItem" in app_js and "try { localStorage.setItem" in app_js
     for name in ("app.js", "common.js"):

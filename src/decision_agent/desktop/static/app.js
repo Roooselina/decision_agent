@@ -407,150 +407,337 @@
   function homePanel(week, st) {
     const mode = readPanel();
     const switcher = segmented([["calendar", "캘린더"], ["mail", "메일"]], mode, (v) => { writePanel(v); renderRoute(true); }, "캘린더 또는 메일");
-    if (mode === "mail") {
-      return h("section", {class: "card home-card cal-card mail-card", "aria-label": "메일"},
-        h("div", {class: "home-card-head"}, h("h2", {}, "메일"), switcher), mailPanel(true));
-    }
+    if (mode === "mail") return homeMailCard(switcher);
     const card = calendarCard(week, st);
     const head = card.querySelector(".home-card-head");
     if (head) head.appendChild(switcher);
     return card;
   }
 
-  // ---------------------------------------------------------------- mail view
+  // ---------------------------------------------------------------- mail: home card and mail page
 
-  const MS = {group: "", team: "", sender: "", book: "", purpose: "", source: "", period: "30", day: "", q: "", offset: 0, selected: null};
-  const MAIL_GROUPS = [["", "묶지 않음"], ["date", "날짜"], ["team", "팀"], ["sender", "보낸 사람"], ["purpose", "용도"], ["source", "소스"]];
-  const MAIL_PERIODS = [["7", "최근 7일"], ["30", "최근 30일"], ["90", "최근 90일"], ["365", "최근 1년"], ["all", "전체 기간"]];
+  // The mail page keeps its place (box, label, open thread) while the app runs.
+  const MP = {box: "all", label: "", q: "", period: "all", day: "", sender: "", selected: null, seq: -1};
+  const MAIL_PERIODS = [["all", "전체 기간"], ["7", "7일"], ["30", "30일"], ["90", "90일"]];
+  const MAIL_BOXES = [["all", "전체", "inbox"], ["inbox", "받은 편지", "mail"], ["sent", "보낸 편지", "upload"]];
+  const LABEL_COLORS = [["blue", "파랑"], ["green", "초록"], ["orange", "주황"], ["red", "빨강"], ["purple", "보라"], ["gray", "회색"]];
+  // The open pages learn about new mail from local state only (a change counter).
+  const MAIL_WATCH = {seq: -1, listeners: new Set(), timer: null, events: 0};
 
-  function mailParams() {
-    const p = new URLSearchParams();
-    for (const k of ["group", "team", "sender", "book", "purpose", "source", "q"]) if (MS[k]) p.set(k, MS[k]);
-    if (MS.day) { p.set("since", MS.day); p.set("until", MS.day); }
-    else if (MS.period !== "all") p.set("since", addDays(isoDay(new Date()), -Number(MS.period)));
-    p.set("offset", String(MS.offset));
+  function watchMail(fn) {
+    MAIL_WATCH.listeners.add(fn);
+    if (!MAIL_WATCH.timer) {
+      MAIL_WATCH.timer = setInterval(async () => {
+        if (!MAIL_WATCH.listeners.size) return;
+        let state;
+        try { state = await api("/api/mail/state"); } catch (e) { return; }
+        const events = state.events || [];
+        if (MAIL_WATCH.seq >= 0 && events.length > MAIL_WATCH.events) toast(events[events.length - 1].text, "info");
+        MAIL_WATCH.events = events.length;
+        if (state.seq !== MAIL_WATCH.seq) {
+          const first = MAIL_WATCH.seq < 0;
+          MAIL_WATCH.seq = state.seq;
+          if (!first) MAIL_WATCH.listeners.forEach(f => { if (f.node && !f.node.isConnected) MAIL_WATCH.listeners.delete(f); else f(state); });
+        }
+      }, REFRESH_MS);
+    }
+  }
+
+  function threadPeople(t) {
+    const names = (t.participants || []).slice(0, 3).join(", ");
+    return names + (t.count > 1 ? " (" + t.count + ")" : "");
+  }
+
+  function threadWhen(t) {
+    return t.date === isoDay(new Date()) && t.time ? t.time : shortDate(t.date);
+  }
+
+  function chipNode(c) {
+    return h("span", {class: "mchip" + (c.kind === "local" ? " local" : "")},
+      c.kind === "local" ? h("span", {class: "dot c-" + (c.color || "gray"), "aria-hidden": "true"}) : null, c.text);
+  }
+
+  function homeMailCard(switcher) {
+    const status = h("p", {class: "home-mail-status small muted"});
+    const list = h("div", {class: "home-mail-list", role: "list", "aria-label": "최근 메일"},
+      h("p", {class: "muted small"}, "불러오는 중입니다."));
+    const card = h("section", {class: "card home-card mail-card", "aria-label": "메일"},
+      h("div", {class: "home-card-head"}, h("h2", {}, "메일"), switcher),
+      status, list,
+      h("div", {class: "home-mail-foot"}, h("button", {type: "button", class: "link", onclick: () => go("mail")}, "메일 열기")));
+    async function load() {
+      let data;
+      try { data = await api("/api/mail/threads?limit=6"); }
+      catch (e) { set(list, h("p", {class: "danger-text small"}, e.message)); return; }
+      status.textContent = (data.state && data.state.status.line) || "";
+      if (!data.items.length) {
+        set(list, h("p", {class: "muted small home-mail-empty"}, data.sources
+          ? "아직 받은 메일이 없습니다. 새 메일이 오면 여기에 자동으로 나타납니다."
+          : "메일 소스가 없습니다. 설정에서 메일을 연결하세요."));
+        return;
+      }
+      set(list, ...data.items.map(t => h("button", {type: "button", role: "listitem",
+        class: "home-mail-row" + (t.unread ? " unread" : ""), onclick: () => go("mail", {t: t.id})},
+        h("span", {class: "unread-dot", "aria-label": t.unread ? "읽지 않음" : null}),
+        h("span", {class: "home-mail-main"},
+          h("span", {class: "home-mail-top"}, h("span", {class: "home-mail-who truncate"}, threadPeople(t)),
+            h("span", {class: "home-mail-time muted small"}, threadWhen(t))),
+          h("span", {class: "home-mail-subject truncate"}, t.subject),
+          t.chips.length ? h("span", {class: "home-mail-chips"}, ...t.chips.slice(0, 2).map(chipNode)) : null))));
+    }
+    const refresh = () => load();
+    refresh.node = card;
+    watchMail(refresh);
+    load();
+    return card;
+  }
+
+  function mailQuery(extra) {
+    const p = new URLSearchParams({box: MP.box});
+    if (MP.label) p.set("label", MP.label);
+    if (MP.q) p.set("q", MP.q);
+    if (MP.sender) p.set("sender", MP.sender);
+    if (MP.day) { p.set("since", MP.day); p.set("until", MP.day); }
+    else if (MP.period !== "all") p.set("since", addDays(isoDay(new Date()), -Number(MP.period)));
+    for (const [k, v] of Object.entries(extra || {})) p.set(k, v);
     return p.toString();
   }
 
-  function mailPanel(compact) {
-    const filters = h("div", {class: "mail-filters"});
-    const listBox = h("div", {class: "mail-list", "aria-label": "메일 목록"});
-    const pane = h("div", {class: "mail-pane", "aria-label": "메일 읽기"});
-    // On home the card is narrow: a mail opens on the full mail page instead of a side pane.
-    const root = h("div", {class: "mail-view" + (compact ? " compact" : "")},
-      compact ? h("details", {class: "result-more"}, h("summary", {}, icon("filter", "sm"), "필터와 묶기"), filters) : filters,
-      listBox, compact ? null : pane);
-    let facets = null;
-    const reload = () => { MS.offset = 0; load(); };
+  function mailPage() {
+    const side = h("nav", {class: "mbox-side", "aria-label": "편지함과 라벨"});
+    const listBox = h("div", {class: "mbox-list", role: "listbox", "aria-label": "대화 목록", tabindex: "-1"});
+    const conv = h("section", {class: "mbox-conv", "aria-label": "대화"});
+    const statusLine = h("p", {class: "mbox-status small muted", role: "status"});
+    const search = input({type: "search", value: MP.q, placeholder: "메일 검색 (제목, 사람, 본문)", "aria-label": "메일 검색", class: "input mbox-search"});
+    const filterRow = h("div", {class: "mbox-filters"});
+    const center = h("div", {class: "mbox-center"}, h("div", {class: "mbox-top"}, search, filterRow), listBox);
+    const root = h("div", {class: "mbox" + (MP.selected ? " reading" : "")}, side, center, conv);
+    let data = null;
+    let timer = null;
+
+    search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { MP.q = search.value.trim(); load(); }, 300); });
+
+    function sideItem(key, name, count, unread, color, onPick) {
+      const active = (key.startsWith("box:") ? !MP.label && MP.box === key.slice(4) : MP.label === key);
+      return h("button", {type: "button", class: "mbox-side-item" + (active ? " active" : ""), "aria-current": active ? "true" : null,
+        onclick: onPick},
+        h("span", {class: "dot c-" + (color || "none"), "aria-hidden": "true"}),
+        h("span", {class: "mbox-side-name truncate"}, name),
+        h("span", {class: "mbox-side-count" + (unread ? " strong" : " muted")}, unread ? String(unread) : (count ? String(count) : "")));
+    }
+
+    function drawSide() {
+      const d = data || {boxes: {}, groups: {team: [], purpose: [], gmail: [], local: []}};
+      const pick = (box, label) => () => { MP.box = box; MP.label = label; MP.selected = null; root.classList.remove("reading"); load(); };
+      const groups = [["team", "팀"], ["purpose", "용도"], ["gmail", "Gmail 라벨"], ["local", "내 라벨"]];
+      set(side,
+        ...MAIL_BOXES.map(([box, name]) => {
+          const c = d.boxes[box] || {count: 0, unread: 0};
+          return sideItem("box:" + box, name, c.count, c.unread, box === "all" ? "accent" : "none", pick(box, ""));
+        }),
+        ...groups.map(([kind, title]) => {
+          const items = d.groups[kind] || [];
+          if (!items.length && kind !== "local") return null;
+          return h("div", {class: "mbox-side-group"},
+            h("div", {class: "mbox-side-title"}, h("span", {}, title),
+              kind === "local" ? h("button", {type: "button", class: "link small", onclick: newLabel}, "+ 라벨") : null),
+            ...items.map(g => sideItem(g.key, g.name, g.count, g.unread, kind === "local" ? g.color : "none", pick("all", g.key))),
+            kind === "local" && !items.length ? h("p", {class: "small muted"}, "라벨을 만들어 대화를 묶어 보세요.") : null);
+        }));
+    }
 
     function drawFilters() {
-      const f = facets || {teams: [], sources: [], purposes: []};
-      const q = input({type: "search", value: MS.q, placeholder: "제목, 보낸 사람, 본문 검색", "aria-label": "메일 검색"});
-      let timer = null;
-      q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { MS.q = q.value.trim(); reload(); }, 300); });
-      const sender = input({value: MS.sender, placeholder: "이름 또는 주소", "aria-label": "보낸 사람"});
-      sender.addEventListener("change", () => { MS.sender = sender.value.trim(); reload(); });
-      set(filters,
-        h("label", {class: "mini-field"}, h("span", {}, "검색어"), q),
-        selectControl([["", "모든 팀"], ...f.teams.map(t => [t, t])], MS.team, "팀", (v) => { MS.team = v; reload(); }),
-        h("label", {class: "mini-field"}, h("span", {}, "보낸 사람"), sender),
-        selectControl([["", "주소록 전체"], ["in", "주소록에 있는 사람"], ["out", "주소록에 없는 사람"]], MS.book, "주소록", (v) => { MS.book = v; reload(); }),
-        selectControl([["", "모든 용도"], ...f.purposes], MS.purpose, "용도", (v) => { MS.purpose = v; reload(); }),
-        selectControl([["", "모든 소스"], ...f.sources.map(s => [s.id, s.name])], MS.source, "소스", (v) => { MS.source = v; reload(); }),
-        MS.day ? h("p", {class: "small"}, MS.day + " 받은 메일 ", h("button", {type: "button", class: "link", onclick: () => { MS.day = ""; reload(); }}, "날짜 풀기"))
-          : selectControl(MAIL_PERIODS, MS.period, "기간", (v) => { MS.period = v; reload(); }),
-        selectControl(MAIL_GROUPS, MS.group, "묶기", (v) => { MS.group = v; reload(); }));
+      const chips = MAIL_PERIODS.map(([v, name]) => h("button", {type: "button", class: "fchip" + (!MP.day && MP.period === v ? " on" : ""),
+        "aria-pressed": String(!MP.day && MP.period === v), onclick: () => { MP.period = v; MP.day = ""; load(); }}, name));
+      const sender = input({value: MP.sender, placeholder: "보낸 사람", "aria-label": "보낸 사람", class: "input fchip-input"});
+      sender.addEventListener("change", () => { MP.sender = sender.value.trim(); load(); });
+      const labelName = MP.label && data ? (Object.values(data.groups).flat().find(g => g.key === MP.label) || {}).name : "";
+      set(filterRow, h("span", {class: "fchip-label small muted"}, "기간"), ...chips,
+        MP.day ? h("button", {type: "button", class: "fchip on", onclick: () => { MP.day = ""; load(); }}, shortDate(MP.day) + " 받은 메일 지우기") : null,
+        sender,
+        labelName ? h("button", {type: "button", class: "fchip on", onclick: () => { MP.label = ""; load(); }}, "라벨: " + labelName + " 지우기") : null);
     }
 
-    function mailRow(m) {
-      const open = compact ? () => go("mail", {id: m.id}) : () => { MS.selected = m.id; markSelected(); openMail(m.id); };
-      return h("button", {type: "button", class: "mail-row" + (m.id === MS.selected ? " selected" : ""), onclick: open, "data-id": m.id},
-        h("span", {class: "mail-row-top"}, h("span", {class: "muted small"}, shortDate(m.date)), h("span", {class: "strong truncate"}, m.sender)),
-        h("span", {class: "mail-subject truncate"}, m.subject),
-        h("span", {class: "mail-chips"}, m.source ? h("span", {class: "badge neutral"}, m.source) : null,
-          m.team ? h("span", {class: "badge neutral"}, "팀 " + m.team) : null,
-          m.deadline ? h("span", {class: "badge warning"}, "마감 있음") : null,
-          m.included ? h("span", {class: "badge neutral"}, "분석 포함") : null));
+    function row(t) {
+      const node = h("button", {type: "button", role: "option", class: "trow" + (t.unread ? " unread" : "") + (t.id === MP.selected ? " selected" : ""),
+        "aria-selected": String(t.id === MP.selected), "data-id": t.id, onclick: () => open(t.id)},
+        h("span", {class: "unread-dot", "aria-hidden": "true"}),
+        h("span", {class: "trow-who truncate"}, threadPeople(t)),
+        h("span", {class: "trow-text truncate"}, h("span", {class: "trow-subject"}, t.subject), h("span", {class: "muted"}, " - " + t.snippet)),
+        h("span", {class: "trow-meta"},
+          ...t.chips.slice(0, 2).map(chipNode),
+          t.deadline ? h("span", {class: "mchip warn"}, "마감 있음") : null,
+          h("span", {class: "mchip state" + (t.analysis === "점검 안 함" ? " off" : "")}, t.analysis),
+          h("span", {class: "trow-date muted small"}, threadWhen(t))));
+      return node;
     }
 
-    function markSelected() {
-      for (const node of listBox.querySelectorAll(".mail-row")) node.classList.toggle("selected", node.getAttribute("data-id") === MS.selected);
-    }
-
-    function drawList(data) {
-      if (!data.total) {
-        set(listBox, h("p", {class: "muted"}, MS.q || MS.team || MS.sender || MS.source || MS.purpose || MS.book || MS.day ? "조건에 맞는 메일이 없습니다." : "저장된 메일이 없습니다. 설정의 메일 소스에서 '지금 가져오기'를 누르세요."));
+    function drawList() {
+      if (!data.sources) {
+        set(listBox, emptyState({icon: "mail", title: "연결된 메일이 없습니다",
+          text: "설정에서 Gmail이나 Outlook을 연결하고 메일 소스를 추가하면 새 메일이 자동으로 여기에 나타납니다.",
+          action: button("메일 연결", {variant: "primary", onClick: () => go("settings", {tab: "connect", focus: "gmail"})}), neutral: true}));
         return;
       }
-      const nodes = [];
-      let current = null;
-      const counts = new Map(data.groups.map(g => [g.key, g.count]));
-      for (const m of data.items) {
-        if (MS.group && m.group !== current) {
-          current = m.group;
-          nodes.push(h("p", {class: "mail-group"}, (MS.group === "date" ? shortDate(current) : current) + " · " + (counts.get(current) || 0) + "통"));
-        }
-        nodes.push(mailRow(m));
+      if (!data.total) {
+        const filtered = MP.q || MP.label || MP.sender || MP.day || MP.period !== "all" || MP.box !== "all";
+        set(listBox, emptyState({icon: "inbox", neutral: true, title: filtered ? "조건에 맞는 메일이 없습니다" : "아직 받은 메일이 없습니다",
+          text: filtered ? "검색어나 라벨, 기간을 바꿔 보세요." : "메일이 오면 자동으로 가져옵니다. 버튼을 누를 필요가 없습니다."}));
+        return;
       }
-      const pages = h("div", {class: "row mail-pages"},
-        h("span", {class: "small muted"}, (data.offset + 1) + "-" + (data.offset + data.items.length) + " / " + data.total + "통"),
-        data.offset > 0 ? button("이전", {size: "sm", onClick: () => { MS.offset = Math.max(0, data.offset - data.limit); load(); }}) : null,
-        data.offset + data.limit < data.total ? button("다음", {size: "sm", onClick: () => { MS.offset = data.offset + data.limit; load(); }}) : null);
-      set(listBox, ...nodes, pages);
+      const more = data.offset + data.items.length < data.total
+        ? h("div", {class: "mbox-more"}, button("더 보기", {size: "sm", onClick: () => load(data.offset + data.limit, true)})) : null;
+      set(listBox, ...data.items.map(row), more);
     }
 
-    async function openMail(id) {
-      set(pane, h("p", {class: "muted"}, "불러오는 중입니다."));
-      let m;
-      try { m = await api("/api/mail/" + encodeURIComponent(id)); }
-      catch (e) { set(pane, h("p", {class: "danger-text"}, e.message)); return; }
-      const include = button(m.included ? "분석에 포함됨" : "이 메일을 분석에 포함", {size: "sm", disabled: m.included});
-      include.addEventListener("click", () => busy(include, async () => {
-        const ok = await confirmDialog({title: "이 메일을 분석에 포함", message: "이 메일 본문을 결정 점검에 사용합니다. 외부 AI를 쓰는 경우 본문이 전송될 수 있습니다.", confirmLabel: "포함"});
-        if (!ok) return;
-        await api("/api/mail/" + encodeURIComponent(id) + "/include", "POST", {});
-        toast("다음 점검부터 이 메일을 분석합니다.", "success");
-        openMail(id);
-      }));
-      const related = h("div", {class: "stack-sm"});
-      set(pane,
-        h("h3", {class: "mail-title"}, m.subject),
-        h("p", {class: "small"}, "보낸 사람: " + m.sender + (m.sender !== m.sender_address ? " <" + m.sender_address + ">" : "")),
-        h("p", {class: "small muted"}, m.date + (m.source ? " · " + m.connector + ", " + m.source : "")),
-        h("div", {class: "mail-chips"}, m.team ? h("span", {class: "badge neutral"}, "팀 " + m.team) : null, m.purpose_label ? h("span", {class: "badge neutral"}, m.purpose_label) : null),
-        h("div", {class: "mail-body"}, ...(m.body ? m.body.split("\n").map(line => h("p", {}, line)) : [h("p", {class: "muted"}, "본문 텍스트가 없습니다 (이미지나 첨부만 있는 메일).")])),
-        h("div", {class: "row"}, include),
-        related);
-      mailExtras(m, related);
+    function drawStatus() {
+      const st = data.state.status;
+      statusLine.textContent = st.line || "";
+      statusLine.classList.toggle("danger-text", /실패|멈춤/.test(st.line || ""));
     }
 
-    async function load() {
-      const data = await api("/api/mail?" + mailParams());
-      facets = data.facets;
-      drawFilters();
-      drawList(data);
-      if (compact) return;
-      if (MS.selected) openMail(MS.selected);
-      else set(pane, h("p", {class: "muted"}, "목록에서 메일을 고르면 여기에 본문이 나옵니다."));
+    async function load(offset, append) {
+      let next;
+      try { next = await api("/api/mail/threads?" + mailQuery({offset: String(offset || 0)})); }
+      catch (e) { set(listBox, errorState(e.message, () => load())); return; }
+      if (append && data) next.items = data.items.concat(next.items);
+      data = next;
+      MAIL_WATCH.seq = data.state.seq;
+      drawSide(); drawFilters(); drawList(); drawStatus();
+      if (MP.selected && !conv.childNodes.length) open(MP.selected, true);
+      if (!MP.selected) set(conv, h("div", {class: "mbox-conv-empty muted"}, icon("mail", "xl"), h("p", {}, "대화를 고르면 여기에 주고받은 메일이 순서대로 나옵니다.")));
     }
 
-    drawFilters();
+    async function open(id, keep) {
+      MP.selected = id;
+      root.classList.add("reading");
+      for (const node of listBox.querySelectorAll(".trow")) {
+        const on = node.getAttribute("data-id") === id;
+        node.classList.toggle("selected", on);
+        node.setAttribute("aria-selected", String(on));
+      }
+      if (!keep) set(conv, h("p", {class: "muted"}, "불러오는 중입니다."));
+      let t;
+      try { t = await api("/api/mail/threads/" + encodeURIComponent(id)); }
+      catch (e) { set(conv, h("p", {class: "danger-text"}, e.message)); return; }
+      set(conv, conversation(t));
+      if (t.unread) {
+        api("/api/mail/threads/" + encodeURIComponent(id) + "/read", "POST", {read: true}).then(() => load()).catch(() => {});
+      }
+    }
+
+    function back() {
+      MP.selected = null;
+      root.classList.remove("reading");
+      set(conv);
+      load();
+      const first = listBox.querySelector(".trow");
+      if (first) first.focus();
+    }
+
+    function conversation(t) {
+      const last = t.messages.length - 1;
+      const labels = h("div", {class: "conv-chips"}, ...t.chips.map(chipNode),
+        h("button", {type: "button", class: "link small", onclick: () => editLabels(t)}, "라벨 편집"));
+      const found = (t.decisions || []).map(d => h("p", {class: "conv-finding small"},
+        h("span", {class: "mchip state"}, "결정"), " " + d.label + ": " + d.text + " ",
+        h("button", {type: "button", class: "link", onclick: () => go("results", {topic: d.topic})},
+          d.findings ? "고칠 곳 " + d.findings + "건 보기" : "점검 결과 보기")));
+      const messages = t.messages.map((m, i) => message(m, i === last));
+      const latest = t.messages[last];
+      return h("div", {class: "conv"},
+        h("div", {class: "conv-head"},
+          h("button", {type: "button", class: "btn sm conv-back", onclick: back}, "목록으로"),
+          h("h2", {class: "conv-subject"}, t.subject),
+          labels, ...found,
+          t.analysis === "점검 안 함" ? h("p", {class: "small muted"}, "이 소스는 AI 분석을 하지 않습니다. 저장과 검색만 합니다.") : null),
+        h("div", {class: "conv-msgs"}, ...messages),
+        relatedBlock("비슷한 메일", t.subject + " " + (latest.body || "").slice(0, 400), {exclude: latest.id, hideEmpty: true}));
+    }
+
+    function message(m, expanded) {
+      const body = h("div", {class: "msg-body"});
+      const head = h("button", {type: "button", class: "msg-head", "aria-expanded": String(expanded)},
+        h("span", {class: "msg-who strong"}, m.mine ? "나" : m.sender),
+        h("span", {class: "msg-snip muted truncate"}, expanded ? "" : (m.body || "").split("\n")[0]),
+        h("span", {class: "msg-when muted small"}, shortDate(m.date) + (m.time ? " " + m.time : "")));
+      const node = h("article", {class: "msg" + (m.mine ? " mine" : "") + (expanded ? " open" : "")}, head, body);
+      function fill() {
+        const quoted = m.quoted ? h("div", {class: "msg-quoted", hidden: true}, ...m.quoted.split("\n").map(l => h("p", {}, l))) : null;
+        set(body,
+          ...(m.body ? m.body.split("\n").map(line => h("p", {}, line)) : [h("p", {class: "muted"}, "본문 텍스트가 없습니다 (이미지나 첨부만 있는 메일).")]),
+          quoted ? h("button", {type: "button", class: "msg-more", "aria-label": "인용된 이전 메일 보기",
+            onclick: (e) => { quoted.hidden = !quoted.hidden; e.currentTarget.setAttribute("aria-expanded", String(!quoted.hidden)); }}, "...") : null,
+          quoted,
+          m.signature ? h("p", {class: "msg-sign"}, m.signature) : null,
+          (m.hints || []).length ? h("p", {class: "small"}, h("span", {class: "mchip warn"}, "메일 속 날짜"), " ",
+            ...m.hints.map(x => shortDate(x.date) + (x.kind === "deadline" ? " 마감" : "") + "  ")) : null,
+          m.included ? h("p", {class: "small muted"}, "이 메일은 분석에 포함됩니다.") : h("button", {type: "button", class: "link small",
+            onclick: async (e) => {
+              const ok = await confirmDialog({title: "이 메일을 분석에 포함", message: "이 메일 본문을 결정 점검에 사용합니다. 외부 AI를 쓰는 경우 본문이 전송될 수 있습니다.", confirmLabel: "포함"});
+              if (!ok) return;
+              await busy(e.currentTarget, () => api("/api/mail/" + encodeURIComponent(m.uid) + "/include", "POST", {}));
+              toast("다음 점검부터 이 메일을 분석합니다.", "success");
+            }}, "이 메일을 분석에 포함"));
+      }
+      if (expanded) fill();
+      head.addEventListener("click", () => {
+        const opening = !node.classList.contains("open");
+        node.classList.toggle("open", opening);
+        head.setAttribute("aria-expanded", String(opening));
+        head.querySelector(".msg-snip").textContent = opening ? "" : (m.body || "").split("\n")[0];
+        if (opening && !body.childNodes.length) fill();
+      });
+      return node;
+    }
+
+    function editLabels(t) {
+      const boxes = (data ? data.labels : []).map(l => {
+        const box = h("input", {type: "checkbox", checked: t.local_labels.includes(l.id), value: l.id});
+        return h("label", {class: "label-pick"}, box, h("span", {class: "dot c-" + l.color, "aria-hidden": "true"}), l.name);
+      });
+      modal({title: "라벨 편집", plain: true,
+        body: h("div", {class: "stack-sm"}, h("p", {class: "small muted"}, "라벨은 이 컴퓨터에만 저장됩니다. 메일 계정에는 아무것도 쓰지 않습니다."),
+          ...(boxes.length ? boxes : [h("p", {class: "muted"}, "아직 만든 라벨이 없습니다. 왼쪽의 + 라벨로 만드세요.")])),
+        actions: [{label: "취소"}, {label: "저장", variant: "primary", onClick: async () => {
+          const ids = boxes.map(b => b.querySelector("input")).filter(b => b.checked).map(b => b.value);
+          await api("/api/mail/threads/" + encodeURIComponent(t.id) + "/labels", "PUT", {ids});
+          await load(); open(t.id, true);
+        }}]});
+    }
+
+    function newLabel() {
+      const name = input({placeholder: "예: 발표 준비", "aria-label": "라벨 이름", maxlength: "30"});
+      const color = segmented(LABEL_COLORS.map(([v, n]) => [v, n]), "blue", null, "라벨 색");
+      modal({title: "새 라벨", plain: true, body: h("div", {class: "stack-sm"}, name, color),
+        actions: [{label: "취소"}, {label: "만들기", variant: "primary", onClick: async () => {
+          await api("/api/mail/labels", "POST", {name: name.value.trim(), color: color.value()});
+          await load();
+        }}]});
+    }
+
+    // Arrow keys move through threads, Enter opens, Esc goes back to the list.
+    root.addEventListener("keydown", (e) => {
+      if (isTyping()) return;
+      const rows = Array.from(listBox.querySelectorAll(".trow"));
+      const at = rows.indexOf(document.activeElement);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = rows[Math.max(0, Math.min(rows.length - 1, at + (e.key === "ArrowDown" ? 1 : -1)))] || rows[0];
+        if (next) next.focus();
+      } else if (e.key === "Escape" && MP.selected) {
+        e.preventDefault();
+        back();
+      }
+    });
+
+    const refresh = () => { load(data ? 0 : 0); if (MP.selected) open(MP.selected, true); };
+    refresh.node = root;
+    watchMail(refresh);
     set(listBox, h("p", {class: "muted"}, "불러오는 중입니다."));
-    load().catch(e => set(listBox, h("p", {class: "danger-text"}, e.message)));
-    return root;
-  }
-
-  // Reading pane extras: dates found in the mail (hints, not facts) and similar stored mail.
-  function mailExtras(m, box) {
-    const hints = (m.hints || []).map(x => h("li", {},
-      h("span", {class: "strong"}, shortDate(x.date)), " ",
-      x.kind === "deadline" ? h("span", {class: "badge warning"}, "마감") : null, " ",
-      h("span", {class: "muted"}, x.sentence)));
-    set(box,
-      hints.length ? h("div", {class: "stack-sm"}, h("h4", {}, "메일 속 날짜"),
-        h("p", {class: "small muted"}, "메일 문장에서 찾은 날짜입니다. 확인용 힌트이며 점검 결과에는 쓰지 않습니다."),
-        h("ul", {class: "hint-list"}, ...hints)) : null,
-      relatedBlock("비슷한 메일", m.subject + " " + (m.body || "").slice(0, 400), {exclude: m.id}));
+    drawSide(); drawFilters();
+    load();
+    return h("div", {class: "mbox-wrap"}, statusLine, root);
   }
 
   // Stored mail similar to a text, ranked on this computer. Each row opens the mail view.
@@ -575,15 +762,24 @@
   ROUTES.mail = {
     title: "메일",
     async load(params) {
-      if (params.has("id")) MS.selected = params.get("id");
-      if (params.has("date")) { MS.day = params.get("date"); MS.offset = 0; }
-      if (params.has("q")) MS.q = params.get("q");
-      if (params.has("id") || params.has("date") || params.has("q")) history.replaceState(null, "", "#/mail");
+      if (params.has("t")) MP.selected = params.get("t");
+      if (params.has("id")) {
+        // A single stored mail (from related mail or the calendar) opens its conversation.
+        try { MP.selected = (await api("/api/mail/" + encodeURIComponent(params.get("id")))).thread || null; } catch (e) { MP.selected = null; }
+      }
+      if (params.has("date")) { MP.day = params.get("date"); MP.label = ""; MP.box = "all"; }
+      if (params.has("q")) MP.q = params.get("q");
+      if (["t", "id", "date", "q"].some(k => params.has(k))) history.replaceState(null, "", "#/mail");
       return {};
     },
     render() {
-      return page("메일", "저장된 메일을 이 컴퓨터에서만 찾고 읽습니다. 검색과 읽기에는 AI를 쓰지 않습니다.", null,
-        h("section", {class: "card mail-page"}, mailPanel(false)));
+      const check = button("지금 확인", {size: "sm", icon: "refresh", onClick: (e) => busy(e.currentTarget, async () => {
+        await api("/api/mail/check", "POST", {});
+        toast("메일을 확인하는 중입니다. 새 메일은 자동으로 나타납니다.", "info");
+      })});
+      const book = button("주소록", {size: "sm", icon: "user", onClick: () => go("settings", {tab: "connect", focus: "contacts"})});
+      return page("메일", "메일은 자동으로 새로 고쳐집니다. 검색과 읽기, 라벨은 이 컴퓨터에서만 처리하고 AI를 쓰지 않습니다.", [check, book],
+        h("section", {class: "card mail-page"}, mailPage()));
     },
   };
 

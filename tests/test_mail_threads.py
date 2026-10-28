@@ -171,7 +171,8 @@ def test_my_sent_reply_joins_the_thread_and_its_decision_is_analysed(mailbox):
     gmail.add_thread(thread_of("T2"))
     gmail.add_thread(thread_of("T3"))
     poll = controller.mail_poller.check(source(controller))
-    assert poll.ok and poll.new == 7
+    # The first fetch fills the index; "new" counts only mail that arrives after it.
+    assert poll.ok and poll.new == 0 and controller.maildb.count() == 7
     threads = {t["subject"]: t for t in controller.thread_list({})["items"]}
     t2 = controller.thread_read(threads["배포 서버 비용 문의"]["id"])
     assert [m["mine"] for m in t2["messages"]] == [False, True, False, True]
@@ -196,15 +197,16 @@ def test_without_include_sent_only_the_labelled_mails_are_read(mailbox):
     controller, gmail, _ = mailbox
     controller.settings.mail_sources = [source(controller).model_copy(update={"include_sent": False})]
     gmail.add_thread(thread_of("T2"))
-    assert controller.mail_poller.check(source(controller)).new == 2
-    assert gmail.calls("/threads/T2") == 0
+    controller.mail_poller.check(source(controller))
+    assert controller.maildb.count() == 2 and gmail.calls("/threads/T2") == 0
     assert not any("내가 보낸 메일" in t for t in mail_texts(controller))
 
 
 def test_history_makes_later_checks_cheap_and_picks_up_new_mail_and_my_reply(mailbox):
     controller, gmail, jobs = mailbox
     gmail.add_thread(thread_of("T2"), upto=2)
-    assert controller.mail_poller.check(source(controller)).new == 2
+    controller.mail_poller.check(source(controller))
+    assert controller.maildb.count() == 2
     lists = gmail.calls("/messages")
     # Nothing new: only the history call, no listing and no body.
     assert controller.mail_poller.check(source(controller)).new == 0
@@ -238,7 +240,8 @@ def test_no_analysis_when_analysis_is_off_but_the_index_changes(mailbox):
     controller, gmail, jobs = mailbox
     controller.settings.mail_sources = [source(controller).model_copy(update={"analysis": "off"})]
     gmail.add_thread(thread_of("T5"))
-    assert controller.mail_poller.check(source(controller)).new == 3
+    controller.mail_poller.check(source(controller))
+    assert controller.maildb.count() == 3
     assert controller.thread_list({})["items"][0]["analysis"] == "점검 안 함"
     assert documents(controller) == []
     time.sleep(0.2)
@@ -381,3 +384,39 @@ def test_thread_endpoints_need_the_token_and_mark_read(mailbox):
     state = http.get("/api/mail/state", headers=headers).json()
     assert set(state) == {"seq", "status", "events"}
     assert http.get("/api/mail/threads/nothing", headers=headers).status_code == 404
+
+
+def test_a_thread_whose_mail_decided_something_shows_and_links_it():
+    from decision_agent.desktop import mailview
+
+    db = MailDB()
+    src = MailSource(id="team", name="팀A 메일", connector="gmail", labels=["팀A"], team="BookSwap")
+    first = MailMessage("m1", "2026-10-27", "배포 서버 비용 문의", "민재 <m@x.kr>", "Render가 편할까?", thread_id="T2")
+    mine = MailMessage("m2", "2026-10-27", "Re: 배포 서버 비용 문의", "나 <me@x.kr>", "그럼 Render로 하자.",
+                       thread_id="T2", direction="sent")
+    other = MailMessage("m3", "2026-10-26", "점심", "k@x.kr", "점심 뭐 먹지", thread_id="T9")
+    db.upsert("team", [first, mine, other])
+    path = mailview.mail_doc_path(src, db.get(next(r["uid"] for r in db.rows("team") if r["msg_id"] == "m2")))
+    decisions = {path: [{"topic": "deploy", "label": "배포", "text": "그럼 Render로 하자.", "findings": 1}]}
+    items = {t["subject"]: t for t in mailview.list_threads(db, [src], {}, decisions)["items"]}
+    assert items["배포 서버 비용 문의"]["analysis"] == "결정 1건" and items["점심"]["analysis"] == "점검됨"
+    thread = mailview.read_thread(db, [src], items["배포 서버 비용 문의"]["id"], decisions)
+    assert thread["decisions"][0]["topic"] == "deploy" and [m["mine"] for m in thread["messages"]].count(True) == 1
+    # Chips: the team once, even when a Gmail label has the same name.
+    db.upsert("team", [MailMessage("m4", "2026-10-26", "점심", "k@x.kr", "", thread_id="T9", labels=["BookSwap"])])
+    chips = [c["text"] for c in mailview.list_threads(db, [src], {})["items"][1]["chips"]]
+    assert chips.count("BookSwap") == 1
+
+
+def test_similar_mail_leaves_out_the_conversation_itself():
+    from decision_agent.desktop import mailview
+
+    db = MailDB()
+    db.upsert("s", [
+        MailMessage("a", "2026-10-26", "배포 서버 비용 문의", "m@x.kr", "Lightsail 비용이 고정이야", thread_id="T"),
+        MailMessage("b", "2026-10-27", "Re: 배포 서버 비용 문의", "me@x.kr", "Render 유료 플랜으로 하자", thread_id="T"),
+        MailMessage("c", "2026-10-20", "서버 이전 일정", "m@x.kr", "Lightsail 서버 이전 일정 안내", thread_id="U"),
+    ])
+    uid = next(r["uid"] for r in db.rows("s") if r["msg_id"] == "b")
+    found = mailview.related_mail(db, "배포 서버 Lightsail 비용", exclude=uid)
+    assert [r["subject"] for r in found] == ["서버 이전 일정"]
