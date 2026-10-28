@@ -15,7 +15,7 @@
 
   // The Figma sidebar has four screens. Older pages live on inside them; their old addresses
   // (from bookmarks, toasts, or the tray) are sent to the new place.
-  const NAV = ["home", "results", "folders", "settings"];
+  const NAV = ["home", "results", "mail", "folders", "settings"];
   const ROUTES = {};
   const MOVED = {
     questions: ["home", {}], digest: ["home", {}], activity: ["home", {log: "1"}],
@@ -90,7 +90,7 @@
 
   // Sidebar: "작업 공간", the four screens, then "빠른 점검" and one status line
   // ("로컬 AI · 정상", "시연용 모드", "로컬 AI · 오류", ...).
-  const NAV_ICONS = {home: "home", results: "list", folders: "folder", settings: "settings"};
+  const NAV_ICONS = {home: "home", results: "list", mail: "mail", folders: "folder", settings: "settings"};
 
   function renderNav() {
     const nav = document.getElementById("nav");
@@ -213,7 +213,7 @@
         ? callout("warning", "alert", st.overall.label, st.overall.detail || "") : null;
       return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))],
         partial, ...confirmBanners(st), agentCard(st),
-        h("div", {class: "home-grid"}, calendarCard(week, st), todoCard(st, findings, questions)),
+        h("div", {class: "home-grid"}, homePanel(week, st), todoCard(st, findings, questions)),
         recentCard(st, activity));
     },
   };
@@ -397,6 +397,167 @@
     return "AI 연결을 확인할 수 없습니다.";
   }
 
+  // ---------------------------------------------------------------- calendar or mail on home
+
+  // The choice is a per-viewer convenience; the page works the same without storage.
+  const PANEL_KEY = "da.home.panel";
+  function readPanel() { try { return localStorage.getItem(PANEL_KEY) === "mail" ? "mail" : "calendar"; } catch (e) { return "calendar"; } }
+  function writePanel(v) { try { localStorage.setItem(PANEL_KEY, v); } catch (e) { /* storage blocked */ } }
+
+  function homePanel(week, st) {
+    const mode = readPanel();
+    const switcher = segmented([["calendar", "캘린더"], ["mail", "메일"]], mode, (v) => { writePanel(v); renderRoute(true); }, "캘린더 또는 메일");
+    if (mode === "mail") {
+      return h("section", {class: "card home-card cal-card mail-card", "aria-label": "메일"},
+        h("div", {class: "home-card-head"}, h("h2", {}, "메일"), switcher), mailPanel(true));
+    }
+    const card = calendarCard(week, st);
+    const head = card.querySelector(".home-card-head");
+    if (head) head.appendChild(switcher);
+    return card;
+  }
+
+  // ---------------------------------------------------------------- mail view
+
+  const MS = {group: "", team: "", sender: "", book: "", purpose: "", source: "", period: "30", day: "", q: "", offset: 0, selected: null};
+  const MAIL_GROUPS = [["", "묶지 않음"], ["date", "날짜"], ["team", "팀"], ["sender", "보낸 사람"], ["purpose", "용도"], ["source", "소스"]];
+  const MAIL_PERIODS = [["7", "최근 7일"], ["30", "최근 30일"], ["90", "최근 90일"], ["365", "최근 1년"], ["all", "전체 기간"]];
+
+  function mailParams() {
+    const p = new URLSearchParams();
+    for (const k of ["group", "team", "sender", "book", "purpose", "source", "q"]) if (MS[k]) p.set(k, MS[k]);
+    if (MS.day) { p.set("since", MS.day); p.set("until", MS.day); }
+    else if (MS.period !== "all") p.set("since", addDays(isoDay(new Date()), -Number(MS.period)));
+    p.set("offset", String(MS.offset));
+    return p.toString();
+  }
+
+  function mailPanel(compact) {
+    const filters = h("div", {class: "mail-filters"});
+    const listBox = h("div", {class: "mail-list", "aria-label": "메일 목록"});
+    const pane = h("div", {class: "mail-pane", "aria-label": "메일 읽기"});
+    // On home the card is narrow: a mail opens on the full mail page instead of a side pane.
+    const root = h("div", {class: "mail-view" + (compact ? " compact" : "")},
+      compact ? h("details", {class: "result-more"}, h("summary", {}, icon("filter", "sm"), "필터와 묶기"), filters) : filters,
+      listBox, compact ? null : pane);
+    let facets = null;
+    const reload = () => { MS.offset = 0; load(); };
+
+    function drawFilters() {
+      const f = facets || {teams: [], sources: [], purposes: []};
+      const q = input({type: "search", value: MS.q, placeholder: "제목, 보낸 사람, 본문 검색", "aria-label": "메일 검색"});
+      let timer = null;
+      q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { MS.q = q.value.trim(); reload(); }, 300); });
+      const sender = input({value: MS.sender, placeholder: "이름 또는 주소", "aria-label": "보낸 사람"});
+      sender.addEventListener("change", () => { MS.sender = sender.value.trim(); reload(); });
+      set(filters,
+        h("label", {class: "mini-field"}, h("span", {}, "검색어"), q),
+        selectControl([["", "모든 팀"], ...f.teams.map(t => [t, t])], MS.team, "팀", (v) => { MS.team = v; reload(); }),
+        h("label", {class: "mini-field"}, h("span", {}, "보낸 사람"), sender),
+        selectControl([["", "주소록 전체"], ["in", "주소록에 있는 사람"], ["out", "주소록에 없는 사람"]], MS.book, "주소록", (v) => { MS.book = v; reload(); }),
+        selectControl([["", "모든 용도"], ...f.purposes], MS.purpose, "용도", (v) => { MS.purpose = v; reload(); }),
+        selectControl([["", "모든 소스"], ...f.sources.map(s => [s.id, s.name])], MS.source, "소스", (v) => { MS.source = v; reload(); }),
+        MS.day ? h("p", {class: "small"}, MS.day + " 받은 메일 ", h("button", {type: "button", class: "link", onclick: () => { MS.day = ""; reload(); }}, "날짜 풀기"))
+          : selectControl(MAIL_PERIODS, MS.period, "기간", (v) => { MS.period = v; reload(); }),
+        selectControl(MAIL_GROUPS, MS.group, "묶기", (v) => { MS.group = v; reload(); }));
+    }
+
+    function mailRow(m) {
+      const open = compact ? () => go("mail", {id: m.id}) : () => { MS.selected = m.id; markSelected(); openMail(m.id); };
+      return h("button", {type: "button", class: "mail-row" + (m.id === MS.selected ? " selected" : ""), onclick: open, "data-id": m.id},
+        h("span", {class: "mail-row-top"}, h("span", {class: "muted small"}, shortDate(m.date)), h("span", {class: "strong truncate"}, m.sender)),
+        h("span", {class: "mail-subject truncate"}, m.subject),
+        h("span", {class: "mail-chips"}, m.source ? h("span", {class: "badge neutral"}, m.source) : null,
+          m.team ? h("span", {class: "badge neutral"}, "팀 " + m.team) : null,
+          m.deadline ? h("span", {class: "badge warning"}, "마감 있음") : null,
+          m.included ? h("span", {class: "badge neutral"}, "분석 포함") : null));
+    }
+
+    function markSelected() {
+      for (const node of listBox.querySelectorAll(".mail-row")) node.classList.toggle("selected", node.getAttribute("data-id") === MS.selected);
+    }
+
+    function drawList(data) {
+      if (!data.total) {
+        set(listBox, h("p", {class: "muted"}, MS.q || MS.team || MS.sender || MS.source || MS.purpose || MS.book || MS.day ? "조건에 맞는 메일이 없습니다." : "저장된 메일이 없습니다. 설정의 메일 소스에서 '지금 가져오기'를 누르세요."));
+        return;
+      }
+      const nodes = [];
+      let current = null;
+      const counts = new Map(data.groups.map(g => [g.key, g.count]));
+      for (const m of data.items) {
+        if (MS.group && m.group !== current) {
+          current = m.group;
+          nodes.push(h("p", {class: "mail-group"}, (MS.group === "date" ? shortDate(current) : current) + " · " + (counts.get(current) || 0) + "통"));
+        }
+        nodes.push(mailRow(m));
+      }
+      const pages = h("div", {class: "row mail-pages"},
+        h("span", {class: "small muted"}, (data.offset + 1) + "-" + (data.offset + data.items.length) + " / " + data.total + "통"),
+        data.offset > 0 ? button("이전", {size: "sm", onClick: () => { MS.offset = Math.max(0, data.offset - data.limit); load(); }}) : null,
+        data.offset + data.limit < data.total ? button("다음", {size: "sm", onClick: () => { MS.offset = data.offset + data.limit; load(); }}) : null);
+      set(listBox, ...nodes, pages);
+    }
+
+    async function openMail(id) {
+      set(pane, h("p", {class: "muted"}, "불러오는 중입니다."));
+      let m;
+      try { m = await api("/api/mail/" + encodeURIComponent(id)); }
+      catch (e) { set(pane, h("p", {class: "danger-text"}, e.message)); return; }
+      const include = button(m.included ? "분석에 포함됨" : "이 메일을 분석에 포함", {size: "sm", disabled: m.included});
+      include.addEventListener("click", () => busy(include, async () => {
+        const ok = await confirmDialog({title: "이 메일을 분석에 포함", message: "이 메일 본문을 결정 점검에 사용합니다. 외부 AI를 쓰는 경우 본문이 전송될 수 있습니다.", confirmLabel: "포함"});
+        if (!ok) return;
+        await api("/api/mail/" + encodeURIComponent(id) + "/include", "POST", {});
+        toast("다음 점검부터 이 메일을 분석합니다.", "success");
+        openMail(id);
+      }));
+      const related = h("div", {class: "stack-sm"});
+      set(pane,
+        h("h3", {class: "mail-title"}, m.subject),
+        h("p", {class: "small"}, "보낸 사람: " + m.sender + (m.sender !== m.sender_address ? " <" + m.sender_address + ">" : "")),
+        h("p", {class: "small muted"}, m.date + (m.source ? " · " + m.connector + ", " + m.source : "")),
+        h("div", {class: "mail-chips"}, m.team ? h("span", {class: "badge neutral"}, "팀 " + m.team) : null, m.purpose_label ? h("span", {class: "badge neutral"}, m.purpose_label) : null),
+        h("div", {class: "mail-body"}, ...(m.body ? m.body.split("\n").map(line => h("p", {}, line)) : [h("p", {class: "muted"}, "본문 텍스트가 없습니다 (이미지나 첨부만 있는 메일).")])),
+        h("div", {class: "row"}, include),
+        related);
+      mailExtras(m, related);
+    }
+
+    async function load() {
+      const data = await api("/api/mail?" + mailParams());
+      facets = data.facets;
+      drawFilters();
+      drawList(data);
+      if (compact) return;
+      if (MS.selected) openMail(MS.selected);
+      else set(pane, h("p", {class: "muted"}, "목록에서 메일을 고르면 여기에 본문이 나옵니다."));
+    }
+
+    drawFilters();
+    set(listBox, h("p", {class: "muted"}, "불러오는 중입니다."));
+    load().catch(e => set(listBox, h("p", {class: "danger-text"}, e.message)));
+    return root;
+  }
+
+  // Filled in by the related-mail feature: deadline hints and similar mail in the reading pane.
+  function mailExtras(m, box) { set(box); }
+
+  ROUTES.mail = {
+    title: "메일",
+    async load(params) {
+      if (params.has("id")) MS.selected = params.get("id");
+      if (params.has("date")) { MS.day = params.get("date"); MS.offset = 0; }
+      if (params.has("q")) MS.q = params.get("q");
+      if (params.has("id") || params.has("date") || params.has("q")) history.replaceState(null, "", "#/mail");
+      return {};
+    },
+    render() {
+      return page("메일", "저장된 메일을 이 컴퓨터에서만 찾고 읽습니다. 검색과 읽기에는 AI를 쓰지 않습니다.", null,
+        h("section", {class: "card mail-page"}, mailPanel(false)));
+    },
+  };
+
   // ---------------------------------------------------------------- calendar card
 
   function calendarCard(week, st) {
@@ -436,13 +597,17 @@
         byDay.get(d).length ? h("span", {class: "cal-dot", "aria-hidden": "true"}) : null);
       }));
       const items = byDay.get(HS.day);
+      const mailDay = (week.mail_days || {})[HS.day];
+      const mailLine = mailDay && mailDay.count
+        ? h("button", {type: "button", class: "link cal-mail", onclick: () => go("mail", {date: HS.day})}, icon("mail", "sm"), "이 날 받은 메일 " + mailDay.count + "통")
+        : null;
       if (items.length) {
-        set(list, ...items.map(eventRow));
+        set(list, ...items.map(eventRow), mailLine);
       } else if (week.events.length === 0) {
         set(list, h("div", {class: "cal-none"}, h("span", {}, "이 주에는 일정이 없습니다."),
           week.nearest_week ? h("button", {type: "button", class: "link", onclick: () => { HS.week = week.nearest_week; HS.day = null; touchCalendar(); renderRoute(false); }}, "일정이 있는 주로 이동") : null));
       } else {
-        set(list, h("div", {class: "cal-none"}, h("span", {}, "이 날에는 일정이 없습니다.")));
+        set(list, h("div", {class: "cal-none"}, h("span", {}, "이 날에는 일정이 없습니다.")), mailLine);
       }
     };
     drawDay();

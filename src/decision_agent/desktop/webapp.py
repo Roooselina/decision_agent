@@ -452,6 +452,33 @@ def create_web_app(
         except UserError as exc:
             raise _bad(exc) from exc
 
+    @app.get("/api/mail", dependencies=auth)
+    def mail_list(
+        group: str = "", team: str = "", sender: str = "", book: str = "", purpose: str = "",
+        source: str = "", since: str = "", until: str = "", q: str = "", limit: int = 50, offset: int = 0,
+    ):
+        """Local mail list with snippets only (no bodies). No model is called."""
+        for value in (since, until):
+            if value and not DATE_PARAM.match(value):
+                raise HTTPException(status_code=400, detail="날짜는 YYYY-MM-DD 형식이어야 합니다.")
+        if group and group not in {"date", "team", "sender", "purpose", "source"}:
+            raise HTTPException(status_code=400, detail="묶는 기준이 올바르지 않습니다.")
+        if book not in {"", "in", "out"}:
+            raise HTTPException(status_code=400, detail="주소록 조건이 올바르지 않습니다.")
+        params = {
+            "group": group, "team": team[:40], "sender": sender[:100], "book": book, "purpose": purpose[:20],
+            "source": source[:40], "since": since, "until": until, "q": q[:200],
+            "limit": max(1, min(50, limit)), "offset": max(0, offset),
+        }
+        return controller.mail_list(params)
+
+    @app.get("/api/mail/{uid}", dependencies=auth)
+    def mail_read(uid: str):
+        try:
+            return controller.mail_read(uid)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @app.post("/api/mail/{uid}/include", dependencies=auth)
     def mail_include(uid: str):
         try:

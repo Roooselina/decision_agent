@@ -21,7 +21,7 @@ from decision_agent import __version__
 from decision_agent.connectors.base import ConnectorError, SecretStore, mail_summary
 from decision_agent.connectors.http import Http
 from decision_agent.connectors.registry import CONNECTORS
-from decision_agent.desktop import calendar_view, mailsources
+from decision_agent.desktop import calendar_view, mailsources, mailview
 from decision_agent.desktop import digest as digest_module
 from decision_agent.desktop import folders as folders_module
 from decision_agent.desktop import notes as notes_store
@@ -1016,7 +1016,20 @@ class DecisionAgentApp:
             first, artifacts, self.findings(), calendar_view.event_times(docs), connected
         )
         week["today"] = today.isoformat()
+        # Mail received per day of the week (counts only), for the day detail.
+        week["mail_days"] = mailview.day_summary(self.maildb, week["start"], week["end"])
         return week
+
+    # mail view
+
+    def mail_list(self, params: dict) -> dict:
+        return mailview.list_mail(self.maildb, list(self.settings.mail_sources), params)
+
+    def mail_read(self, uid: str) -> dict:
+        item = mailview.read_mail(self.maildb, list(self.settings.mail_sources), uid)
+        if item is None:
+            raise UserError("메일을 찾지 못했습니다.")
+        return item
 
     # daily digest
 
