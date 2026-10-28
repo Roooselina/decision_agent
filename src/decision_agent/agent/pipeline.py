@@ -8,6 +8,7 @@ from decision_agent.config import DEFAULT_SETTINGS, Settings
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import AgentStep, AgentTrace, Artifact
 from decision_agent.storage import SQLiteStore
+from decision_agent.verdicts import VerdictStore
 
 
 def run_pipeline(
@@ -20,6 +21,7 @@ def run_pipeline(
     ui: UserInterface | None = None,
     ask=None,
     settings: Settings = DEFAULT_SETTINGS,
+    verdict_store: VerdictStore | None = None,
 ) -> AgentTrace:
     """Fixed-order control: predict, resolve scopes, judge, optionally clarify, finalize.
 
@@ -36,6 +38,7 @@ def run_pipeline(
         as_of_date=as_of_date,
         settings=settings,
         allow_clarify=clarify,
+        verdict_store=verdict_store,
     )
     trace = AgentTrace()
     start = time.perf_counter()
@@ -67,6 +70,8 @@ def run_pipeline(
     trace.rechecked_artifact_ids = list(ctx.rechecked_ids)
     trace.final_results = ctx.final_results()
     trace.local_answers = ctx.local_answers
+    trace.reused_lines = ctx.reused_lines
+    trace.judged_lines = ctx.judged_lines
     trace.tool_calls = len(trace.steps)
     trace.elapsed_seconds = time.perf_counter() - start
     return trace

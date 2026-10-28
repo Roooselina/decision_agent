@@ -127,6 +127,8 @@ class AgentTrace(BaseModel):
     affected_artifact_ids: list[str] = Field(default_factory=list)
     rechecked_artifact_ids: list[str] = Field(default_factory=list)
     local_answers: int = 0
+    reused_lines: int = 0
+    judged_lines: int = 0
 
 
 class GuardWarning(BaseModel):

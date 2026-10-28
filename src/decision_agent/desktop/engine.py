@@ -30,6 +30,7 @@ from decision_agent.desktop.providers import (
 )
 from decision_agent.desktop.settings import AppSettings, apply_speed_settings
 from decision_agent.desktop.state import FindingInput, StateDB, sha256_file
+from decision_agent.desktop.verdicts import TopicVerdicts, artifact_fingerprint, sampling_key
 from decision_agent.impact import candidate_artifacts_for_topic
 from decision_agent.llm.caching import CachingProvider
 from decision_agent.models import AgentTrace, Artifact, ConsistencyLabel
@@ -78,6 +79,10 @@ class CycleReport:
     llm_calls: int = 0
     calls_by_task: dict[str, int] = field(default_factory=dict)
     local_answers: int = 0
+    # Lines whose verdict came from the verdict store or an unchanged topic, and lines the
+    # model judged in this cycle.
+    reused_lines: int = 0
+    judged_lines: int = 0
     # Set when the expensive part was held back until the user confirms it.
     pending_confirm: dict | None = None
 
@@ -112,11 +117,7 @@ def decision_fingerprint(store: SQLiteStore, topic: str) -> str:
 
 
 def artifacts_fingerprint(artifacts: Iterable[Artifact]) -> str:
-    parts = [
-        f"{a.id}|{a.kind.value}|{a.text}|{a.scope.model_dump_json()}|"
-        f"{json.dumps(a.metadata, sort_keys=True, ensure_ascii=False)}"
-        for a in sorted(artifacts, key=lambda x: x.id)
-    ]
+    parts = [artifact_fingerprint(a) for a in sorted(artifacts, key=lambda x: x.id)]
     return _sha(*parts)
 
 
@@ -151,7 +152,9 @@ class ProjectEngine:
             bundle.provider, settings.max_llm_calls_per_cycle, settings.max_parallel_calls,
             self.cancelled,
         )
-        self.persistent = PersistentCachingProvider(self.counter, db, bundle.provider_id)
+        self.persistent = PersistentCachingProvider(
+            self.counter, db, bundle.judge_model_id, bundle.cheap_model_id
+        )
         self.lock = threading.RLock()
         self.extra_ranker = None
         if settings.embedding_model and (
@@ -314,8 +317,20 @@ class ProjectEngine:
 
     # analysis
 
+    def _verdicts(self, decision_fp: str, stamp: str) -> TopicVerdicts:
+        """The verdict store for one topic: reuse is bound to its decision state and models."""
+        return TopicVerdicts(
+            self.db,
+            decision_fp,
+            self.bundle.judge_model_id,
+            self.bundle.cheap_model_id,
+            sampling_key(self.core),
+            "demo" if self.bundle.local_only else "model",
+            stamp,
+        )
+
     def _run_topic(
-        self, topic: str, project, answers: list[str]
+        self, topic: str, project, answers: list[str], verdicts: TopicVerdicts | None = None
     ) -> tuple[AgentTrace, str | None]:
         provider = CachingProvider(self.persistent)
         ui = ReplayUserInterface(answers)
@@ -325,12 +340,12 @@ class ProjectEngine:
             if mode == "pipeline":
                 trace = run_pipeline(
                     project.store, provider, topic, project.artifacts, AS_OF, clarify=True, ui=ui,
-                    settings=self.core,
+                    settings=self.core, verdict_store=verdicts,
                 )
             else:
                 trace = run_agent(
                     project.store, provider, topic, project.artifacts, AS_OF, ui=ui,
-                    allow_clarify=True, settings=self.core,
+                    allow_clarify=True, settings=self.core, verdict_store=verdicts,
                 )
             return trace, None
         except NeedUserInput as need:
@@ -338,12 +353,12 @@ class ProjectEngine:
             if mode == "pipeline":
                 trace = run_pipeline(
                     project.store, provider, topic, project.artifacts, AS_OF, clarify=False,
-                    settings=self.core,
+                    settings=self.core, verdict_store=verdicts,
                 )
             else:
                 trace = run_agent(
                     project.store, provider, topic, project.artifacts, AS_OF, allow_clarify=False,
-                    settings=self.core,
+                    settings=self.core, verdict_store=verdicts,
                 )
             return trace, need.question
 
@@ -461,6 +476,8 @@ class ProjectEngine:
             "cost_profile": self.settings.cost_profile,
             "calls_by_task": report.calls_by_task,
             "local_answers": report.local_answers,
+            "reused_lines": report.reused_lines,
+            "judged_lines": report.judged_lines,
         }
         self.db.meta_put("completion", json.dumps(record, ensure_ascii=False))
 
@@ -527,6 +544,7 @@ class ProjectEngine:
     ) -> CycleReport:
         report = CycleReport(root=str(self.root))
         force_topics = force_topics or set()
+        stamp = datetime.datetime.now().isoformat()
         with self.lock:
             self.counter.reset()
             self.db.meta_delete("pending_confirm")
@@ -537,17 +555,28 @@ class ProjectEngine:
             self.profile_notes = profile.notes
             built = build_inputs(docs, profile.config, profile.aliases, profile.overrides)
             self.last_build = built
+            # Only the judging model and the sampling settings matter here: changing the cheap
+            # model or a profile field that does not change the verdicts re-checks nothing.
             input_fp = _sha(
-                self.bundle.provider_id,
+                self.bundle.judge_model_id,
                 profile.fingerprint,
                 self.settings.analysis_mode,
-                self.settings.cost_profile,
+                sampling_key(self.core),
                 self.settings.embedding_model,
                 json.dumps([m.model_dump() for m in built.meetings], ensure_ascii=False),
                 artifacts_fingerprint(built.artifacts),
             )
             if not force and not force_topics and self.db.meta_get("input_fp") == input_fp:
-                if self.db.meta_get("completion") is None:
+                # Nothing to re-check. A changed cheap model or profile field that leaves the
+                # verdicts as they are still gets a new completion record, so the status does
+                # not keep asking for a check that would change nothing.
+                stored = self.completion()
+                if (
+                    stored is None
+                    or stored.get("provider_id") != self.bundle.provider_id
+                    or stored.get("cost_profile") != self.settings.cost_profile
+                ):
+                    report.reused_lines = sum(self.db.finding_counts().values())
                     self._record_completion(len(self.db.list_topics()), report)
                 return report
             report.rebuilt = True
@@ -588,9 +617,9 @@ class ProjectEngine:
                 fingerprint = _sha(
                     decision_fp,
                     artifacts_fingerprint(candidates),
-                    self.bundle.provider_id,
+                    self.bundle.judge_model_id,
                     self.settings.analysis_mode,
-                    self.settings.cost_profile,
+                    sampling_key(self.core),
                 )
                 previous = self.db.topic_get(topic)
                 unchanged = (
@@ -603,7 +632,13 @@ class ProjectEngine:
                 plans.append((topic, decisions, candidates, decision_fp, fingerprint, unchanged))
             limit = self.settings.confirm_over_calls
             if limit > 0 and not confirm and self.bundle.sends_externally:
-                counts = [len(c) for _, _, c, _, _, same in plans if not same and c]
+                # Lines with a stored verdict cost nothing, so only the others are counted.
+                counts = [
+                    self._verdicts(fp, stamp).missing_lines(c)
+                    for _, _, c, fp, _, same in plans
+                    if not same and c
+                ]
+                counts = [c for c in counts if c]
                 estimated = estimate_calls(counts, self.core)
                 if self.counter.calls + estimated > limit:
                     report.pending_confirm = {
@@ -620,10 +655,12 @@ class ProjectEngine:
                     report.llm_calls = self.counter.calls
                     return report
             runnable = []
+            stored_lines = self.db.finding_counts()
             for topic, decisions, candidates, decision_fp, fingerprint, unchanged in plans:
                 self.db.clear_stale_answers(topic, decision_fp)
                 answers = self.db.get_answers(topic, decision_fp)
                 if unchanged:
+                    report.reused_lines += stored_lines.get(topic, 0)
                     self.progress.topic_done(topic, unchanged=True)
                     continue
                 latest = decisions[-1] if decisions else None
@@ -646,15 +683,16 @@ class ProjectEngine:
                     continue
                 label = short_label(latest.text if latest else topic)
                 runnable.append((topic, decision_fp, fingerprint, answers, summary, label))
-            all_done = self._check_topics(project, runnable, report)
+            all_done = self._check_topics(project, runnable, report, stamp)
             report.llm_calls = self.counter.calls
             report.calls_by_task = dict(self.counter.by_task)
+            self.db.prune_verdicts(stamp)
             if all_done:
                 self.db.meta_put("input_fp", input_fp)
                 self._record_completion(len(topics), report)
         return report
 
-    def _check_topics(self, project, runnable: list, report: CycleReport) -> bool:
+    def _check_topics(self, project, runnable: list, report: CycleReport, stamp: str) -> bool:
         """Analyse the topics that need it, several at a time, and store results in order.
 
         The model work of different topics is independent, so up to settings.topic_workers topics
@@ -668,14 +706,15 @@ class ProjectEngine:
         judge = self.bundle.provider_id
         workers = max(1, min(self.settings.topic_workers, len(runnable)))
         executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="topic")
+        stores = [self._verdicts(decision_fp, stamp) for _, decision_fp, _, _, _, _ in runnable]
         futures = [
-            executor.submit(self._run_topic, topic, project, answers)
-            for topic, _, _, answers, _, _ in runnable
+            executor.submit(self._run_topic, topic, project, answers, store)
+            for (topic, _, _, answers, _, _), store in zip(runnable, stores, strict=True)
         ]
         all_done = True
         try:
-            for (topic, decision_fp, fingerprint, _answers, summary, label), future in zip(
-                runnable, futures, strict=True
+            for (topic, decision_fp, fingerprint, _answers, summary, label), future, store in zip(
+                runnable, futures, stores, strict=True
             ):
                 if self.cancelled.is_set():
                     report.partial = True
@@ -707,6 +746,8 @@ class ProjectEngine:
                     all_done = False
                     break
                 report.local_answers += trace.local_answers
+                report.reused_lines += store.reused_lines
+                report.judged_lines += store.judged_lines
                 outcome = self._store_topic_results(topic, project, trace, question)
                 self.db.topic_put(topic, fingerprint, decision_fp, outcome.state, summary, judge)
                 report.topics_checked.append(topic)

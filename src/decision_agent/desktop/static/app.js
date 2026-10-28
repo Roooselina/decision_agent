@@ -368,6 +368,14 @@
     }
     return [...sums.entries()].sort((a, b) => b[1] - a[1]);
   }
+  function usageText(c) {
+    const local = c.local_answers ? ", AI 없이 확인한 줄 " + c.local_answers + "건" : "";
+    if (typeof c.judged_lines !== "number") {
+      return "이번 점검: 모델 호출 " + c.llm_calls + "회, AI 없이 확인한 줄 " + (c.local_answers || 0) + "건";
+    }
+    return "이번 점검: 새로 판단한 줄 " + c.judged_lines + ", 이전 결과 재사용 " + (c.reused_lines || 0) +
+      ", 모델 호출 " + c.llm_calls + "회" + local;
+  }
   function usageBlock(st) {
     const done = st.folders.filter(f => f.completion && typeof f.completion.llm_calls === "number" && providerKind(f.completion.provider_id) !== "demo");
     if (!done.length) return null;
@@ -376,7 +384,7 @@
       const c = f.completion;
       const rows = taskRows(c.calls_by_task);
       return h("div", {class: "usage-folder"},
-        h("p", {class: "usage-line"}, (many ? folderName(f.root) + " · " : "") + "이번 점검: 모델 호출 " + c.llm_calls + "회, AI 없이 확인한 줄 " + (c.local_answers || 0) + "건"),
+        h("p", {class: "usage-line"}, (many ? folderName(f.root) + " · " : "") + usageText(c)),
         rows.length ? h("details", {class: "usage-details"}, h("summary", {}, "호출 내역", icon("chevron-right", "sm")),
           h("ul", {class: "usage-list"}, ...rows.map(([name, n]) => h("li", {}, h("span", {}, name), h("span", {class: "usage-n"}, n + "회"))))) : null);
     }));

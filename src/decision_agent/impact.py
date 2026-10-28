@@ -12,6 +12,7 @@ from decision_agent.models import Artifact, Decision, DecisionRelation
 from decision_agent.ranking import stable_order
 from decision_agent.scope import scope_overlaps
 from decision_agent.storage import SQLiteStore
+from decision_agent.verdicts import VerdictStore
 
 IMPACT_SYSTEM = """TASK:IMPACT_SELECT
 너는 결정 변경의 영향을 받아야 하는 산출물을 고른다.
@@ -76,9 +77,31 @@ def _select(
     decisions: list[Decision],
     candidates: list[Artifact],
     provider: LLMProvider,
+    store: VerdictStore | None = None,
 ) -> list[Artifact]:
+    """The model picks affected ids among the candidates.
+
+    With a store, candidates whose selection is already known for this decision state are not
+    sent again; only unseen candidates go to the model. The result is then in candidate order.
+    """
     if not candidates:
         return []
+    if store is None:
+        return _ask(decisions, candidates, provider)
+    known = store.get_selections(candidates)
+    unseen = [a for a in candidates if a.id not in known]
+    picked: set[str] = set()
+    if unseen:
+        picked = {a.id for a in _ask(decisions, unseen, provider)}
+        store.put_selections(unseen, picked)
+    return [a for a in candidates if known.get(a.id) or a.id in picked]
+
+
+def _ask(
+    decisions: list[Decision],
+    candidates: list[Artifact],
+    provider: LLMProvider,
+) -> list[Artifact]:
     lines = [f"- {d.date} {d.text}" for d in decisions]
     user = "DECISIONS=\n" + "\n".join(lines) + "\nCANDIDATES:\n"
     user += "\n".join(f"ID={a.id} KIND={a.kind.value} TEXT={a.text}" for a in candidates)
@@ -136,9 +159,10 @@ def predict_affected_for_topic(
     provider: LLMProvider,
     as_of_date: str,
     k: int | None = None,
+    verdict_store: VerdictStore | None = None,
 ) -> list[Artifact]:
     """Select artifacts affected by any decision of the topic, using the whole decision history."""
     decisions, candidates = candidate_artifacts_for_topic(store, topic, artifacts, as_of_date, k)
     if not decisions:
         return []
-    return _select(decisions, candidates, provider)
+    return _select(decisions, candidates, provider, verdict_store)

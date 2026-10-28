@@ -12,6 +12,7 @@ from decision_agent.config import DEFAULT_SETTINGS, Settings
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import AgentStep, AgentTrace, Artifact
 from decision_agent.storage import SQLiteStore
+from decision_agent.verdicts import VerdictStore
 
 AGENT_SYSTEM = (
     """TASK:TOOL_SELECT
@@ -127,6 +128,7 @@ def run_agent(
     ask=None,
     settings: Settings = DEFAULT_SETTINGS,
     allow_clarify: bool = True,
+    verdict_store: VerdictStore | None = None,
 ) -> AgentTrace:
     """Run the tool-selection loop. The LLM sees real state and picks each next tool."""
     if ui is None and ask is not None:
@@ -139,6 +141,7 @@ def run_agent(
         as_of_date=as_of_date,
         settings=settings,
         allow_clarify=allow_clarify,
+        verdict_store=verdict_store,
     )
     trace = AgentTrace()
     start = time.perf_counter()
@@ -189,6 +192,8 @@ def run_agent(
     trace.rechecked_artifact_ids = list(ctx.rechecked_ids)
     trace.final_results = ctx.final_results()
     trace.local_answers = ctx.local_answers
+    trace.reused_lines = ctx.reused_lines
+    trace.judged_lines = ctx.judged_lines
     trace.tool_calls = len(trace.steps)
     trace.elapsed_seconds = time.perf_counter() - start
     return trace

@@ -40,6 +40,24 @@ class ProviderBundle:
     local_only: bool
     reason: str
     sends_externally: bool = False
+    # Ids of the model that answers judging tasks and of the one that answers cheap tasks.
+    # Empty means derived from provider_id ("kind:main+cheap" or "kind:main").
+    judge_id: str = ""
+    cheap_id: str = ""
+
+    @property
+    def judge_model_id(self) -> str:
+        return self.judge_id or self.provider_id.split("+", 1)[0]
+
+    @property
+    def cheap_model_id(self) -> str:
+        if self.cheap_id:
+            return self.cheap_id
+        main, _, cheap = self.provider_id.partition("+")
+        if not cheap:
+            return main
+        kind, colon, _ = main.partition(":")
+        return f"{kind}:{cheap}" if colon else cheap
 
 
 def describe_llm_error(exc: Exception) -> tuple[str, bool]:
@@ -167,17 +185,23 @@ class PersistentCachingProvider(LLMProvider):
 
     Rebuilding the decision store after a file change then costs no new calls for text that
     was already seen. Sampling calls (temperature above zero) are never cached, because each
-    sample must stay independent. The key includes the provider id, so switching between the
-    local mock and a real model never mixes their answers.
+    sample must stay independent. The key includes the id of the model that answers the task
+    (cheap_id for the cheap tasks, provider_id for the rest), so switching between the local
+    mock and a real model never mixes their answers, and changing only the cheap model keeps the
+    judging answers.
     """
 
-    def __init__(self, inner: LLMProvider, db: StateDB, provider_id: str) -> None:
+    def __init__(
+        self, inner: LLMProvider, db: StateDB, provider_id: str, cheap_id: str | None = None
+    ) -> None:
         self.inner = inner
         self.db = db
         self.provider_id = provider_id
+        self.cheap_id = cheap_id or provider_id
 
     def _key(self, system: str, user: str) -> str:
-        raw = f"{self.provider_id}\x00{system}\x00{user}"
+        model = self.cheap_id if task_of(system) in CHEAP_TASKS else self.provider_id
+        raw = f"{model}\x00{system}\x00{user}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def complete(
@@ -224,11 +248,13 @@ def _build_ollama(
     )
     main = factory(settings.ollama_url, model)
     provider_id = f"ollama:{model}"
+    judge_id = cheap_id = provider_id
     cheap_name = settings.cheap_model_name.strip()
     if cheap_name and cheap_name != model:
         main = TieredProvider(main, factory(settings.ollama_url, cheap_name))
         provider_id = f"{provider_id}+{cheap_name}"
-    return ProviderBundle(main, provider_id, False, reason, remote)
+        cheap_id = f"ollama:{cheap_name}"
+    return ProviderBundle(main, provider_id, False, reason, remote, judge_id, cheap_id)
 
 
 def build_provider(
@@ -264,8 +290,12 @@ def build_provider(
 
     main = anthropic_factory(key, model)
     provider_id = f"anthropic:{model}"
+    judge_id = cheap_id = provider_id
     cheap_name = settings.cheap_model_name.strip()
     if cheap_name and cheap_name != model:
         main = TieredProvider(main, anthropic_factory(key, cheap_name))
         provider_id = f"{provider_id}+{cheap_name}"
-    return ProviderBundle(main, provider_id, False, "외부 LLM을 사용합니다.", True)
+        cheap_id = f"anthropic:{cheap_name}"
+    return ProviderBundle(
+        main, provider_id, False, "외부 LLM을 사용합니다.", True, judge_id, cheap_id
+    )

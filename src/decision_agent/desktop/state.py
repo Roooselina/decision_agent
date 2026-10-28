@@ -35,9 +35,24 @@ CREATE TABLE IF NOT EXISTS answers (
     id INTEGER PRIMARY KEY AUTOINCREMENT, topic TEXT NOT NULL, text TEXT NOT NULL, decision_fp TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS line_verdicts (
+    key TEXT PRIMARY KEY, line_key TEXT NOT NULL, label TEXT NOT NULL, evidence TEXT NOT NULL,
+    expected_action TEXT NOT NULL, certainty REAL NOT NULL, decision_id TEXT,
+    origin TEXT NOT NULL, created_at TEXT NOT NULL, used_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS line_verdicts_line ON line_verdicts(line_key);
+CREATE INDEX IF NOT EXISTS line_verdicts_used ON line_verdicts(used_at);
+CREATE TABLE IF NOT EXISTS impact_selections (
+    key TEXT PRIMARY KEY, selected INTEGER NOT NULL, created_at TEXT NOT NULL, used_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS impact_selections_used ON impact_selections(used_at);
 """
 
 CACHE_LIMIT = 20000
+# Stored line verdicts and impact selections: rows not read for this many days are removed,
+# and the tables never hold more than VERDICT_LIMIT rows each (least recently used go first).
+VERDICT_MAX_AGE_DAYS = 60
+VERDICT_LIMIT = 200000
 
 
 def now_iso() -> str:
@@ -168,6 +183,104 @@ class StateDB:
                 )
             self.conn.commit()
 
+    # line verdicts and impact selections
+    def verdicts_get(self, keys: list[str], stamp: str) -> dict[str, sqlite3.Row]:
+        """Rows for the keys that exist. Their used_at is set to the cycle stamp."""
+        found: dict[str, sqlite3.Row] = {}
+        with self.lock:
+            for key in dict.fromkeys(keys):
+                row = self.conn.execute("SELECT * FROM line_verdicts WHERE key=?", (key,)).fetchone()
+                if row is not None:
+                    found[key] = row
+            self.conn.executemany(
+                "UPDATE line_verdicts SET used_at=? WHERE key=?", [(stamp, k) for k in found]
+            )
+            self.conn.commit()
+        return found
+
+    def verdicts_put(self, rows: list[dict], stamp: str) -> None:
+        with self.lock:
+            self.conn.executemany(
+                "INSERT OR REPLACE INTO line_verdicts(key,line_key,label,evidence,expected_action,"
+                "certainty,decision_id,origin,created_at,used_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                [
+                    (
+                        r["key"], r["line_key"], r["label"], r["evidence"], r["expected_action"],
+                        r["certainty"], r["decision_id"], r["origin"], stamp, stamp,
+                    )
+                    for r in rows
+                ],
+            )
+            self.conn.commit()
+
+    def verdict_lines_known(self, line_keys: list[str], origins: tuple[str, ...]) -> set[str]:
+        """Line keys that have at least one stored verdict of the given origins."""
+        marks = ",".join("?" for _ in origins)
+        known: set[str] = set()
+        with self.lock:
+            for key in dict.fromkeys(line_keys):
+                row = self.conn.execute(
+                    f"SELECT 1 FROM line_verdicts WHERE line_key=? AND origin IN ({marks}) LIMIT 1",
+                    (key, *origins),
+                ).fetchone()
+                if row is not None:
+                    known.add(key)
+        return known
+
+    def selections_get(self, keys: list[str], stamp: str) -> dict[str, bool]:
+        found: dict[str, bool] = {}
+        with self.lock:
+            for key in dict.fromkeys(keys):
+                row = self.conn.execute(
+                    "SELECT selected FROM impact_selections WHERE key=?", (key,)
+                ).fetchone()
+                if row is not None:
+                    found[key] = bool(row["selected"])
+            self.conn.executemany(
+                "UPDATE impact_selections SET used_at=? WHERE key=?", [(stamp, k) for k in found]
+            )
+            self.conn.commit()
+        return found
+
+    def selections_put(self, rows: dict[str, bool], stamp: str) -> None:
+        with self.lock:
+            self.conn.executemany(
+                "INSERT OR REPLACE INTO impact_selections(key,selected,created_at,used_at)"
+                " VALUES(?,?,?,?)",
+                [(key, int(value), stamp, stamp) for key, value in rows.items()],
+            )
+            self.conn.commit()
+
+    def prune_verdicts(
+        self,
+        stamp: str,
+        max_age_days: int = VERDICT_MAX_AGE_DAYS,
+        limit: int = VERDICT_LIMIT,
+    ) -> int:
+        """Remove old stored verdicts and selections. Returns the number of rows removed.
+
+        Only rows last used before `stamp` (the start of the current cycle) can go, so nothing
+        the current cycle read or wrote is ever removed, even when the limit is exceeded.
+        """
+        cutoff = (
+            datetime.datetime.fromisoformat(stamp) - datetime.timedelta(days=max_age_days)
+        ).isoformat()
+        removed = 0
+        with self.lock:
+            for table in ("line_verdicts", "impact_selections"):
+                removed += self.conn.execute(
+                    f"DELETE FROM {table} WHERE used_at < ?", (cutoff,)
+                ).rowcount
+                count = self.conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
+                if count > limit:
+                    removed += self.conn.execute(
+                        f"DELETE FROM {table} WHERE key IN (SELECT key FROM {table} "
+                        "WHERE used_at < ? ORDER BY used_at ASC, key ASC LIMIT ?)",
+                        (stamp, count - limit),
+                    ).rowcount
+            self.conn.commit()
+        return removed
+
     # meta
     def meta_get(self, key: str) -> str | None:
         with self.lock:
@@ -273,6 +386,14 @@ class StateDB:
                 continue
             visible.append(row)
         return visible
+
+    def finding_counts(self) -> dict[str, int]:
+        """Stored result lines per topic, counted in SQL."""
+        with self.lock:
+            rows = self.conn.execute(
+                "SELECT topic, COUNT(*) AS n FROM findings GROUP BY topic"
+            ).fetchall()
+        return {row["topic"]: row["n"] for row in rows}
 
     def set_finding_status(
         self, topic: str, artifact_id: str, status: str, snooze_until: str | None = None

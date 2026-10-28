@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from decision_agent.agent.interfaces import UserInterface
 from decision_agent.clarification import generate_questions, select_question
 from decision_agent.config import DEFAULT_SETTINGS, Settings
-from decision_agent.consistency import prepare_check
+from decision_agent.consistency import PreparedCheck, prepare_check
 from decision_agent.impact import predict_affected_for_topic
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import (
@@ -19,6 +19,7 @@ from decision_agent.prefilter import PrefilterContext, local_verdict
 from decision_agent.resolver import resolve_effective_decision
 from decision_agent.storage import SQLiteStore
 from decision_agent.uncertainty import estimate_many, estimate_uncertainty
+from decision_agent.verdicts import VerdictStore
 
 
 def describe_scope(artifact: Artifact) -> str:
@@ -62,6 +63,10 @@ class AnalysisContext:
     question_blocked: bool = False
     rechecked_ids: list[str] = field(default_factory=list)
     local_answers: int = 0
+    # Optional reuse of earlier verdicts (None judges every line, as the research runs do).
+    verdict_store: VerdictStore | None = None
+    reused_lines: int = 0
+    judged_lines: int = 0
 
     def __post_init__(self) -> None:
         self.store.clear_evidence(self.topic)
@@ -100,6 +105,7 @@ class AnalysisContext:
             self.provider,
             self.as_of_date,
             self.settings.k,
+            verdict_store=self.verdict_store,
         )
         ids = ", ".join(self.affected_ids()) or "없음"
         return f"영향 대상 {len(self.affected)}건: {ids}"
@@ -147,13 +153,38 @@ class AnalysisContext:
                 if verdict is not None:
                     item.early = verdict
                     self.local_answers += 1
-        for artifact, result in zip(
-            targets, estimate_many(prepared, self.provider, self.settings), strict=True
-        ):
+        for artifact, result in zip(targets, self._estimate(prepared), strict=True):
             self.results[artifact.id] = result
         counts = Counter(self.results[i].label.value for i in ids if i in self.results)
         summary = ", ".join(f"{label}={n}" for label, n in sorted(counts.items()))
         return f"{len(ids)}건 판단: {summary or '없음'}"
+
+    def _estimate(self, prepared: list[PreparedCheck]) -> list[ConsistencyResult]:
+        """estimate_many, reusing stored verdicts for lines judged before when a store is set.
+
+        Stored and missing lines are split, only the missing ones go to the model, and both are
+        merged back in the original order. Lines answered locally never touch the store.
+        """
+        if self.verdict_store is None:
+            return estimate_many(prepared, self.provider, self.settings)
+        stored = self.verdict_store.get_verdicts(prepared)
+        missing = [i for i, item in enumerate(prepared) if item.early is not None or stored[i] is None]
+        fresh = estimate_many([prepared[i] for i in missing], self.provider, self.settings)
+        merged: list[ConsistencyResult | None] = list(stored)
+        new_rows: list[tuple[PreparedCheck, ConsistencyResult]] = []
+        for index, result in zip(missing, fresh, strict=True):
+            merged[index] = result
+            if prepared[index].early is None:
+                new_rows.append((prepared[index], result))
+        if new_rows:
+            self.verdict_store.put_verdicts(new_rows)
+        self.judged_lines += len(new_rows)
+        self.reused_lines += len(prepared) - len(missing)
+        return [
+            result.model_copy(update={"artifact_id": item.artifact.id})
+            for item, result in zip(prepared, merged, strict=True)
+            if result is not None
+        ]
 
     def _clarify_context(self, targets: list[str]) -> str:
         by_id = self._by_id()
@@ -192,15 +223,22 @@ class AnalysisContext:
             self.store.add_evidence(self.topic, answer, artifact_id)
         by_id = self._by_id()
         for artifact_id in targets:
-            self.results[artifact_id] = estimate_uncertainty(
-                self.store,
-                self.topic,
-                by_id[artifact_id],
-                self.as_of_date,
-                self.provider,
-                self.settings,
-                extra_evidence=self.shared_evidence,
-            )
+            if self.verdict_store is not None:
+                prepared = prepare_check(
+                    self.store, self.topic, by_id[artifact_id], self.as_of_date,
+                    self.shared_evidence,
+                )
+                self.results[artifact_id] = self._estimate([prepared])[0]
+            else:
+                self.results[artifact_id] = estimate_uncertainty(
+                    self.store,
+                    self.topic,
+                    by_id[artifact_id],
+                    self.as_of_date,
+                    self.provider,
+                    self.settings,
+                    extra_evidence=self.shared_evidence,
+                )
             self.rechecked_ids.append(artifact_id)
         remaining = self.uncertain_ids()
         if set(remaining) == set(targets):
