@@ -1025,6 +1025,12 @@ class DecisionAgentApp:
     def mail_list(self, params: dict) -> dict:
         return mailview.list_mail(self.maildb, list(self.settings.mail_sources), params)
 
+    def related_mail(
+        self, text: str, limit: int = 5, exclude: str = "", timeline: bool = False
+    ) -> list[dict]:
+        """Stored mails similar to a text (event, decision, or another mail). Local, no model."""
+        return mailview.related_mail(self.maildb, text, limit, exclude, timeline)
+
     def mail_read(self, uid: str) -> dict:
         item = mailview.read_mail(self.maildb, list(self.settings.mail_sources), uid)
         if item is None:

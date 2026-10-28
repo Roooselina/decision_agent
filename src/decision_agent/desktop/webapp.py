@@ -153,6 +153,13 @@ class TextBody(BaseModel):
     text: str = Field(min_length=2, max_length=1000)
 
 
+class RelatedBody(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    limit: int = Field(default=5, ge=1, le=10)
+    exclude: str = Field(default="", max_length=40)
+    timeline: bool = False
+
+
 class ContactsImportBody(BaseModel):
     text: str = Field(max_length=1_000_000)
 
@@ -471,6 +478,11 @@ def create_web_app(
             "limit": max(1, min(50, limit)), "offset": max(0, offset),
         }
         return controller.mail_list(params)
+
+    @app.post("/api/related", dependencies=auth)
+    def related(body: RelatedBody):
+        """Stored mails similar to a text. Rows carry a snippet only; no model is called."""
+        return controller.related_mail(body.text, body.limit, body.exclude, body.timeline)
 
     @app.get("/api/mail/{uid}", dependencies=auth)
     def mail_read(uid: str):

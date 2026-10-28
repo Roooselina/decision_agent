@@ -915,4 +915,14 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .mail-body { border-top: 1px solid var(--border); padding-top: 8px; max-height: 50vh; overflow-y: auto; font-size: 14px; }
 .mail-body p { margin: 0 0 4px; white-space: pre-wrap; }
 .cal-mail { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; }
-@media (max-width: 1180px) { .mail-view { grid-template-columns: minmax(0, 1fr); } .mail-filters { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+@media (max-width: 1180px) { .mail-view:not(.compact) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .mail-view:not(.compact) .mail-filters { grid-column: 1 / -1; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+@media (max-width: 760px) { .mail-view:not(.compact) { grid-template-columns: minmax(0, 1fr); } }
+/* related mail and date hints */
+.hint-list, .related-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.related-row { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 10px; min-width: 0; overflow-wrap: anywhere; }
+.related-top { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.related-top .link { margin-left: auto; }
+.related-row p { margin: 2px 0 0; }
+.related-block h4 { margin: 8px 0 0; }
+.cal-due { display: grid; gap: 4px; margin-top: 8px; }
+.cal-bar.warn { background: var(--warning); }

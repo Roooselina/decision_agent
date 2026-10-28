@@ -540,8 +540,37 @@
     return root;
   }
 
-  // Filled in by the related-mail feature: deadline hints and similar mail in the reading pane.
-  function mailExtras(m, box) { set(box); }
+  // Reading pane extras: dates found in the mail (hints, not facts) and similar stored mail.
+  function mailExtras(m, box) {
+    const hints = (m.hints || []).map(x => h("li", {},
+      h("span", {class: "strong"}, shortDate(x.date)), " ",
+      x.kind === "deadline" ? h("span", {class: "badge warning"}, "마감") : null, " ",
+      h("span", {class: "muted"}, x.sentence)));
+    set(box,
+      hints.length ? h("div", {class: "stack-sm"}, h("h4", {}, "메일 속 날짜"),
+        h("p", {class: "small muted"}, "메일 문장에서 찾은 날짜입니다. 확인용 힌트이며 점검 결과에는 쓰지 않습니다."),
+        h("ul", {class: "hint-list"}, ...hints)) : null,
+      relatedBlock("비슷한 메일", m.subject + " " + (m.body || "").slice(0, 400), {exclude: m.id}));
+  }
+
+  // Stored mail similar to a text, ranked on this computer. Each row opens the mail view.
+  function relatedBlock(title, text, opts) {
+    const o = opts || {};
+    const box = h("div", {class: "stack-sm related-block"}, h("h4", {}, title), h("p", {class: "small muted"}, "찾는 중입니다."));
+    if (!text || !text.trim()) { set(box); return box; }
+    api("/api/related", "POST", {text: text.slice(0, 2000), limit: o.limit || 5, exclude: o.exclude || "", timeline: Boolean(o.timeline)})
+      .then(rows => {
+        if (!rows.length) { set(box, ...(o.hideEmpty ? [] : [h("h4", {}, title), h("p", {class: "small muted"}, "관련 메일이 없습니다.")])); return; }
+        set(box, h("h4", {}, title + " " + rows.length + "건"),
+          h("ul", {class: "related-list"}, ...rows.map(r => h("li", {class: "related-row"},
+            h("div", {class: "related-top"}, h("span", {class: "muted small"}, shortDate(r.date)), h("span", {class: "strong truncate"}, r.sender),
+              h("button", {type: "button", class: "link", onclick: () => go("mail", {id: r.id})}, "열기")),
+            h("p", {class: "small truncate"}, r.subject),
+            h("p", {class: "small muted related-snippet"}, r.snippet)))));
+      })
+      .catch(() => set(box));
+    return box;
+  }
 
   ROUTES.mail = {
     title: "메일",
@@ -598,8 +627,14 @@
       }));
       const items = byDay.get(HS.day);
       const mailDay = (week.mail_days || {})[HS.day];
-      const mailLine = mailDay && mailDay.count
-        ? h("button", {type: "button", class: "link cal-mail", onclick: () => go("mail", {date: HS.day})}, icon("mail", "sm"), "이 날 받은 메일 " + mailDay.count + "통")
+      const dueMail = mailDay && mailDay.deadlines && mailDay.deadlines.length
+        ? h("div", {class: "cal-due"}, h("p", {class: "small strong"}, "이 날 마감으로 보이는 메일"),
+            ...mailDay.deadlines.map(x => h("button", {type: "button", class: "cal-event", onclick: () => go("mail", {id: x.id})},
+              h("span", {class: "cal-bar warn", "aria-hidden": "true"}), h("span", {class: "cal-time"}, x.phrase),
+              h("span", {class: "cal-title truncate", title: x.sentence}, x.subject))))
+        : null;
+      const mailLine = mailDay && (mailDay.count || dueMail)
+        ? h("div", {}, dueMail, mailDay.count ? h("button", {type: "button", class: "link cal-mail", onclick: () => go("mail", {date: HS.day})}, icon("mail", "sm"), "이 날 받은 메일 " + mailDay.count + "통") : null)
         : null;
       if (items.length) {
         set(list, ...items.map(eventRow), mailLine);
@@ -641,7 +676,8 @@
       h("p", {class: "small muted"}, "출처 " + e.source_name),
       d ? h("div", {class: "ev-decision"}, h("span", {class: "small muted"}, "연결된 결정"), h("strong", {}, d.topic_label),
         h("p", {class: "muted"}, d.evidence || (e.source_name + "의 " + e.title + " 항목이 변경된 결정과 맞는지 확인이 필요합니다."))) :
-        h("p", {class: "muted"}, "이 일정과 연결된 결정이 없습니다."));
+        h("p", {class: "muted"}, "이 일정과 연결된 결정이 없습니다."),
+      relatedBlock("관련 메일", e.title + (d ? " " + d.topic_label : ""), {hideEmpty: true}));
     modal({title: e.title, body, plain: true, actions: d
       ? [{label: "관련 점검 결과", variant: "primary", onClick: () => { go("results", {open: [d.root, d.topic, d.artifact_id].join("|")}); }}, {label: "닫기"}]
       : [{label: "닫기"}]});
@@ -1027,6 +1063,8 @@
           related ? h("span", {}, "관련 일정  " + shortDate(related.date) + " " + related.text) : null)),
       draftBox,
       h("div", {class: "detail-links"}, ...actions),
+      relatedBlock("과거 메일에서 같은 내용", f.decision_text + " " + f.text, {hideEmpty: true}),
+      relatedBlock("이 결정과 관련된 메일 흐름", f.decision_text, {timeline: true, limit: 10, hideEmpty: true}),
       h("details", {class: "detail-tech"}, h("summary", {}, "자세히 보기"),
         h("dl", {class: "kv"},
           h("dt", {}, "종류"), h("dd", {}, KINDS[f.kind] || f.kind),

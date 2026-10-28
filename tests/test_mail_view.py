@@ -102,8 +102,10 @@ def test_calendar_week_counts_mail_per_day(viewer):
     controller, _ = viewer
     week = controller.calendar_week(day(1))
     if week["start"] <= day(1) <= week["end"]:
-        assert week["mail_days"][day(1)] == {"count": 1}
-    assert all(set(v) == {"count"} for v in week["mail_days"].values())
+        assert week["mail_days"][day(1)]["count"] == 1
+    # Only counts and the deadline hints travel with the week; never a body.
+    assert all(set(v) == {"count", "deadlines"} for v in week["mail_days"].values())
+    assert "비밀 본문" not in str(week)
 
 
 def test_screens_have_the_mail_view_and_render_text_only():

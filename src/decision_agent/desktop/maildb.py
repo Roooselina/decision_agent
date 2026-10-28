@@ -19,6 +19,7 @@ from pathlib import Path
 
 from decision_agent.connectors.base import MailMessage, clean_message_text
 from decision_agent.connectors.mailfilter import address_of, sender_matches
+from decision_agent.desktop.mailhints import extract_hints
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS mail_index (
@@ -30,6 +31,12 @@ CREATE TABLE IF NOT EXISTS mail_index (
 CREATE UNIQUE INDEX IF NOT EXISTS mail_index_source_msg ON mail_index(source_id, msg_id);
 CREATE INDEX IF NOT EXISTS mail_index_date ON mail_index(date);
 CREATE TABLE IF NOT EXISTS mail_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS mail_hints (
+    uid TEXT NOT NULL, date TEXT NOT NULL, phrase TEXT NOT NULL, sentence TEXT NOT NULL,
+    kind TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS mail_hints_uid ON mail_hints(uid);
+CREATE INDEX IF NOT EXISTS mail_hints_date ON mail_hints(date);
 CREATE TABLE IF NOT EXISTS contacts (
     pattern TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', team TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL DEFAULT '기타', note TEXT NOT NULL DEFAULT ''
@@ -69,6 +76,7 @@ class MailDB:
                 self.conn.execute("PRAGMA journal_mode=WAL")
             self.conn.executescript(SCHEMA)
             self.conn.commit()
+        self.ensure_hints()
 
     def close(self) -> None:
         with self.lock:
@@ -94,7 +102,7 @@ class MailDB:
     def purge(self) -> None:
         """Delete every indexed mail, fetch memory and contact."""
         with self.lock:
-            for table in ("mail_index", "mail_meta", "contacts"):
+            for table in ("mail_index", "mail_hints", "mail_meta", "contacts"):
                 self.conn.execute(f"DELETE FROM {table}")
             self.conn.commit()
 
@@ -122,7 +130,54 @@ class MailDB:
                 rows,
             )
             self.conn.commit()
+        for row in rows:
+            self._store_hints(row[0], row[4], row[8], row[3])
         return len(rows)
+
+    # date hints (local only; never used by the analysis)
+
+    def _store_hints(self, uid: str, subject: str, body: str, date: str) -> None:
+        hints = extract_hints(subject, body, date)
+        with self.lock:
+            self.conn.execute("DELETE FROM mail_hints WHERE uid=?", (uid,))
+            self.conn.executemany(
+                "INSERT INTO mail_hints(uid,date,phrase,sentence,kind) VALUES(?,?,?,?,?)",
+                [(uid, h["date"], h["phrase"], h["sentence"], h["kind"]) for h in hints],
+            )
+            self.conn.commit()
+
+    def ensure_hints(self) -> None:
+        """Compute hints once for mail indexed before hints existed."""
+        if self.meta_get("hints_v1"):
+            return
+        for row in self.all_rows():
+            self._store_hints(row["uid"], row["subject"], row["body"], row["date"])
+        self.meta_put("hints_v1", "1")
+
+    def hints(self, uid: str) -> list[dict]:
+        with self.lock:
+            rows = self.conn.execute(
+                "SELECT date, phrase, sentence, kind FROM mail_hints WHERE uid=? ORDER BY date, phrase", (uid,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def deadline_uids(self) -> set[str]:
+        with self.lock:
+            rows = self.conn.execute("SELECT DISTINCT uid FROM mail_hints WHERE kind='deadline'").fetchall()
+        return {r["uid"] for r in rows}
+
+    def deadlines_between(self, start: str, end: str) -> list[sqlite3.Row]:
+        """Deadline hints dated in the range, with the mail's subject and sender."""
+        with self.lock:
+            return self.conn.execute(
+                "SELECT h.date AS due, h.phrase, h.sentence, m.uid, m.subject, m.sender, m.sender_name, m.date "
+                "FROM mail_hints h JOIN mail_index m ON m.uid = h.uid "
+                "WHERE h.kind='deadline' AND h.date BETWEEN ? AND ? ORDER BY h.date, m.date, m.uid",
+                (start, end),
+            ).fetchall()
+
+    def _drop_orphan_hints(self) -> None:
+        self.conn.execute("DELETE FROM mail_hints WHERE uid NOT IN (SELECT uid FROM mail_index)")
 
     def ids(self, source_id: str) -> set[str]:
         with self.lock:
@@ -157,6 +212,7 @@ class MailDB:
             ).fetchall()
             gone = [(r["uid"],) for r in rows if r["msg_id"] not in seen]
             self.conn.executemany("DELETE FROM mail_index WHERE uid=?", gone)
+            self._drop_orphan_hints()
             self.conn.commit()
         return len(gone)
 
@@ -169,6 +225,7 @@ class MailDB:
             params = (oldest, source_id)
         with self.lock:
             removed = self.conn.execute(query, params).rowcount
+            self._drop_orphan_hints()
             self.conn.commit()
         return removed
 
@@ -177,6 +234,7 @@ class MailDB:
             removed = self.conn.execute(
                 "DELETE FROM mail_index WHERE source_id=?", (source_id,)
             ).rowcount
+            self._drop_orphan_hints()
             self.conn.commit()
         return removed
 

@@ -5,8 +5,12 @@ List responses carry snippets only; a body is returned only for one mail at a ti
 
 from __future__ import annotations
 
+import datetime
 import json
+import re
 import sqlite3
+
+from sklearn.metrics.pairwise import cosine_similarity
 
 from decision_agent.connectors.mailfilter import sender_matches
 from decision_agent.desktop import quick as quick_module
@@ -78,6 +82,9 @@ def list_mail(maildb: MailDB, sources: list[MailSource], params: dict) -> dict:
     q = str(params.get("q") or "").strip()
     rows = maildb.all_rows()
     items = [_item(r, by_id, book) for r in rows]
+    deadlines = maildb.deadline_uids()
+    for item in items:
+        item["deadline"] = item["id"] in deadlines
     bodies = {r["uid"]: r["body"] for r in rows} if q else {}
     team = str(params.get("team") or "")
     sender = str(params.get("sender") or "").strip().casefold()
@@ -154,13 +161,94 @@ def read_mail(maildb: MailDB, sources: list[MailSource], uid: str) -> dict | Non
     item["body"] = row["body"]
     item["labels"] = json.loads(row["labels"] or "[]")
     item["analysis"] = source.effective_analysis if source else "off"
+    # Dates found in the mail ("메일 속 날짜"): hints only, never used by the analysis.
+    item["hints"] = maildb.hints(uid)
+    item["deadline"] = any(h["kind"] == "deadline" for h in item["hints"])
     return item
 
 
 def day_summary(maildb: MailDB, start: str, end: str) -> dict[str, dict]:
-    """Mails received per day of a date range (counts only)."""
+    """Per day of a date range: mails received, and mails that seem to be due that day."""
     found: dict[str, dict] = {}
     for row in maildb.all_rows():
         if start <= row["date"] <= end:
-            found.setdefault(row["date"], {"count": 0})["count"] += 1
+            found.setdefault(row["date"], {"count": 0, "deadlines": []})["count"] += 1
+    for row in maildb.deadlines_between(start, end):
+        day = found.setdefault(row["due"], {"count": 0, "deadlines": []})
+        if any(d["id"] == row["uid"] for d in day["deadlines"]):
+            continue
+        day["deadlines"].append({
+            "id": row["uid"], "subject": row["subject"], "sender": row["sender_name"] or row["sender"],
+            "phrase": row["phrase"], "sentence": row["sentence"], "date": row["date"],
+        })
     return found
+
+
+# Related mail: character TF-IDF over subject and body, like the candidate ranking of the
+# analysis. Ties keep the newest mail first, then the id, so the order never changes by chance.
+MIN_RELATED = 0.1
+UNITS_PER_MAIL = 40
+_WORD = re.compile(r"\w{2,}")
+
+
+def match_snippet(body: str, text: str, width: int = 160) -> str:
+    """A short piece of the body around the first word it shares with the text."""
+    flat = " ".join(body.split())
+    lowered = flat.casefold()
+    for word in sorted(set(_WORD.findall(text.casefold())), key=len, reverse=True):
+        position = lowered.find(word)
+        if position >= 0:
+            start = max(0, position - 50)
+            return ("..." if start else "") + flat[start: start + width]
+    return flat[:width]
+
+
+def related_mail(
+    maildb: MailDB,
+    text: str,
+    limit: int = 5,
+    exclude: str = "",
+    timeline: bool = False,
+) -> list[dict]:
+    """Indexed mails most similar to the text, above a minimum score. No model is called.
+
+    timeline=True returns them by date ascending, to show how a topic developed by mail.
+    """
+    rows = [r for r in maildb.all_rows() if r["uid"] != exclude]
+    if not text.strip() or not rows:
+        return []
+    # A mail scores by its best unit (the subject or one body line): a long mail that holds
+    # the matching sentence is not diluted by the rest of its text.
+    units: list[tuple[int, str]] = []
+    for index, row in enumerate(rows):
+        units.append((index, row["subject"]))
+        lines = [line for line in (row["body"] or "").splitlines() if line.strip()]
+        units.extend((index, line) for line in lines[:UNITS_PER_MAIL])
+    matrix = quick_module._vectorizer().fit_transform([u[1] for u in units] + [text])
+    unit_sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
+    sims = [0.0] * len(rows)
+    best = [""] * len(rows)
+    for (index, unit), score in zip(units, unit_sims, strict=True):
+        if score > sims[index]:
+            sims[index], best[index] = float(score), unit
+
+    def newest(row: sqlite3.Row) -> int:
+        try:
+            return -datetime.date.fromisoformat(row["date"][:10]).toordinal()
+        except ValueError:
+            return 0
+
+    order = sorted(range(len(rows)), key=lambda i: (-round(float(sims[i]), 9), newest(rows[i]), rows[i]["uid"]))
+    picked = [i for i in order if sims[i] >= MIN_RELATED][:limit]
+    if timeline:
+        picked.sort(key=lambda i: (rows[i]["date"], rows[i]["uid"]))
+    book = ContactIndex(maildb.contacts())
+    return [
+        {
+            "id": rows[i]["uid"], "date": rows[i]["date"], "subject": rows[i]["subject"],
+            "sender": (book.find(rows[i]["sender"]) or {}).get("name") or rows[i]["sender_name"] or rows[i]["sender"],
+            "snippet": match_snippet(best[i] or rows[i]["body"] or rows[i]["subject"], text),
+            "score": round(float(sims[i]), 3),
+        }
+        for i in picked
+    ]
