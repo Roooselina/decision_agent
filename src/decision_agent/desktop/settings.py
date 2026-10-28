@@ -197,6 +197,8 @@ class AppSettings(BaseModel):
     # Background mail refresh while the app runs (no model calls). Seconds between checks.
     mail_poll_enabled: bool = True
     mail_poll_seconds: int = Field(default=60, ge=30, le=600)
+    # Folders checked at the same time; each folder still runs one job at a time.
+    folder_workers: int = Field(default=2, ge=1, le=4)
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)
     hotkey_enabled: bool = True
     hotkey: str = "ctrl+shift+space"

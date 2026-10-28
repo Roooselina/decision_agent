@@ -105,7 +105,8 @@ def test_budget_stop_is_partial_and_never_complete(tmp_path):
         status = controller.status()
         assert status["folders"][0]["failure"]["partial"] is True
         assert status["overall"]["state"] == "partial"
-        assert status["overall"]["label"] == PARTIAL_LABEL
+        assert status["overall"]["label"] == "폴더가 일부만 점검되었습니다."
+        assert status["overall"]["detail"].startswith(PARTIAL_LABEL)
         assert "검사 완료" not in status["overall"]["label"]
     finally:
         controller.stop()

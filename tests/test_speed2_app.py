@@ -104,7 +104,7 @@ def test_stopping_the_app_mid_check_ends_quickly_without_threads(tmp_path):
     started = time.perf_counter()
     app.stop()
     assert time.perf_counter() - started < 2.5
-    assert not app._worker.is_alive()
+    assert not any(worker.is_alive() for worker in app._workers)
     assert not topic_threads()
 
 

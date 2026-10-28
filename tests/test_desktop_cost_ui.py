@@ -54,9 +54,10 @@ def test_status_json_carries_the_wait_and_the_label_is_never_done(tmp_path):
     try:
         data = client.get("/api/status", headers=HEADERS).json()
         waiting = data["folders"][0]["pending_confirm"]
-        assert set(waiting) == {"estimated_calls", "calls_so_far", "topics", "limit"}
+        assert set(waiting) == {"estimated_calls", "calls_so_far", "topics", "limit", "reused_lines"}
         assert waiting["limit"] == 1 and waiting["topics"] > 0 and waiting["estimated_calls"] > 1
-        assert data["overall"]["state"] == "awaiting_confirm" and data["overall"]["label"] == "확인 대기"
+        assert data["overall"]["state"] == "awaiting_confirm" and data["overall"]["label"] == "폴더가 확인을 기다립니다."
+        assert data["folders"][0]["state"]["label"] == "확인 대기"
         assert data["folders"][0]["progress"]["phase"] == "awaiting_confirm"
         assert "검사 완료" not in data["overall"]["label"]
     finally:
@@ -130,7 +131,7 @@ def test_screens_draw_the_new_fields_as_text_only():
     sources = all_sources()
     app_js, helper_js = sources["app.js"], sources["helper.js"]
     for text in ("AI 사용량 절약", "점검 정밀도", "저가 모델 이름 (선택)", "확인 기준 호출 수", "다음 점검 때 전체를 다시 점검합니다",
-                 "모델 호출이 많이 예상됩니다", "계속 점검", "나중에", "설정에서 정밀도 낮추기", "/api/confirm",
+                 "허용하고 계속", "나중에", "중단", "지금 점검", "/api/confirm", "/api/folders/later", "/api/folders/stop",
                  "이번 점검: 모델 호출 ", "호출 내역", "로컬 확인", "AI 확인 없이", "영향 대상 선택", "도구 선택", "기타"):
         assert text in app_js, text
     assert "확인 대기" in sources["common.js"] and 'act("home")' in helper_js

@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import platform
-import queue
 import shutil
 import sys
 import threading
@@ -33,6 +32,7 @@ from decision_agent.desktop.engine import EXTERNAL_PREFIX, CycleReport, ProjectE
 from decision_agent.desktop.errors import UserError
 from decision_agent.desktop.helper import quiet_now
 from decision_agent.desktop.hotkey import hotkey_status
+from decision_agent.desktop.jobs import AUTO, USER, JobBoard
 from decision_agent.desktop.maildb import MailDB
 from decision_agent.desktop.mailpoller import MailPoller
 from decision_agent.desktop.notify import LogNotifier, Notifier
@@ -97,12 +97,15 @@ LIGHT_FIELDS = frozenset(
 
 @dataclass
 class Job:
-    kind: str  # sync, answer, reanalyze
+    kind: str  # sync, answer, reanalyze, confirm, connectors, notes
     root: str
     paths: set[Path] | None = None
     topic: str = ""
     text: str = ""
     attempt: int = 0
+    # USER jobs (started by a click) go ahead of AUTO ones (watchers, timers).
+    priority: int = AUTO
+    seq: int = 0
 
 
 @dataclass
@@ -150,17 +153,15 @@ class DecisionAgentApp:
         self.start_watchers = start_watchers
         self.bundle = bundle_factory(settings)
         self.runtimes: dict[str, _RootRuntime] = {}
-        self.jobs: queue.Queue[Job | None] = queue.Queue()
+        self.jobs = JobBoard(held=self._held)
+        self._workers: list[threading.Thread] = []
         self.deferred: list[Job] = []
         self.paused = False
-        self.busy = False
         self.last_cycle: str | None = None
         self.last_error: str | None = None
         self._last_error_notified: str | None = None
         self._lock = threading.RLock()
-        self._exec_lock = threading.RLock()
         self._dbs: dict[str, StateDB] = {}
-        self._worker: threading.Thread | None = None
         self._timers: list[threading.Timer] = []
         self._lock_attempts: dict[Path, int] = {}
         self.listeners: list[Callable[[], None]] = []
@@ -195,8 +196,13 @@ class DecisionAgentApp:
             self.last_tick = time.time()
             self._migrate_mail_settings()
             self._build_runtimes()
-            self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
-            self._worker.start()
+            self.jobs.closed = False
+            self._workers = [
+                threading.Thread(target=self._work, name=f"analysis-worker-{n}", daemon=True)
+                for n in range(self.settings.folder_workers)
+            ]
+            for worker in self._workers:
+                worker.start()
             self._start_connector_timer()
             if self.settings.mail_poll_enabled and self.start_watchers:
                 self.mail_poller.start()
@@ -293,9 +299,10 @@ class DecisionAgentApp:
             # A running check stops at its next model call instead of running to the end.
             for runtime in self.runtimes.values():
                 runtime.engine.cancel()
-        self.jobs.put(None)
-        if self._worker is not None:
-            self._worker.join(timeout=10)
+        self.jobs.close()
+        for worker in self._workers:
+            worker.join(timeout=10)
+        self._workers = []
         for db in self._dbs.values():
             db.close()
         self._dbs.clear()
@@ -361,10 +368,11 @@ class DecisionAgentApp:
             if not self._running:
                 return restarted
             self.last_tick = time.time()
-            if self._worker is not None and not self._worker.is_alive():
-                self._worker = threading.Thread(target=self._work, name="analysis-worker", daemon=True)
-                self._worker.start()
-                restarted.append("analysis")
+            for index, worker in enumerate(self._workers):
+                if not worker.is_alive():
+                    self._workers[index] = threading.Thread(target=self._work, name=worker.name, daemon=True)
+                    self._workers[index].start()
+                    restarted.append("analysis")
             for key, runtime in list(self.runtimes.items()):
                 if not self.start_watchers or not Path(key).is_dir():
                     continue
@@ -492,48 +500,95 @@ class DecisionAgentApp:
             self.enqueue(job)
         self._changed()
 
-    def rescan(self, root: str | None = None) -> None:
+    def rescan(self, root: str | None = None, user: bool = True) -> None:
+        """Check a folder now ("지금 점검"); a paused folder is resumed by the user's click."""
         for key in [root] if root else list(self.runtimes):
-            if key in self.runtimes:
-                self.enqueue(Job("sync", key))
+            runtime = self.runtimes.get(key)
+            if runtime is not None:
+                if user:
+                    runtime.db.meta_delete("folder_paused")
+                self.enqueue(Job("sync", key, priority=USER if user else AUTO))
+        self.jobs.wake()
 
     def answer(self, root: str, topic: str, text: str) -> None:
-        self.enqueue(Job("answer", root, topic=topic, text=text))
+        self.enqueue(Job("answer", root, topic=topic, text=text, priority=USER))
 
     def confirm(self, root: str) -> None:
-        """Run the part of the check that was held back because of its estimated cost."""
-        self.enqueue(Job("confirm", root))
+        """Run the part of this folder's check that was held back because of its cost."""
+        runtime = self.runtimes.get(root)
+        if runtime is not None:
+            runtime.db.meta_delete("folder_paused")
+        self.enqueue(Job("confirm", root, priority=USER))
+
+    def confirm_later(self, root: str) -> None:
+        """"나중에": keep the estimate, stop the alert, no new estimate on every file change."""
+        runtime = self.runtimes.get(root)
+        if runtime is None or runtime.engine.pending_confirm() is None:
+            raise UserError("확인을 기다리는 점검이 없습니다.")
+        runtime.db.meta_put("confirm_later", now_iso())
+        self.jobs.drop(root, {"reanalyze"})
+        self._changed()
+
+    def stop_folder(self, root: str) -> None:
+        """"중단": the running check of this folder stops at the next safe point and the folder
+        waits until the user checks it again. Stored verdicts stay."""
+        runtime = self.runtimes.get(root)
+        if runtime is None:
+            raise UserError("폴더를 찾지 못했습니다.")
+        runtime.db.meta_put("folder_paused", "1")
+        self.jobs.drop(root)
+        runtime.engine.stop()
+        self._changed()
 
     # worker
 
+    @property
+    def busy(self) -> bool:
+        return bool(self.jobs.running_roots())
+
+    def _held(self, job: Job) -> bool:
+        """Automatic jobs of a folder the user paused wait; the user's own jobs run."""
+        if job.priority == USER:
+            return False
+        runtime = self.runtimes.get(job.root)
+        return runtime is not None and runtime.db.meta_get("folder_paused") == "1"
+
     def _work(self) -> None:
         while True:
-            job = self.jobs.get()
+            job = self.jobs.take()
             if job is None:
-                self.idle.set()
+                if self.jobs.idle():
+                    self.idle.set()
                 return
             with self._lock:
                 runtime = self.runtimes.get(job.root)
-            self.busy = True
             self._changed()
             try:
                 if runtime is not None:
-                    with self._exec_lock:
-                        self._run_job(runtime, job)
+                    self._run_job(runtime, job)
             except Exception as exc:
                 log.exception("job failed")
                 self.last_error = f"점검 중 오류: {exc}"
             finally:
-                self.busy = False
+                self.jobs.done(job)
                 self.last_tick = time.time()
                 self.last_cycle = now_iso()
-                if self.jobs.empty():
+                if self.jobs.idle():
                     self.idle.set()
                 self._changed()
 
     def _run_job(self, runtime: _RootRuntime, job: Job) -> None:
         engine = runtime.engine
         first_run = runtime.db.meta_get("initial_done") is None
+        if job.priority == AUTO and runtime.db.meta_get("confirm_later") and job.kind in {"sync", "reanalyze"}:
+            # "나중에": files are still read, but the held check is not estimated again on every
+            # change. The user's "지금 점검" or "허용하고 계속" runs it.
+            if job.kind == "sync":
+                engine.sync(job.paths)
+                runtime.db.meta_put("last_checked", now_iso())
+            return
+        if job.priority == USER:
+            runtime.db.meta_delete("confirm_later")
         if job.kind == "sync":
             report = engine.process(job.paths)
         elif job.kind == "answer":
@@ -548,6 +603,8 @@ class DecisionAgentApp:
             report = engine.analyze(force=False)
         if engine.cancelled.is_set():
             return
+        if report.pending_confirm is None:
+            runtime.db.meta_delete("confirm_later")
         stamp = now_iso()
         if job.kind == "sync":
             # The heartbeat: the folder was looked at, whether or not anything changed.
@@ -1425,6 +1482,7 @@ class DecisionAgentApp:
                     "last_analyzed": runtime.db.meta_get("last_analyzed"),
                 }
             )
+            folders[-1]["state"] = self.folder_state(key, runtime, folders[-1])
         return {
             "paused": self.paused,
             "busy": self.busy,
@@ -1464,7 +1522,7 @@ class DecisionAgentApp:
         alive = all(f.get("watch_alive", True) for f in folders)
         return {
             "mode": "realtime" if modes & {"native", "polling"} else "periodic",
-            "alive": alive and (self._worker is None or self._worker.is_alive()),
+            "alive": alive and all(worker.is_alive() for worker in self._workers),
             "rescan_minutes": self.settings.rescan_minutes,
             "last_checked": max(checked) if checked else None,
             "last_analyzed": max(analyzed) if analyzed else None,
@@ -1484,61 +1542,87 @@ class DecisionAgentApp:
             "verified": all(r["verified"] for r in records),
         }
 
+    def folder_state(self, key: str, runtime: _RootRuntime, folder: dict) -> dict:
+        """The state of one folder: what it is doing, and what the user can do about it.
+
+        Built from what the folder database keeps (estimate, failure, completion, pause), so it
+        survives a restart; only "점검 중" and "대기열" come from the running app.
+        """
+        waiting = folder.get("pending_confirm")
+        failure = folder.get("failure")
+        record = folder.get("completion")
+        later = bool(runtime.db.meta_get("confirm_later"))
+        if key in self.jobs.running_roots():
+            return {"state": "running", "label": "점검 중", "detail": ""}
+        if key in self.jobs.queued_roots() and not self._held(Job("sync", key)):
+            return {"state": "queued", "label": "대기열", "detail": ""}
+        if runtime.db.meta_get("folder_paused") == "1":
+            return {"state": "paused", "label": "일시 중지", "detail": "지금 점검을 누르면 다시 시작합니다."}
+        if waiting:
+            reused = waiting.get("reused_lines", 0)
+            detail = f"AI 요청 약 {waiting['estimated_calls']}회 예상 (기준 {waiting['limit']}회)"
+            if reused:
+                detail += f", 저장된 결과 {reused}줄 재사용"
+            return {"state": "awaiting_confirm", "label": "확인 대기", "detail": detail, "later": later}
+        if failure:
+            kind = "failed" if failure.get("fatal") else "partial" if failure.get("partial") else "retrying"
+            label = {"failed": "실패", "partial": "일부만 점검", "retrying": "실패, 다시 시도 중"}[kind]
+            return {"state": kind, "label": label, "detail": failure["message"]}
+        if record is None:
+            return {"state": "incomplete", "label": "점검 전", "detail": ""}
+        if record["provider_id"] != self.bundle.provider_id or record.get("cost_profile", "precise") != self.settings.cost_profile:
+            return {"state": "stale", "label": "다시 점검 필요", "detail": "확인 방식이나 정확도 설정이 바뀌었습니다."}
+        if record["verified"]:
+            return {"state": "verified", "label": "검사 완료", "detail": record["at"]}
+        return {"state": "demo", "label": "데모로만 점검", "detail": "실제 검사가 아닙니다."}
+
+    # Overall order: what needs the user's attention first. The label counts folders instead
+    # of letting one folder's state stand for all of them.
+    _OVERALL_ORDER = (
+        ("running", "점검 중입니다"), ("queued", "점검을 기다립니다"),
+        ("awaiting_confirm", "확인을 기다립니다"), ("failed", "점검에 실패했습니다"),
+        ("partial", "일부만 점검되었습니다"), ("retrying", "점검에 실패해 다시 시도합니다"),
+        ("paused", "일시 중지되었습니다"), ("stale", "다시 점검해야 합니다"),
+        ("incomplete", "아직 점검되지 않았습니다"),
+    )
+
     def overall(self, folders: list[dict]) -> dict:
-        """One honest sentence about how complete the checking is.
+        """One honest summary of all folders, as counts.
 
         verified means every folder was fully checked by a real model. demo means it was only
         checked by the built-in rule judge, which is not a real check of normal documents.
         """
         if not folders:
-            return {"state": "no_folders", "label": "감시 폴더가 없습니다.", "detail": ""}
-        if self.busy or not self.idle.is_set():
-            return {"state": "running", "label": "점검 중입니다.", "detail": ""}
-        for folder in folders:
-            failure = folder["failure"]
-            if failure and failure.get("fatal"):
-                return {"state": "failed", "label": "점검에 실패했습니다.", "detail": failure["message"]}
-        for folder in folders:
-            failure = folder["failure"]
-            if failure and failure.get("partial"):
-                return {"state": "partial", "label": PARTIAL_LABEL, "detail": failure["message"]}
-        for folder in folders:
-            if folder["failure"]:
-                return {
-                    "state": "retrying",
-                    "label": "일부만 점검했고 자동으로 다시 시도합니다.",
-                    "detail": folder["failure"]["message"],
-                }
-        for folder in folders:
-            waiting = folder.get("pending_confirm")
-            if waiting:
-                return {
-                    "state": "awaiting_confirm",
-                    "label": "확인 대기",
-                    "detail": f"예상 약 {waiting['estimated_calls']}회 호출 (기준 {waiting['limit']}회)",
-                }
+            return {"state": "no_folders", "label": "감시 폴더가 없습니다.", "detail": "", "counts": {}}
+        states = [f.get("state") or {"state": "incomplete"} for f in folders]
+        counts = Counter(s["state"] for s in states)
+        total = len(folders)
+        for state, phrase in self._OVERALL_ORDER:
+            n = counts.get(state, 0)
+            if n:
+                who = f"폴더 {total}개 모두" if n == total and total > 1 else (
+                    "폴더가" if total == 1 else f"폴더 {total}개 중 {n}개가")
+                label = f"{who} {phrase}."
+                detail = next((s["detail"] for s in states if s["state"] == state and s.get("detail")), "")
+                if state == "partial":
+                    detail = PARTIAL_LABEL + (f" ({detail})" if detail else "")
+                return {"state": state, "label": label, "detail": detail, "counts": dict(counts)}
         records = [f["completion"] for f in folders]
-        if any(r is None for r in records):
-            return {"state": "incomplete", "label": "아직 점검을 끝내지 못했습니다.", "detail": ""}
-        if any(r["provider_id"] != self.bundle.provider_id for r in records) or any(
-            r.get("cost_profile", "precise") != self.settings.cost_profile for r in records
-        ):
-            return {"state": "stale", "label": "판정 방식이 바뀌어 다시 점검해야 합니다.", "detail": ""}
         files = sum(r["files_ok"] for r in records)
         topics = sum(r["topics"] for r in records)
         latest = max(r["at"] for r in records)
         local = sum(r.get("local_answers", 0) for r in records)
-        if all(r["verified"] for r in records):
+        latest_text = f"폴더 {total}개 모두 최신입니다." if total > 1 else "폴더가 최신입니다."
+        if all(s["state"] == "verified" for s in states):
             extra = f" / 로컬 선거름 {local}건" if local else ""
             return {
-                "state": "verified",
-                "label": "검사 완료",
+                "state": "verified", "label": f"검사 완료. {latest_text}",
                 "detail": f"{self.bundle.provider_id} / 파일 {files}개, 결정 {topics}건{extra} / {latest}",
+                "counts": dict(counts),
             }
         return {
-            "state": "demo",
-            "label": "시연용 모드, 실제 검사가 아닙니다.",
-            "detail": f"파일 {files}개, 결정 {topics}건 / {latest}",
+            "state": "demo", "label": "데모 확인 방식으로만 점검했습니다. 실제 검사가 아닙니다.",
+            "detail": f"파일 {files}개, 결정 {topics}건 / {latest}", "counts": dict(counts),
         }
 
     def test_provider(self) -> dict:
@@ -1674,7 +1758,7 @@ class DecisionAgentApp:
         Waits for a running analysis to finish first, so state databases are never closed
         while the worker is using them.
         """
-        with self._exec_lock, self._lock:
+        with self.jobs.exclusive(), self._lock:
             self._stop_runtimes()
             self.runtimes.clear()
             self.settings = new_settings
@@ -1873,7 +1957,7 @@ class DecisionAgentApp:
         Removes the API key and connector secrets from the credential store, the state
         databases, settings, digests, and caches. Files in the watched folders are not touched.
         """
-        with self._exec_lock, self._lock:
+        with self.jobs.exclusive(), self._lock:
             self._stop_runtimes()
             self.runtimes.clear()
             for db in self._dbs.values():

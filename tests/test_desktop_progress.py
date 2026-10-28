@@ -96,7 +96,8 @@ def test_real_model_run_ends_in_verified_with_counts(tmp_path):
         assert app.wait_idle(60)
         status = app.status()
         assert status["overall"]["state"] == "verified"
-        assert status["overall"]["label"] == "검사 완료"
+        assert status["overall"]["label"] == "검사 완료. 폴더가 최신입니다."
+        assert status["folders"][0]["state"]["label"] == "검사 완료"
         record = status["folders"][0]["completion"]
         assert record["verified"] is True and record["provider_id"] == "fake:real-model"
         assert record["files_ok"] == 5 and record["topics"] == 3

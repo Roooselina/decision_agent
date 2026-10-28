@@ -561,7 +561,7 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .agent-note { font-size: 13px; color: var(--text-3); }
 .agent-note.danger { color: var(--danger); } .agent-note.warn { color: var(--warning); } .agent-note.info { color: var(--primary); }
 .agent-meta-line { margin: 6px 0 0 42px; font-size: 12px; color: var(--text-3); white-space: pre; }
-.agent-action { position: absolute; right: 16px; bottom: 15px; }
+.agent-action { display: flex; justify-content: flex-end; margin-top: 8px; }
 .agent-action .btn { min-width: 142px; height: 30px; font-size: 13px; }
 .agent-bar { position: absolute; left: 16px; right: 16px; bottom: 0; height: 4px; background: var(--border); border-radius: 2px; }
 .agent-bar > div { height: 100%; background: var(--primary); border-radius: 2px; transition: width .4s; }
@@ -1007,3 +1007,16 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .related-block h4 { margin: 8px 0 0; }
 .cal-due { display: grid; gap: 4px; margin-top: 8px; }
 .cal-bar.warn { background: var(--warning); }
+
+/* per-folder state and actions (home card and folder page) */
+.folder-states { display: grid; gap: 0; margin-top: 12px; border-top: 1px solid var(--border); }
+.folder-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.folder-card .folder-state { border-bottom: 0; padding: 4px 0 8px; }
+.folder-state-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.folder-state-name { max-width: 240px; font-weight: 500; }
+.folder-state-detail { overflow-wrap: anywhere; }
+.folder-state-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--text-3); align-self: center; }
+.status-dot.ok { background: var(--success); } .status-dot.busy { background: var(--primary); }
+.status-dot.attention, .status-dot.demo { background: var(--warning); } .status-dot.error { background: var(--danger); }
+.status-dot.paused { background: var(--text-3); }

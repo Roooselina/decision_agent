@@ -146,8 +146,10 @@ class ProjectEngine:
         self.policy = FolderPolicy.for_root(self.root, settings)
         apply_speed_settings(settings)
         # Set by cancel(): the app is stopping or this folder was removed. Never cleared, because
-        # a cancelled engine is not used again.
+        # a cancelled engine is not used again. stop() sets it too, for the user's "중단"; the
+        # next check clears that one.
         self.cancelled = threading.Event()
+        self._user_stop = False
         self.counter = CountingProvider(
             bundle.provider, settings.max_llm_calls_per_cycle, settings.max_parallel_calls,
             self.cancelled,
@@ -560,6 +562,7 @@ class ProjectEngine:
     def analyze(
         self, force: bool = False, force_topics: set[str] | None = None, confirm: bool = False
     ) -> CycleReport:
+        self._clear_user_stop()
         self._start_if_idle()
         try:
             report = self._analyze(force, force_topics, confirm)
@@ -594,7 +597,22 @@ class ProjectEngine:
 
     def cancel(self) -> None:
         """Stop the running check soon: no new model calls, no further results stored."""
+        self._user_stop = False
         self.cancelled.set()
+
+    def stop(self) -> None:
+        """The user's stop: the running check ends at its next model call or topic boundary.
+
+        Topics already finished keep their stored verdicts; the next check starts normally.
+        """
+        if not self.cancelled.is_set():
+            self._user_stop = True
+            self.cancelled.set()
+
+    def _clear_user_stop(self) -> None:
+        if self._user_stop:
+            self._user_stop = False
+            self.cancelled.clear()
 
     def _fail(self, report: CycleReport, exc: Exception, prefix: str) -> None:
         message, fatal = describe_llm_error(exc)
@@ -697,11 +715,9 @@ class ProjectEngine:
             limit = self.settings.confirm_over_calls
             if limit > 0 and not confirm and self.bundle.sends_externally:
                 # Lines with a stored verdict cost nothing, so only the others are counted.
-                counts = [
-                    self._verdicts(fp, stamp).missing_lines(c)
-                    for _, _, c, fp, _, same in plans
-                    if not same and c
-                ]
+                changed = [(c, fp) for _, _, c, fp, _, same in plans if not same and c]
+                counts = [self._verdicts(fp, stamp).missing_lines(c) for c, fp in changed]
+                reused = sum(len(c) for c, _ in changed) - sum(counts)
                 counts = [c for c in counts if c]
                 estimated = estimate_calls(counts, self.core)
                 if self.counter.calls + estimated > limit:
@@ -710,6 +726,7 @@ class ProjectEngine:
                         "calls_so_far": self.counter.calls,
                         "topics": len(counts),
                         "limit": limit,
+                        "reused_lines": reused,
                     }
                     self.db.meta_put("pending_confirm", json.dumps(report.pending_confirm))
                     self.progress.activity.add(

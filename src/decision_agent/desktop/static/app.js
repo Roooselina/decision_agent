@@ -119,7 +119,21 @@
     }
     const info = DA.STATES[state] || DA.STATES.incomplete;
     const cls = {ok: "ok", busy: "busy", paused: "paused", error: "error", attention: "demo"}[info.cls] || "ok";
-    return [cls, state === "verified" ? "shield-check" : info.icon, judge + " · " + info.short];
+    return [cls, state === "verified" ? "shield-check" : info.icon, folderCount(st) || judge + " · " + info.short];
+  }
+
+  // "폴더 2개 중 1개 확인 대기", "폴더 2개 모두 최신".
+  function folderCount(st) {
+    const counts = (st.overall && st.overall.counts) || {};
+    const total = st.folders.length;
+    if (!total) return "";
+    const names = [["running", "점검 중"], ["queued", "대기열"], ["awaiting_confirm", "확인 대기"], ["failed", "실패"],
+      ["retrying", "실패"], ["partial", "일부만 점검"], ["paused", "일시 중지"], ["stale", "다시 점검 필요"], ["incomplete", "점검 전"]];
+    for (const [key, name] of names) {
+      const n = counts[key] || 0;
+      if (n) return total === 1 ? name : (n === total ? "폴더 " + total + "개 모두 " + name : "폴더 " + total + "개 중 " + n + "개 " + name);
+    }
+    return total === 1 ? "최신" : "폴더 " + total + "개 모두 최신";
   }
 
   function renderSidebarFoot() {
@@ -212,36 +226,47 @@
       const partial = agentState(st) === "partial"
         ? callout("warning", "alert", st.overall.label, st.overall.detail || "") : null;
       return page("홈", null, [h("span", {class: "page-date"}, longDate(new Date()))],
-        partial, ...confirmBanners(st), agentCard(st),
+        partial, agentCard(st),
         h("div", {class: "home-grid"}, homePanel(week, st), todoCard(st, findings, questions)),
         recentCard(st, activity));
     },
   };
 
-  // Folders whose costly judging stage waits for the user. "나중에" only folds the card for this
-  // wait (keyed by its numbers); nothing runs until "계속 점검" is pressed.
-  const CONFIRM_HIDDEN = new Set();
-  function confirmKey(f) { const w = f.pending_confirm; return f.root + "|" + w.estimated_calls + "|" + w.calls_so_far + "|" + w.topics; }
-  function confirmBanners(st) {
-    if (st.paused) return [];
-    const many = st.folders.length > 1;
-    return st.folders.filter(f => f.pending_confirm && !CONFIRM_HIDDEN.has(confirmKey(f))).map(f => {
-      const w = f.pending_confirm;
-      const go_ = button("계속 점검", {variant: "primary", onClick: (e) => busy(e.currentTarget, async () => {
-        await api("/api/confirm", "POST", {root: f.root});
-        toast("점검을 이어서 진행합니다.", "info");
-        await refreshAll();
-      })});
-      // Remove the card itself: the home data did not change, so a re-render would be skipped.
-      const later = button("나중에", {onClick: (e) => { CONFIRM_HIDDEN.add(confirmKey(f)); e.currentTarget.closest(".confirm-banner").remove(); }});
-      const lower = h("button", {type: "button", class: "link", onclick: () => go("settings", {tab: "connect", section: "cost"})}, "설정에서 정밀도 낮추기");
-      const body = h("div", {},
-        many ? h("p", {class: "small muted"}, folderName(f.root)) : null,
-        h("p", {}, "이번 점검에 약 " + w.estimated_calls + "회 호출이 예상됩니다 (기준 " + w.limit + "회). 결정 추출은 이미 끝났고, 이어서 " + w.topics + "개 결정을 점검합니다."));
-      const node = callout("warning", "alert", "모델 호출이 많이 예상됩니다", body, [go_, later, lower]);
-      node.classList.add("confirm-banner");
-      return node;
-    });
+  // Each folder has its own state and its own actions; one folder never stands for the others.
+  const FOLDER_DOT = {running: "busy", queued: "busy", awaiting_confirm: "attention", failed: "error", partial: "attention",
+    retrying: "attention", paused: "paused", stale: "attention", incomplete: "busy", verified: "ok", demo: "demo"};
+
+  function folderActions(f) {
+    const s = f.state || {};
+    const act = (label, path, done, primary) => button(label, {size: "sm", variant: primary ? "primary" : "", onClick: (e) => busy(e.currentTarget, async () => {
+      await api(path, "POST", {root: f.root});
+      toast(done, "info");
+      await refreshAll();
+    })});
+    const list = [];
+    if (s.state === "awaiting_confirm") {
+      list.push(act("허용하고 계속", "/api/confirm", "이 폴더의 점검을 이어서 진행합니다.", true));
+      if (!s.later) list.push(act("나중에", "/api/folders/later", "이 폴더의 확인 요청을 접어 두었습니다."));
+    }
+    if (s.state === "running") list.push(act("중단", "/api/folders/stop", "이 폴더의 점검을 멈춥니다. 저장된 결과는 남습니다."));
+    else list.push(act("지금 점검", "/api/rescan", "이 폴더를 점검합니다."));
+    return list;
+  }
+
+  function folderStateRow(f, withName) {
+    const s = f.state || {state: "incomplete", label: "점검 전", detail: ""};
+    return h("div", {class: "folder-state"},
+      h("div", {class: "folder-state-main"},
+        h("span", {class: "status-dot " + (FOLDER_DOT[s.state] || "busy"), "aria-hidden": "true"}),
+        withName ? h("span", {class: "folder-state-name truncate", title: f.root}, folderName(f.root)) : null,
+        h("span", {class: "folder-state-label"}, s.label + (s.later ? " (나중에)" : "")),
+        s.detail && s.state !== "verified" ? h("span", {class: "folder-state-detail small muted"}, s.detail) : null),
+      h("div", {class: "folder-state-actions"}, ...folderActions(f)));
+  }
+
+  function folderStates(st) {
+    if (!st.folders.length) return null;
+    return h("div", {class: "folder-states", "aria-label": "폴더별 상태"}, ...st.folders.map(f => folderStateRow(f, true)));
   }
 
   // week and day are what the user picked with the arrows; null means "the week of today, on
@@ -341,7 +366,7 @@
       right = h("div", {class: "agent-right"},
         r && state === "verified" ? h("span", {class: "agent-note"}, "검사 완료 · 문서 " + r.files + "개, 결정 " + r.topics + "건 확인") : null,
         state === "retrying" || state === "stale" || state === "partial" ? h("span", {class: "agent-note warn", title: info.detail || ""}, info.label) : null,
-        state === "awaiting_confirm" ? h("span", {class: "agent-note warn", title: info.detail || ""}, "확인 대기 · " + (info.detail || "")) : null,
+        state === "awaiting_confirm" ? h("span", {class: "agent-note warn"}, info.label) : null,
         state === "incomplete" ? h("span", {class: "agent-note"}, "첫 확인을 준비하고 있습니다.") : null,
         h("span", {class: "agent-note" + (sends ? " info" : "")}, sends ? "문서 처리: 외부 AI로 전송 중 (" + st.provider.id + ")" : "문서 처리: 내 컴퓨터 · 외부 전송 안 함"));
     }
@@ -353,7 +378,7 @@
         h("div", {class: "agent-side"}, right));
     const usage = state === "running" ? null : usageBlock(st);
     return h("section", {class: "card agent-card " + tone + (demo ? " demo" : ""), "aria-label": "문서 확인 상태"},
-      head, sub, metas, usage, action ? h("div", {class: "agent-action"}, action) : null, bar);
+      head, sub, metas, folderStates(st), usage, action ? h("div", {class: "agent-action"}, action) : null, bar);
   }
 
   // Model calls of the last finished check, per folder, with the calls by kind of work folded away.
@@ -1370,6 +1395,8 @@
     const STATE = {watching: busy ? ["busy", "loader", "확인 중"] : ["ok", "check", "정상"], paused: ["paused", "pause-bars", "일시 중지"]};
     const [cls, iconName, text] = STATE[c.watch] || STATE.watching;
     const badgeNode = h("span", {class: "badge state " + cls}, icon(iconName), text);
+    const live = S.status ? S.status.folders.find(f => f.root === c.root) : null;
+    const stateRow = live ? folderStateRow(live, false) : null;
     if (iconName === "loader") badgeNode.querySelector("svg").classList.add("spin");
     const menuWrap = h("div", {class: "anchor"});
     const menuBtn = h("button", {type: "button", class: "icon-btn", "aria-label": "폴더 메뉴", "aria-haspopup": "menu",
@@ -1425,6 +1452,7 @@
       h("div", {class: "folder-head"}, icon("folder", "folder-big"),
         h("div", {class: "folder-title"}, h("h2", {title: c.root}, folderName(c.root)), summary),
         badgeNode, menuWrap),
+      stateRow,
       c.is_target ? h("p", {class: "folder-target"}, icon("link", "sm"), "메일, 캘린더, 메모, 가져온 파일을 이 폴더와 함께 분석합니다.") : null,
       data ? tree : h("p", {class: "small muted"}, "하위 폴더를 불러오지 못했습니다."),
       data && data.truncated ? h("p", {class: "small muted"}, "폴더가 많아 일부만 표시했습니다.") : null,

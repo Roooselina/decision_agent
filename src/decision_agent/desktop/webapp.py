@@ -343,6 +343,24 @@ def create_web_app(
         controller.confirm(body.root)
         return {"ok": True}
 
+    @app.post("/api/folders/later", dependencies=auth)
+    def folder_later(body: ConfirmBody):
+        """Keep the estimate of a folder that waits for confirmation and stop showing it."""
+        try:
+            controller.confirm_later(body.root)
+        except UserError as exc:
+            raise _bad(exc) from exc
+        return {"ok": True}
+
+    @app.post("/api/folders/stop", dependencies=auth)
+    def folder_stop(body: ConfirmBody):
+        """Stop this folder's running check at the next safe point; stored results stay."""
+        try:
+            controller.stop_folder(body.root)
+        except UserError as exc:
+            raise _bad(exc) from exc
+        return {"ok": True}
+
     @app.post("/api/rescan", dependencies=auth)
     async def rescan(body: RescanBody):
         controller.rescan(body.root)
