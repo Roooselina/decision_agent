@@ -857,6 +857,7 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .set-row .set-label { min-width: 170px; }
 .set-value { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .set-text { font-size: 15px; }
+.about-path { font-size: 12.5px; overflow-wrap: anywhere; user-select: text; }
 .set-time { width: 120px; height: 32px; font-size: 13px; }
 .set-select { width: auto; min-width: 120px; height: 32px; font-size: 13px; }
 .hotkey-help { margin: 4px 0 4px 186px; display: flex; flex-direction: column; gap: 6px; }

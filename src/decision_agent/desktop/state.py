@@ -426,10 +426,6 @@ class StateDB:
             self.conn.commit()
             return cursor.rowcount > 0
 
-    def unnotified_findings(self) -> list[sqlite3.Row]:
-        rows = self.list_findings()
-        return [r for r in rows if r["label"] == "INCONSISTENT" and not r["notified"]]
-
     def mark_notified(self, keys: Iterable[tuple[str, str]]) -> None:
         with self.lock:
             for topic, artifact_id in keys:

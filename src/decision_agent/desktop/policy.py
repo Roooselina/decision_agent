@@ -90,10 +90,6 @@ class FolderPolicy:
         except (OSError, ValueError):
             return None
 
-    def is_config_file(self, path: Path) -> bool:
-        parts = self.relative_parts(path)
-        return parts is not None and len(parts) == 1 and parts[0].lower() in CONFIG_NAMES
-
     def check_file(self, path: Path) -> Verdict:
         parts = self.relative_parts(path)
         if parts is None:

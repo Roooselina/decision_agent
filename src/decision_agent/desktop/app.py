@@ -1990,9 +1990,12 @@ class DecisionAgentApp:
 
     def diagnostics(self) -> str:
         """Plain text for support requests. Contains no secret values and no document text."""
+        from decision_agent.desktop.about import about
+
         status = self.status()
+        info = about()
         lines = [
-            f"Decision Agent {__version__}",
+            f"Decision Agent {__version__} ({info['commit'] or 'commit 알 수 없음'})",
             f"OS: {platform.platform()}",
             f"Python: {sys.version.split()[0]}",
             f"화면 방식: {self.ui_mode} {self.ui_reason}".rstrip(),

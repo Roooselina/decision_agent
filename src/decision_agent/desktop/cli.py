@@ -521,6 +521,42 @@ def autostart_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_json(data: dict) -> None:
+    """JSON goes out as UTF-8 even when the console code page is not (Korean Windows: cp949)."""
+    text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    stream = getattr(sys.stdout, "buffer", None)
+    if stream is None:
+        sys.stdout.write(text)
+    else:
+        sys.stdout.flush()
+        stream.write(text.encode("utf-8"))
+        stream.flush()
+
+
+def selftest_command(args: argparse.Namespace) -> int:
+    from decision_agent.desktop.selftest import run_selftest
+
+    report = run_selftest(port=args.port, model=not args.no_model)
+    _print_json(report)
+    return 0 if report["ok"] else 1
+
+
+def state_command(args: argparse.Namespace) -> int:
+    from decision_agent.desktop.statedump import dump_state
+
+    data = dump_state()
+    if args.json:
+        _print_json(data)
+        return 0
+    for folder in data["folders"]:
+        counts = ", ".join(f"{k} {v}" for k, v in folder["open_findings"].items()) or "없음"
+        print(f"{folder['root']}: {folder['label']} (열린 항목: {counts})")
+    print(f"저장된 메일: {data['mail']['total']}개")
+    for row in data["connections"]:
+        print(f"연결 {row['id']}: {'연결됨' if row.get('connected') else '연결 안 됨'}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="decision-agent", description="결정 변경 전파 점검 상주 프로그램"
@@ -564,6 +600,15 @@ def build_parser() -> argparse.ArgumentParser:
     auto = sub.add_parser("autostart", help="Windows 로그인 시 자동 실행")
     auto.add_argument("action", choices=["on", "off", "status"])
     auto.set_defaults(func=autostart_command)
+
+    selftest = sub.add_parser("selftest", help="설치 상태를 점검하고 JSON으로 출력합니다.")
+    selftest.add_argument("--port", type=int, help="확인할 포트 (기본은 설정의 ui_port)")
+    selftest.add_argument("--no-model", action="store_true", help="모델 연결 확인을 건너뜀")
+    selftest.set_defaults(func=selftest_command)
+
+    state = sub.add_parser("state", help="저장된 상태를 읽기 전용으로 출력합니다.")
+    state.add_argument("--json", action="store_true", help="JSON으로 출력")
+    state.set_defaults(func=state_command)
     return parser
 
 

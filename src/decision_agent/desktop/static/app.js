@@ -2035,9 +2035,9 @@
         const tab = params.get("tab");
         SET.tab = SET_TABS.some(([id]) => id === tab) ? tab : tab === "data" ? "advanced" : "connect";
       }
-      const [s, rows, auto, access] = await Promise.all([api("/api/settings"), api("/api/connectors"), api("/api/autostart"), api("/api/access")]);
+      const [s, rows, auto, access, about] = await Promise.all([api("/api/settings"), api("/api/connectors"), api("/api/autostart"), api("/api/access"), api("/api/about")]);
       S.settings = s;
-      return {s, rows, auto, access, st: S.status || await api("/api/status")};
+      return {s, rows, auto, access, about, st: S.status || await api("/api/status")};
     },
     render(data, params) {
       const tabs = h("div", {class: "set-tabs", role: "tablist"}, ...SET_TABS.map(([id, label]) =>
@@ -2632,7 +2632,7 @@
 
   // ---------------------------------------------------------------- tab: notifications and data
 
-  function dataTab({s, auto, access, st}) {
+  function dataTab({s, auto, access, st, about}) {
     const nameValue = h("span", {class: "set-text"}, s.display_name || "이름 없음");
     const profile = h("section", {class: "card set-card"}, h("h2", {}, "내 정보"),
       setRow("표시 이름", nameValue, h("button", {type: "button", class: "link", onclick: () => textDialog("표시 이름", s.display_name, "표시 이름",
@@ -2683,7 +2683,13 @@
       setRow("메일과 일정 가져오기", interval),
       h("p", {class: "set-help"}, "창을 닫아도 트레이에서 계속 확인합니다. 끄려면 트레이 메뉴에서 '종료'를 누르세요."));
 
-    const data = h("section", {class: "card set-card"}, h("h2", {}, "데이터"),
+    const info = about || {};
+    const data = h("section", {class: "card set-card", id: "set-about"}, h("h2", {}, "정보"),
+      setRow("버전", h("span", {class: "set-text"}, info.version || "")),
+      setRow("커밋", h("span", {class: "set-text mono"}, info.commit || "알 수 없음")),
+      info.installed_at ? setRow("설치한 때", h("span", {class: "set-text"}, info.installed_at)) : null,
+      setRow("데이터 폴더", h("span", {class: "set-text mono about-path"}, info.data_dir || "")),
+      setRow("로그 파일", h("span", {class: "set-text mono about-path"}, info.log_path || "")),
       h("div", {class: "set-links"},
         h("button", {type: "button", class: "link big", onclick: () => openLocation("data")}, "데이터 폴더 열기"),
         h("button", {type: "button", class: "link big", onclick: async () => {

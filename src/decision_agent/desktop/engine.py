@@ -539,10 +539,6 @@ class ProjectEngine:
         with self.lock:
             self.db.upsert_file(path, 0, len(payload), _sha(payload), "connector", "ok", "", payload)
 
-    def remove_external_doc(self, source: str, name: str) -> bool:
-        with self.lock:
-            return self.db.delete_files([f"{EXTERNAL_PREFIX}{source}/{name}"]) > 0
-
     # analysis
 
     def _start_if_idle(self) -> None:

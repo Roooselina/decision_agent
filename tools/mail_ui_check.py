@@ -229,6 +229,11 @@ def main() -> int:
                         for hit in page.evaluate(CONTROLS_OVERLAP_JS):
                             problems.append(f"[{tag}] {name}: overlapping controls: {hit}")
                         page.screenshot(path=str(out / f"{tag}-{name}.png"), full_page=True)
+                    page.goto(f"http://127.0.0.1:{port}/#/settings?tab=advanced")
+                    page.wait_for_selector("#set-about")
+                    if "decision-agent.log" not in page.inner_text("#set-about"):
+                        problems.append(f"[{tag}] the 정보 card does not show the log path")
+                    page.locator("#set-about").screenshot(path=str(out / f"{tag}-settings-about.png"))
                     page.goto(f"http://127.0.0.1:{port}/quick")
                     page.wait_for_timeout(800)
                     if page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):

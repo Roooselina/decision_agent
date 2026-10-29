@@ -890,6 +890,12 @@ def create_web_app(
     def notifications():
         return controller.inbox.recent(30)
 
+    @app.get("/api/about", dependencies=auth)
+    def about_info():
+        from decision_agent.desktop.about import about
+
+        return about()
+
     @app.get("/api/diagnostics", dependencies=auth)
     def diagnostics():
         return {"text": controller.diagnostics()}
