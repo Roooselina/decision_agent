@@ -1203,6 +1203,56 @@ class DecisionAgentApp:
                     })
         return found
 
+    # 성능 (settings > 고급)
+
+    def performance(self) -> dict:
+        """Numbers of the last check per folder, sizes and memory. Read only."""
+        from decision_agent.desktop.engine import PHASE_NAMES, slowest_phase
+        from decision_agent.desktop.settings import PERF_LABELS, effective_speed
+
+        folders = []
+        for key, runtime in self._each():
+            record = runtime.engine.completion() or {}
+            seconds = record.get("phase_seconds") or {}
+            hits, misses = record.get("cache_hits", 0), record.get("cache_misses", 0)
+            slow = slowest_phase(seconds)
+            folders.append({
+                "root": key, "at": record.get("at"), "seconds": round(sum(seconds.values()), 2),
+                "phases": [{"name": PHASE_NAMES.get(k, k), "seconds": round(v, 2)} for k, v in seconds.items()],
+                "requests": record.get("llm_calls", 0), "reused_lines": record.get("reused_lines", 0),
+                "cache_rate": round(hits / (hits + misses), 2) if hits + misses else None,
+                "slowest": {"name": PHASE_NAMES.get(slow[0], slow[0]), "seconds": round(slow[1], 2)} if slow else None,
+                "db_bytes": runtime.db.size_bytes(),
+            })
+        return {
+            "mode": self.settings.perf_mode, "modes": PERF_LABELS, "limits": effective_speed(self.settings),
+            "folders": folders, "mail_db_bytes": self.maildb.size_bytes(), "memory_bytes": memory_bytes(),
+        }
+
+    def clean_stored_results(self) -> dict:
+        """저장된 결과 정리: old verdicts and mail past retention go, the databases shrink.
+        Documents in the folders are never touched."""
+        removed = 0
+        with self.jobs.exclusive():
+            stamp = now_iso()
+            for _, runtime in self._each():
+                removed += runtime.db.prune_verdicts(stamp)
+                runtime.db.compact()
+            oldest = (self.connectors.today() - datetime.timedelta(days=self.settings.mail_index_days)).isoformat()
+            removed += self.maildb.prune(oldest)
+            self.maildb.compact()
+        self.activity.add(f"저장된 결과를 정리했습니다. 지운 항목 {removed}개")
+        return {"removed": removed}
+
+    def reindex(self) -> dict:
+        """다시 인덱싱: folder files are read again; stored verdicts stay, so nothing is judged twice."""
+        dropped = 0
+        with self.jobs.exclusive():
+            for _, runtime in self._each():
+                dropped += runtime.db.forget_parsed_files()
+        self.rescan()
+        return {"files": dropped}
+
     def set_mail_send(self, enabled: bool) -> dict:
         """The "메일 보내기" setting. Turning it on asks Google for the send permission once."""
         with self._lock:
@@ -2027,6 +2077,36 @@ def _validation_message(exc: Exception) -> str:
             return f"알 수 없는 항목입니다: {field}"
         return f"'{SOURCE_FIELD_LABELS.get(field, field)}' 값을 확인하세요."
     return "입력값을 확인하세요."
+
+
+def memory_bytes() -> int | None:
+    """Resident memory of this process, or None when it cannot be read."""
+    try:
+        import psutil
+
+        return int(psutil.Process().memory_info().rss)
+    except Exception:  # noqa: BLE001 - optional numbers on the 성능 page
+        log.debug("psutil is not available; trying the Windows API")
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            class Counters(ctypes.Structure):
+                _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                            ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                            ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+
+            counters = Counters()
+            counters.cb = ctypes.sizeof(Counters)
+            handle = ctypes.windll.kernel32.GetCurrentProcess()
+            if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(counters), counters.cb):
+                return int(counters.WorkingSetSize)
+        except Exception:  # noqa: BLE001
+            return None
+    return None
 
 
 def _open_in_file_manager(path: Path) -> None:

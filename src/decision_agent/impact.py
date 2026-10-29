@@ -4,12 +4,12 @@ from collections.abc import Callable
 
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from decision_agent.config import DEFAULT_SETTINGS, effective_k
 from decision_agent.llm.base import LLMProvider
 from decision_agent.models import Artifact, Decision, DecisionRelation
 from decision_agent.ranking import stable_order
+from decision_agent.retrieval import tfidf_similarities
 from decision_agent.scope import scope_overlaps
 from decision_agent.storage import SQLiteStore
 from decision_agent.verdicts import VerdictStore
@@ -49,8 +49,8 @@ def _rank_candidates(
     if not artifacts or not decisions:
         return []
     k = effective_k(k, len(artifacts))
-    matrix = _vectorizer().fit_transform([a.text for a in artifacts] + [query])
-    sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
+    # Same numbers as fit_transform(texts + [query]); the counting of the texts is cached.
+    sims = tfidf_similarities([a.text for a in artifacts], query)
     result: list[Artifact] = []
     for i in stable_order(sims, [a.id for a in artifacts]):
         if sims[i] <= 0.0:

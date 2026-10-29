@@ -155,4 +155,5 @@ def main() -> None:
          new_engine=ProjectEngine(work, settings, db, bundle, ProgressTracker()))
 
 
-main()
+if __name__ == "__main__":
+    main()

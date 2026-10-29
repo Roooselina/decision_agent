@@ -105,6 +105,26 @@ class StateDB:
         if "owner" not in found:
             self.conn.execute("ALTER TABLE findings ADD COLUMN owner TEXT NOT NULL DEFAULT ''")
 
+    def size_bytes(self) -> int:
+        with self.lock:
+            pages = self.conn.execute("PRAGMA page_count").fetchone()[0]
+            size = self.conn.execute("PRAGMA page_size").fetchone()[0]
+        return int(pages) * int(size)
+
+    def compact(self) -> None:
+        """Checkpoint the write-ahead log and rebuild the file to its used size (idle time only)."""
+        with self.lock:
+            self.conn.commit()
+            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            self.conn.execute("VACUUM")
+
+    def forget_parsed_files(self) -> int:
+        """Drop the parse results of folder files (not connector documents), so they are read again."""
+        with self.lock:
+            removed = self.conn.execute("DELETE FROM files WHERE path NOT LIKE '@%'").rowcount
+            self.conn.commit()
+        return removed
+
     def close(self) -> None:
         with self.lock:
             self.conn.close()

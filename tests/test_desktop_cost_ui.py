@@ -167,6 +167,6 @@ def test_parallel_speed_settings_stay_out_of_the_web_api(tmp_path):
         assert app.wait_idle(60)
         for hidden in ({"topic_workers": 2}, {"max_parallel_calls": 4}):
             assert client.post("/api/settings", headers=HEADERS, json=hidden).status_code == 400
-        assert (app.settings.topic_workers, app.settings.max_parallel_calls) == (4, 8)
+        assert (app.settings.topic_workers, app.settings.max_parallel_calls) == (8, 16)
     finally:
         app.stop()

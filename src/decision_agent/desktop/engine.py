@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import threading
+import time
 from collections import Counter
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
@@ -28,7 +29,7 @@ from decision_agent.desktop.providers import (
     describe_llm_error,
     is_loopback_url,
 )
-from decision_agent.desktop.settings import AppSettings, apply_speed_settings
+from decision_agent.desktop.settings import AppSettings, apply_speed_settings, effective_speed
 from decision_agent.desktop.state import FindingInput, StateDB, sha256_file
 from decision_agent.desktop.verdicts import TopicVerdicts, artifact_fingerprint, sampling_key
 from decision_agent.impact import candidate_artifacts_for_topic
@@ -85,6 +86,22 @@ class CycleReport:
     judged_lines: int = 0
     # Set when the expensive part was held back until the user confirms it.
     pending_confirm: dict | None = None
+    # Wall seconds per phase of this cycle (parse, ingest, extract, retrieval, judge, store).
+    phase_seconds: dict[str, float] = field(default_factory=dict)
+
+
+# Plain names of the phases, for the "느린 단계" line and the 성능 page.
+PHASE_NAMES = {
+    "parse": "파일 읽기", "ingest": "내용 정리", "extract": "결정 찾기", "retrieval": "관련 문서 찾기",
+    "judge": "AI 확인", "store": "결과 저장",
+}
+
+
+def slowest_phase(seconds: dict[str, float]) -> tuple[str, float] | None:
+    if not seconds:
+        return None
+    name = max(seconds, key=lambda k: seconds[k])
+    return name, seconds[name]
 
 
 def _sha(*parts: str) -> str:
@@ -151,7 +168,7 @@ class ProjectEngine:
         self.cancelled = threading.Event()
         self._user_stop = False
         self.counter = CountingProvider(
-            bundle.provider, settings.max_llm_calls_per_cycle, settings.max_parallel_calls,
+            bundle.provider, settings.max_llm_calls_per_cycle, effective_speed(settings)["max_parallel"],
             self.cancelled,
         )
         self.persistent = PersistentCachingProvider(
@@ -230,7 +247,16 @@ class ProjectEngine:
         except PermissionError:
             result.retry.append(path)
 
+    last_sync_seconds: float | None = None
+
     def sync(self, paths: Iterable[Path] | None = None) -> SyncResult:
+        started = time.perf_counter()
+        try:
+            return self._sync(paths)
+        finally:
+            self.last_sync_seconds = (self.last_sync_seconds or 0.0) + time.perf_counter() - started
+
+    def _sync(self, paths: Iterable[Path] | None = None) -> SyncResult:
         """Update the index. paths=None scans the whole folder and detects deletions."""
         result = SyncResult()
         with self.lock:
@@ -544,6 +570,9 @@ class ProjectEngine:
             "local_answers": report.local_answers,
             "reused_lines": report.reused_lines,
             "judged_lines": report.judged_lines,
+            "phase_seconds": {k: round(v, 3) for k, v in report.phase_seconds.items()},
+            "cache_hits": self.persistent.hits,
+            "cache_misses": self.persistent.misses,
         }
         self.db.meta_put("completion", json.dumps(record, ensure_ascii=False))
 
@@ -626,6 +655,18 @@ class ProjectEngine:
     ) -> CycleReport:
         report = CycleReport(root=str(self.root))
         force_topics = force_topics or set()
+        clock = time.perf_counter()
+        mark = [clock]
+
+        def phase(name: str) -> None:
+            now = time.perf_counter()
+            report.phase_seconds[name] = report.phase_seconds.get(name, 0.0) + now - mark[0]
+            mark[0] = now
+
+        if self.last_sync_seconds is not None:
+            report.phase_seconds["parse"] = self.last_sync_seconds
+            self.last_sync_seconds = None
+        self.persistent.hits = self.persistent.misses = 0
         stamp = datetime.datetime.now().isoformat()
         with self.lock:
             self.counter.reset()
@@ -637,6 +678,7 @@ class ProjectEngine:
             self.profile_notes = profile.notes
             built = build_inputs(docs, profile.config, profile.aliases, profile.overrides)
             self.last_build = built
+            phase("ingest")
             # Only the judging model and the sampling settings matter here: changing the cheap
             # model or a profile field that does not change the verdicts re-checks nothing.
             input_fp = _sha(
@@ -687,6 +729,7 @@ class ProjectEngine:
                 if stored["topic"] not in topics:
                     self.db.drop_topic(stored["topic"])
             self.progress.set_topics(len(topics))
+            phase("extract")
             self.progress.set_phase("checking")
             all_done = True
             plans = []
@@ -735,6 +778,7 @@ class ProjectEngine:
                     report.calls_by_task = dict(self.counter.by_task)
                     report.llm_calls = self.counter.calls
                     return report
+            phase("retrieval")
             runnable = []
             stored_lines = self.db.finding_counts()
             for topic, decisions, candidates, decision_fp, fingerprint, unchanged in plans:
@@ -765,9 +809,14 @@ class ProjectEngine:
                 label = short_label(latest.text if latest else topic)
                 runnable.append((topic, decision_fp, fingerprint, answers, summary, label))
             all_done = self._check_topics(project, runnable, report, stamp)
+            phase("judge")
             report.llm_calls = self.counter.calls
             report.calls_by_task = dict(self.counter.by_task)
             self.db.prune_verdicts(stamp)
+            phase("store")
+            slow = slowest_phase(report.phase_seconds)
+            if slow is not None and sum(report.phase_seconds.values()) >= 1.0:
+                self.progress.activity.add(f"느린 단계: {PHASE_NAMES.get(slow[0], slow[0])} {slow[1]:.1f}초")
             if all_done:
                 self.db.meta_put("input_fp", input_fp)
                 self._record_completion(len(topics), report)
@@ -785,7 +834,7 @@ class ProjectEngine:
         if not runnable:
             return True
         judge = self.bundle.provider_id
-        workers = max(1, min(self.settings.topic_workers, len(runnable)))
+        workers = max(1, min(effective_speed(self.settings)["topic_workers"], len(runnable)))
         executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="topic")
         stores = [self._verdicts(decision_fp, stamp) for _, decision_fp, _, _, _, _ in runnable]
         futures = [

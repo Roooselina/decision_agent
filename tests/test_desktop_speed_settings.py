@@ -32,7 +32,7 @@ def _restore_default_settings():
 def test_speed_defaults_and_limits():
     settings = AppSettings()
     assert settings.max_llm_calls_per_cycle == 3000
-    assert (settings.llm_concurrency, settings.batch_size, settings.adaptive_sampling) == (8, 8, True)
+    assert (settings.llm_concurrency, settings.batch_size, settings.adaptive_sampling) == (16, 8, True)
     for bad in ({"llm_concurrency": 0}, {"llm_concurrency": 33}, {"batch_size": 0}):
         with pytest.raises(ValueError):
             AppSettings(**bad)
@@ -125,3 +125,37 @@ def test_quick_check_switch_is_the_only_new_editable_field(tmp_path, monkeypatch
     finally:
         controller.wait_idle(60)
         controller.stop()
+
+
+def test_perf_modes_cap_or_raise_the_parallel_limits():
+    from decision_agent.desktop.settings import effective_speed
+
+    normal = effective_speed(AppSettings())
+    assert (normal["max_parallel"], normal["topic_workers"], normal["concurrency"]) == (16, 8, 16)
+    save = effective_speed(AppSettings(perf_mode="save"))
+    assert (save["max_parallel"], save["topic_workers"], save["concurrency"]) == (4, 2, 4)
+    top = effective_speed(AppSettings(perf_mode="max"))
+    assert (top["max_parallel"], top["topic_workers"], top["concurrency"]) == (32, 16, 32)
+    assert top["parse_workers"] >= 1
+
+
+def test_adaptive_limiter_grows_halves_and_waits_for_retry_after():
+    from decision_agent.desktop.providers import AdaptiveLimiter, throttle_of
+
+    now = [100.0]
+    limiter = AdaptiveLimiter(8, clock=lambda: now[0])
+    assert limiter.limit == 8
+    limiter.acquire()
+    limiter.release(False, True, 3.0)
+    assert limiter.limit == 4 and limiter.paused_until == 103.0
+    now[0] = 104.0
+    for _ in range(6):
+        limiter.acquire()
+        limiter.release(True)
+    assert limiter.limit == 8
+
+    class RateLimitError(Exception):
+        status_code = 429
+
+    assert throttle_of(RateLimitError()) == (True, 0.0)
+    assert throttle_of(ValueError()) == (False, 0.0)

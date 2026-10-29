@@ -181,8 +181,11 @@ class AppSettings(BaseModel):
     confirm_over_calls: int = Field(default=400, ge=0, le=100000)
     # Speed settings (advanced, kept in settings.json only). topic_workers topics are analysed at
     # the same time; max_parallel_calls caps the model calls in flight across all of them.
-    topic_workers: int = Field(default=4, ge=1, le=16)
-    max_parallel_calls: int = Field(default=8, ge=1, le=64)
+    topic_workers: int = Field(default=8, ge=1, le=16)
+    max_parallel_calls: int = Field(default=16, ge=1, le=64)
+    # 성능 모드: save caps the parallel work, normal uses the values above, max raises them to the
+    # highest safe level. The request limiter still halves on rate limits in every mode.
+    perf_mode: Literal["save", "normal", "max"] = "normal"
     ollama_url: str = "http://127.0.0.1:11434"
     embedding_model: str = ""
     notify: bool = True
@@ -193,7 +196,7 @@ class AppSettings(BaseModel):
     max_llm_calls_per_cycle: int = Field(default=3000, ge=1, le=100000)
     # Speed of one check. batch_size 1 turns batching off; adaptive_sampling stops sampling a
     # judgement early when the first samples agree. Environment variables override these.
-    llm_concurrency: int = Field(default=8, ge=1, le=32)
+    llm_concurrency: int = Field(default=16, ge=1, le=32)
     batch_size: int = Field(default=8, ge=1, le=32)
     adaptive_sampling: bool = True
     connectors: dict[str, ConnectorSettings] = Field(default_factory=dict)
@@ -320,9 +323,35 @@ SPEED_ENV = {
 }
 
 
+PERF_LIMITS = {
+    # mode: (requests in flight, topics at once, calls per stage, parse workers, cached text lists)
+    "save": (4, 2, 4, 1, 4),
+    "max": (32, 16, 32, max(1, (os.cpu_count() or 2) - 1), 16),
+}
+PERF_LABELS = {
+    "save": "AI 요청 4개, 결정 주제 2개씩 처리합니다. 컴퓨터와 계정 한도를 아낍니다.",
+    "normal": "AI 요청 16개, 결정 주제 8개씩 처리합니다.",
+    "max": "AI 요청 32개, 결정 주제 16개씩 처리하고 CPU를 하나 빼고 모두 씁니다.",
+}
+
+
+def effective_speed(settings: AppSettings) -> dict[str, int]:
+    """The parallel limits of the 성능 모드 in effect."""
+    values = {
+        "max_parallel": settings.max_parallel_calls, "topic_workers": settings.topic_workers,
+        "concurrency": settings.llm_concurrency, "parse_workers": 1, "cache_lists": 8,
+    }
+    limits = PERF_LIMITS.get(settings.perf_mode)
+    if limits is None:
+        return values
+    names = ("max_parallel", "topic_workers", "concurrency", "parse_workers", "cache_lists")
+    pick = min if settings.perf_mode == "save" else max
+    return {name: pick(values[name], limit) for name, limit in zip(names, limits, strict=True)}
+
+
 def speed_values(settings: AppSettings) -> dict[str, int]:
     return {
-        "concurrency": settings.llm_concurrency,
+        "concurrency": effective_speed(settings)["concurrency"],
         "extract_batch": settings.batch_size,
         "judge_batch": settings.batch_size,
         "adaptive_min_samples": 2 if settings.adaptive_sampling else 0,

@@ -453,7 +453,7 @@
     MAIL_WATCH.listeners.add(fn);
     if (!MAIL_WATCH.timer) {
       MAIL_WATCH.timer = setInterval(async () => {
-        if (!MAIL_WATCH.listeners.size) return;
+        if (!MAIL_WATCH.listeners.size || document.hidden) return;
         let state;
         try { state = await api("/api/mail/state"); } catch (e) { return; }
         const events = state.events || [];
@@ -2048,7 +2048,7 @@
         connect: () => connectTab(data),
         check: () => [aiCard(data.s, data.st), privacyCard(data.s, data.st)],
         alerts: () => [parts.alerts],
-        advanced: () => [costCard(data.s), parts.running, parts.profile, parts.data, parts.advanced],
+        advanced: () => [costCard(data.s), performanceCard(data.s), parts.running, parts.profile, parts.data, parts.advanced],
       }[SET.tab]();
       const node = h("div", {class: "page settings-page"}, h("div", {class: "page-head"}, h("h1", {}, "설정")), tabs, ...body);
       const focus = params.get("focus") || params.get("section");
@@ -2235,6 +2235,44 @@
       h("p", {class: "small muted"}, "메일함에서 무엇을 읽을지 정합니다."),
       rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "메일 연결이 없습니다. '메일 연결 추가'를 누르세요."),
       sending);
+  }
+
+  // 성능: the mode, the numbers of the last check, and two maintenance actions.
+  function performanceCard(s) {
+    const MODES = [["save", "절약"], ["normal", "보통"], ["max", "최대"]];
+    const line = h("p", {class: "small muted"});
+    const numbers = h("div", {class: "perf-numbers"}, h("p", {class: "small muted"}, "불러오는 중입니다."));
+    const mb = (n) => n == null ? "-" : (n / 1048576).toFixed(1) + " MB";
+    const draw = (p) => {
+      line.textContent = p.modes[p.mode] || "";
+      set(numbers,
+        ...p.folders.map(f => h("div", {class: "perf-folder"},
+          h("p", {class: "strong"}, folderName(f.root)),
+          f.at ? h("p", {class: "small"}, "마지막 점검 " + stamp(f.at) + " · " + f.seconds + "초 · AI 요청 " + f.requests + "회 · 재사용한 줄 " + f.reused_lines
+            + (f.cache_rate == null ? "" : " · 저장된 결과 사용 " + Math.round(f.cache_rate * 100) + "%")) : h("p", {class: "small muted"}, "아직 점검 기록이 없습니다."),
+          f.phases.length ? h("p", {class: "small muted"}, f.phases.map(x => x.name + " " + x.seconds + "초").join(" · ")) : null,
+          f.slowest ? h("p", {class: "small"}, "느린 단계: " + f.slowest.name + " " + f.slowest.seconds + "초") : null,
+          h("p", {class: "small muted"}, "데이터베이스 " + mb(f.db_bytes)))),
+        h("p", {class: "small muted"}, "메일 색인 " + mb(p.mail_db_bytes) + " · 메모리 " + mb(p.memory_bytes)));
+    };
+    const load = () => api("/api/performance").then(draw).catch(e => set(numbers, h("p", {class: "danger-text small"}, e.message)));
+    const mode = segmented(MODES, s.perf_mode || "normal", async (v) => {
+      await saveSettings({perf_mode: v}, "성능 모드를 바꿨습니다.");
+      load();
+    }, "성능 모드");
+    const ask = (title, message, path, done) => async (e) => {
+      const ok = await confirmDialog({title, message, confirmLabel: title});
+      if (!ok) return;
+      await busy(e.currentTarget, async () => { const r = await api(path, "POST", {}); toast(done(r), "success"); load(); });
+    };
+    load();
+    return h("section", {class: "card set-card", id: "set-performance"}, h("h2", {}, "성능"),
+      setRow("성능 모드", mode), line, numbers,
+      h("div", {class: "row"},
+        button("저장된 결과 정리", {onClick: ask("저장된 결과 정리", "오래된 확인 결과와 보관 기간이 지난 메일 사본을 지우고 데이터베이스를 줄입니다. 폴더의 문서는 지우지 않습니다.",
+          "/api/performance/clean", r => "정리했습니다. 지운 항목 " + r.removed + "개")}),
+        button("다시 인덱싱", {onClick: ask("다시 인덱싱", "폴더의 파일을 처음부터 다시 읽습니다. 저장된 확인 결과는 그대로 씁니다.",
+          "/api/performance/reindex", r => "파일 " + r.files + "개를 다시 읽습니다.")})));
   }
 
   // "메일 보내기": off by default. Turning it on asks Google once for the send permission.
@@ -2894,6 +2932,8 @@
   }
 
   async function loop() {
+    // A hidden window does not poll; it refreshes when it is shown again.
+    if (document.hidden) return;
     await tick();
     const route = ROUTES[parseHash().name];
     if (!S.offline && route.auto && !anyLayerOpen() && !isTyping() && !openPopover && !ONB.active) {

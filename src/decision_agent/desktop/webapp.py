@@ -44,7 +44,7 @@ EDITABLE_FIELDS = {
     "digest_enabled", "digest_time", "display_name", "profile_color", "theme", "language",
     "onboarding_done", "debounce_max_seconds", "helper_enabled", "quiet_hours_enabled", "quiet_start",
     "quiet_end", "meeting_reminder_enabled", "meeting_reminder_minutes", "batch_size", "mail_prefilter",
-    "mail_poll_enabled", "mail_poll_seconds",
+    "mail_poll_enabled", "mail_poll_seconds", "perf_mode",
 }
 PURGE_CONFIRM = "삭제"
 PAGE_HASH = re.compile(r"^#/[a-z-]{0,30}$")
@@ -542,6 +542,18 @@ def create_web_app(
         return {"ok": True}
 
     # Sending (Gmail only). /api/mail/send is the compose action: the only way a mail is sent.
+
+    @app.get("/api/performance", dependencies=auth)
+    def performance():
+        return controller.performance()
+
+    @app.post("/api/performance/clean", dependencies=auth)
+    def performance_clean():
+        return controller.clean_stored_results()
+
+    @app.post("/api/performance/reindex", dependencies=auth)
+    def performance_reindex():
+        return controller.reindex()
 
     @app.get("/api/mail/send/status", dependencies=auth)
     def mail_send_status():

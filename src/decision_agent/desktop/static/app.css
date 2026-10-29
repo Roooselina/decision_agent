@@ -1085,3 +1085,5 @@ pre.log { background: #0f131a; color: #d9dee8; border-radius: var(--r); padding:
 .compose-confirm { color: var(--text-2); overflow-wrap: anywhere; }
 .conv-reply { display: flex; gap: 8px; padding: 4px 0 12px; }
 .send-setting { display: grid; gap: 6px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.perf-numbers { display: grid; gap: 12px; }
+.perf-folder { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--border); }

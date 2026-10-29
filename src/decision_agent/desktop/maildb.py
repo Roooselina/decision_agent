@@ -117,6 +117,18 @@ class MailDB:
         self.ensure_hints()
         self.ensure_threads()
 
+    def size_bytes(self) -> int:
+        with self.lock:
+            pages = self.conn.execute("PRAGMA page_count").fetchone()[0]
+            size = self.conn.execute("PRAGMA page_size").fetchone()[0]
+        return int(pages) * int(size)
+
+    def compact(self) -> None:
+        with self.lock:
+            self.conn.commit()
+            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            self.conn.execute("VACUUM")
+
     def close(self) -> None:
         with self.lock:
             self.conn.close()

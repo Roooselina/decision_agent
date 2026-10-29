@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from pydantic import BaseModel
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from decision_agent.config import DEFAULT_SETTINGS
 from decision_agent.llm.base import LLMProvider
@@ -16,6 +14,7 @@ from decision_agent.models import (
 )
 from decision_agent.parallel import run_parallel
 from decision_agent.ranking import stable_order
+from decision_agent.retrieval import tfidf_similarities
 from decision_agent.storage import SQLiteStore
 
 RELATION_SYSTEM = """TASK:RELATION_CLASSIFY
@@ -77,12 +76,7 @@ def relation_candidates(decisions: list[Decision], new: Decision, top_k: int = 3
         return same[-top_k:]
     if not prior:
         return []
-    corpus = [d.text for d in prior] + [new.text]
-    vec = TfidfVectorizer(
-        analyzer=DEFAULT_SETTINGS.tfidf_analyzer,
-        ngram_range=(DEFAULT_SETTINGS.tfidf_ngram_min, DEFAULT_SETTINGS.tfidf_ngram_max),
-    ).fit_transform(corpus)
-    sims = cosine_similarity(vec[-1], vec[:-1]).ravel()
+    sims = tfidf_similarities([d.text for d in prior], new.text)
     order = stable_order(sims, [d.id for d in prior])[:top_k]
     return [prior[i] for i in order if sims[i] >= 0.20]
 

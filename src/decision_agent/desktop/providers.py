@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 import threading
+import time
 import urllib.parse
 from collections import Counter
 from collections.abc import Callable
@@ -150,9 +151,9 @@ class CountingProvider(LLMProvider):
         self.calls = 0
         self.by_task: Counter[str] = Counter()
         self._lock = threading.Lock()
-        # Several topics run at once, each with its own parallel calls. The semaphore keeps the
-        # total number of requests in flight at max_parallel so the account rate limit is not hit.
-        self._slots = threading.Semaphore(max_parallel) if max_parallel > 0 else None
+        # Several topics run at once, each with its own parallel calls. The limiter keeps the
+        # requests in flight at or under max_parallel, and lowers that on rate limits.
+        self._slots = AdaptiveLimiter(max_parallel) if max_parallel > 0 else None
 
     def reset(self) -> None:
         with self._lock:
@@ -170,14 +171,70 @@ class CountingProvider(LLMProvider):
             self.by_task[task_of(system)] += 1
         if self._slots is None:
             return self.inner.complete(system, user, temperature, json_schema)
-        with self._slots:
+        self._slots.acquire(self._check_cancelled)
+        try:
             # A call that waited for a free slot must not start after the check was cancelled.
             self._check_cancelled()
-            return self.inner.complete(system, user, temperature, json_schema)
+            answer = self.inner.complete(system, user, temperature, json_schema)
+        except Exception as exc:
+            self._slots.release(False, *throttle_of(exc))
+            raise
+        self._slots.release(True)
+        return answer
 
     def _check_cancelled(self) -> None:
         if self.cancelled is not None and self.cancelled.is_set():
             raise CheckCancelled("점검을 중단했습니다.")
+
+
+class AdaptiveLimiter:
+    """Requests in flight: starts at half the ceiling, grows by one on each success, halves on
+    a rate limit or a timeout and then waits the provider's Retry-After before starting more."""
+
+    def __init__(self, ceiling: int, clock: Callable[[], float] = time.monotonic) -> None:
+        self.ceiling = max(1, ceiling)
+        self.limit = self.ceiling
+        self.active = 0
+        self.paused_until = 0.0
+        self.clock = clock
+        self.cond = threading.Condition()
+
+    def acquire(self, check: Callable[[], None] | None = None) -> None:
+        with self.cond:
+            while True:
+                if check is not None:
+                    check()
+                wait = self.paused_until - self.clock()
+                if self.active < self.limit and wait <= 0:
+                    self.active += 1
+                    return
+                self.cond.wait(min(0.2, wait) if wait > 0 else 0.2)
+
+    def release(self, ok: bool, throttled: bool = False, retry_after: float = 0.0) -> None:
+        with self.cond:
+            self.active -= 1
+            if throttled:
+                self.limit = max(1, self.limit // 2)
+                if retry_after > 0:
+                    self.paused_until = max(self.paused_until, self.clock() + min(retry_after, 60.0))
+            elif ok and self.limit < self.ceiling:
+                self.limit += 1
+            self.cond.notify_all()
+
+
+def throttle_of(exc: Exception) -> tuple[bool, float]:
+    """(was this a rate limit or a timeout, seconds the provider asked to wait)."""
+    name = type(exc).__name__.casefold()
+    status = getattr(exc, "status_code", None) or getattr(getattr(exc, "response", None), "status_code", None)
+    throttled = status == 429 or "ratelimit" in name or "timeout" in name or isinstance(exc, TimeoutError)
+    retry = 0.0
+    headers = getattr(getattr(exc, "response", None), "headers", None)
+    if headers is not None:
+        try:
+            retry = float(headers.get("retry-after") or 0)
+        except (TypeError, ValueError):
+            retry = 0.0
+    return throttled, retry
 
 
 class PersistentCachingProvider(LLMProvider):
@@ -198,6 +255,9 @@ class PersistentCachingProvider(LLMProvider):
         self.db = db
         self.provider_id = provider_id
         self.cheap_id = cheap_id or provider_id
+        # Stored answers reused and model requests made in the current check (for 성능).
+        self.hits = 0
+        self.misses = 0
 
     def _key(self, system: str, user: str) -> str:
         model = self.cheap_id if task_of(system) in CHEAP_TASKS else self.provider_id
@@ -212,7 +272,9 @@ class PersistentCachingProvider(LLMProvider):
         key = self._key(system, user)
         cached = self.db.cache_get(key)
         if cached is not None:
+            self.hits += 1
             return cached
+        self.misses += 1
         response = self.inner.complete(system, user, temperature, json_schema)
         self.db.cache_put(key, response)
         return response
