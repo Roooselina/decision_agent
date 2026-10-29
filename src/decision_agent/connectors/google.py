@@ -33,6 +33,8 @@ AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+# Asked only when the user turns on "메일 보내기"; never gmail.modify, gmail.compose or full mail.
+GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 MAX_PAGES = 10
 # Threads expanded in one fetch (one threads.get each).
 MAX_THREADS = 50
@@ -174,6 +176,30 @@ class Gmail(_GoogleBase):
         OptionSpec("days_back", "과거 일수", "number", 14),
         OptionSpec("max_messages", "최대 메일 수", "number", 200),
     )
+
+    def send_app(self) -> OAuthApp:
+        """The consent that adds sending to reading (incremental: earlier grants are kept)."""
+        app = self.oauth_app()
+        return OAuthApp(
+            auth_url=app.auth_url, token_url=app.token_url, scopes=(GMAIL_SCOPE, GMAIL_SEND_SCOPE),
+            client_id=app.client_id, client_secret=app.client_secret, redirect_host=app.redirect_host,
+            extra_params={**app.extra_params, "include_granted_scopes": "true"},
+            optional_scopes=(GMAIL_SEND_SCOPE,),
+        )
+
+    def send_raw(self, raw: str, thread_id: str = "") -> dict:
+        """users.messages.send with a base64url RFC 2822 message. Called only by the outbox
+        (desktop/mailsend.py) after the user pressed send and the undo window passed."""
+        body: dict = {"raw": raw}
+        if thread_id:
+            body["threadId"] = thread_id
+        try:
+            response = self.ctx.http.request(
+                "POST", f"{API}/messages/send", headers=self._headers(), json_body=body
+            )
+        except HttpError as exc:
+            raise ConnectorError(str(exc)) from exc
+        return check_response(response, self.label).json()
 
     def __init__(self, options, ctx) -> None:
         super().__init__(options, ctx)

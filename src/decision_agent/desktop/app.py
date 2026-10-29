@@ -35,6 +35,7 @@ from decision_agent.desktop.hotkey import hotkey_status
 from decision_agent.desktop.jobs import AUTO, USER, JobBoard
 from decision_agent.desktop.maildb import MailDB
 from decision_agent.desktop.mailpoller import MailPoller
+from decision_agent.desktop.mailsend import Outbox
 from decision_agent.desktop.notify import LogNotifier, Notifier
 from decision_agent.desktop.paths import app_home, log_path, mail_db_path, state_db_path
 from decision_agent.desktop.policy import FolderPolicy
@@ -184,6 +185,8 @@ class DecisionAgentApp:
         self.inbox = ActivityLog(limit=50)
         # Background mail refresh (no model calls) and the quiet period before an analysis.
         self.mail_poller = MailPoller(self)
+        # Mail the user sends from the compose window (Gmail only, after the undo period).
+        self.outbox = Outbox(self)
         self.mail_analysis_delay = MAIL_ANALYSIS_DELAY
         self._mail_timers: dict[str, threading.Timer] = {}
         self.mail_events: list[dict] = []
@@ -276,6 +279,7 @@ class DecisionAgentApp:
         return True
 
     def stop(self) -> None:
+        self.outbox.stop()
         self.mail_poller.stop()
         with self._lock:
             for timer in self._mail_timers.values():
@@ -1199,6 +1203,18 @@ class DecisionAgentApp:
                     })
         return found
 
+    def set_mail_send(self, enabled: bool) -> dict:
+        """The "메일 보내기" setting. Turning it on asks Google for the send permission once."""
+        with self._lock:
+            self.settings.mail_send.enabled = enabled
+            if self.settings_file is not None:
+                save_settings(self.settings, self.settings_file)
+        status = self.outbox.status()
+        if enabled and not status["granted"]:
+            status["consent_url"] = self.connectors.start_send_consent()
+        self._changed()
+        return status
+
     def thread_list(self, params: dict) -> dict:
         result = mailview.list_threads(self.maildb, list(self.settings.mail_sources), params, self.mail_decisions())
         result["state"] = self.mail_state()
@@ -1209,6 +1225,7 @@ class DecisionAgentApp:
         item = mailview.read_thread(self.maildb, list(self.settings.mail_sources), tid, self.mail_decisions())
         if item is None:
             raise UserError("대화를 찾지 못했습니다.")
+        item["account"] = self.connectors.accounts.get("gmail", {}).get("account", "")
         return item
 
     def thread_mark_read(self, tid: str, read: bool = True) -> None:

@@ -487,6 +487,7 @@ def read_thread(maildb: MailDB, sources: list[MailSource], tid: str,
             "mine": mine,
             "sender": "나" if mine else (contact or {}).get("name") or row["sender_name"] or row["sender"],
             "sender_address": row["sender"],
+            "to": [a.strip() for a in (row["recipients"] or "").split(",") if a.strip()],
             "date": row["date"],
             "time": row["time"],
             "body": row["body"],
@@ -499,6 +500,7 @@ def read_thread(maildb: MailDB, sources: list[MailSource], tid: str,
             "source": by_id[row["source_id"]].name if row["source_id"] in by_id else "",
         })
     item["messages"] = messages
+    item["connectors"] = sorted({by_id[s].connector for s in json.loads(thread["source_ids"] or "[]") if s in by_id})
     item["local_labels"] = sorted(links[0].get(thread["thread_key"], set()))
     item["decisions"] = _thread_decisions(maildb, thread, by_id, decisions or {})
     item["deadline"] = thread["thread_key"] in maildb.deadline_thread_keys()

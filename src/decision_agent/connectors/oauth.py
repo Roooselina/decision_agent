@@ -44,6 +44,9 @@ class OAuthApp:
     client_secret: str = ""
     redirect_host: str = "127.0.0.1"
     extra_params: dict[str, str] = field(default_factory=dict)
+    # Requested but not required: the login is stored even when the user unticks them, and
+    # the granted list says whether they were given (Gmail send).
+    optional_scopes: tuple[str, ...] = ()
 
 
 @dataclass
@@ -130,7 +133,8 @@ class OAuthManager:
         if not token.get("refresh_token"):
             raise ConnectorError("로그인은 되었지만 계속 읽을 수 있는 권한(refresh token)을 받지 못했습니다.")
         granted = token.get("scope")
-        if granted is not None and missing_scopes(pending.app.scopes, granted):
+        required = tuple(s for s in pending.app.scopes if s not in pending.app.optional_scopes)
+        if granted is not None and missing_scopes(required, granted):
             # Google lets the user untick a permission; such a login is not stored.
             raise ConnectorError(MISSING_SCOPE)
         self._store(pending.connector_id, token, token["refresh_token"])
@@ -171,6 +175,18 @@ class OAuthManager:
         token = self._token_request(app, form)
         self._store(connector_id, token, token.get("refresh_token") or saved.get("refresh_token", ""))
         return token["access_token"]
+
+    def granted_scopes(self, connector_id: str) -> list[str] | None:
+        """The scopes the stored login was granted, or None when unknown or not connected."""
+        raw = self.secrets.get(self.secret_name(connector_id))
+        if not raw:
+            return None
+        try:
+            saved = json.loads(raw)
+        except ValueError:
+            return None
+        scopes = saved.get("scopes") if isinstance(saved, dict) else None
+        return list(scopes) if isinstance(scopes, list) else None
 
     def disconnect(self, connector_id: str) -> None:
         self.secrets.delete(self.secret_name(connector_id))

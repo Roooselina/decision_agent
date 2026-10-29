@@ -178,6 +178,19 @@ class CheckBody(BaseModel):
     source_id: str = Field(default="", max_length=40)
 
 
+class SendBody(BaseModel):
+    to: list[str] = Field(default_factory=list, max_length=60)
+    cc: list[str] = Field(default_factory=list, max_length=60)
+    subject: str = Field(default="", max_length=300)
+    body: str = Field(default="", max_length=200_000)
+    reply_to: str = Field(default="", max_length=40)
+
+
+class SendSettingBody(BaseModel):
+    enabled: bool
+    open_browser: bool = False
+
+
 class ContactsImportBody(BaseModel):
     text: str = Field(max_length=1_000_000)
 
@@ -527,6 +540,65 @@ def create_web_app(
         if not controller.check_mail_now(body.source_id):
             raise HTTPException(status_code=400, detail="메일 연결을 먼저 추가하세요.")
         return {"ok": True}
+
+    # Sending (Gmail only). /api/mail/send is the compose action: the only way a mail is sent.
+
+    @app.get("/api/mail/send/status", dependencies=auth)
+    def mail_send_status():
+        return controller.outbox.status()
+
+    @app.post("/api/mail/send/setting", dependencies=auth)
+    def mail_send_setting(body: SendSettingBody):
+        try:
+            status = controller.set_mail_send(body.enabled)
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+        if status.get("consent_url") and body.open_browser:
+            status["opened"] = bool(url_opener(status["consent_url"]))
+        return status
+
+    @app.post("/api/mail/send", dependencies=auth)
+    def mail_send(body: SendBody):
+        """The compose window's 보내기: queue the mail; it goes out after the undo period."""
+        from decision_agent.desktop.mailsend import Draft
+
+        draft = Draft(to=body.to, cc=body.cc, subject=body.subject, body=body.body, reply_to=body.reply_to)
+        try:
+            return controller.outbox.submit(draft)
+        except (ConnectorError, UserError) as exc:
+            raise _bad(exc) from exc
+
+    @app.post("/api/mail/send/{item_id}/cancel", dependencies=auth)
+    def mail_send_cancel(item_id: str):
+        try:
+            return controller.outbox.cancel(item_id)
+        except UserError as exc:
+            raise _bad(exc) from exc
+
+    @app.get("/api/mail/send/{item_id}", dependencies=auth)
+    def mail_send_view(item_id: str):
+        try:
+            return controller.outbox.view(item_id)
+        except UserError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/mail/suggest", dependencies=auth)
+    def mail_suggest(q: str = ""):
+        """Address book entries for the 받는 사람 field (never addresses from mail content)."""
+        from decision_agent.desktop.mailsend import recipient_suggestions
+
+        return recipient_suggestions(controller.maildb, q[:60])
+
+    @app.get("/api/findings/draft", dependencies=auth)
+    def finding_mail_draft(root: str, topic: str, artifact_id: str):
+        """A fixed-template draft for the owner of a finding; no model is called, nothing is sent."""
+        from decision_agent.desktop.mailsend import finding_draft as make
+
+        found = next((f for f in controller.findings(include_hidden=True)
+                      if f["root"] == root and f["topic"] == topic and f["artifact_id"] == artifact_id), None)
+        if found is None:
+            raise HTTPException(status_code=404, detail="점검 결과를 찾지 못했습니다.")
+        return make(found, controller.maildb)
 
     @app.get("/api/mail/threads", dependencies=auth)
     def thread_list(box: str = "all", label: str = "", q: str = "", since: str = "", until: str = "",

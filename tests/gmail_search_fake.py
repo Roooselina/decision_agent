@@ -41,6 +41,7 @@ class SearchGmail:
         self.history: list[tuple[int, dict]] = []
         self.history_id = 1000
         self.calls: list[dict] = []
+        self.sent: list[dict] = []
 
     # building the mailbox
 
@@ -115,7 +116,11 @@ class SearchGmail:
 
     def request(self, method, url, *, headers=None, params=None, form=None, json_body=None, timeout=30.0):
         params = params or {}
-        self.calls.append({"url": url, "params": dict(params)})
+        self.calls.append({"method": method, "url": url, "params": dict(params), "json": json_body})
+        if method == "POST" and url == f"{API}/messages/send":
+            if self.send_status != 200:
+                return HttpResponse(self.send_status, b"{}")
+            return HttpResponse(200, json.dumps(self._send(json_body)).encode("utf-8"))
         body = self._answer(url, params)
         if body is None:
             return HttpResponse(404, b"{}")
@@ -147,6 +152,32 @@ class SearchGmail:
             tid = url.rsplit("/", 1)[-1]
             return {"id": tid, "messages": [m for m in self.messages.values() if m["threadId"] == tid]}
         return None
+
+    send_status = 200
+
+    def _send(self, body: dict) -> dict:
+        """messages.send: the raw message becomes a SENT message of its thread."""
+        import email
+        import email.policy
+
+        raw = base64.urlsafe_b64decode(body["raw"] + "=" * (-len(body["raw"]) % 4))
+        parsed = email.message_from_bytes(raw, policy=email.policy.default)
+        msg_id = f"sent{len(self.sent) + 1}"
+        thread_id = body.get("threadId") or f"T-{msg_id}"
+        headers = [{"name": k, "value": str(v)} for k, v in parsed.items()]
+        message = {
+            "id": msg_id, "threadId": thread_id, "labelIds": ["SENT"],
+            "internalDate": str(int(self.now.timestamp() * 1000)),
+            "payload": {"mimeType": "text/plain", "body": {"data": _b64(parsed.get_content())}, "headers": headers},
+        }
+        self.messages[msg_id] = message
+        self.sent.append({"raw": raw, "threadId": body.get("threadId", ""), "parsed": parsed})
+        self.history_id += 1
+        self.history.append((self.history_id, message))
+        return {"id": msg_id, "threadId": thread_id, "labelIds": ["SENT"]}
+
+    def send_calls(self) -> list[dict]:
+        return [c for c in self.calls if c["method"] == "POST" and c["url"].endswith("/messages/send")]
 
     def list_calls(self) -> list[dict]:
         return [c for c in self.calls if c["url"] == f"{API}/messages"]

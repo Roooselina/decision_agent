@@ -37,6 +37,17 @@ class FolderRejected(ValueError):
     """Raised when a folder cannot be used as a watch root."""
 
 
+class MailSendSettings(BaseModel):
+    """Sending from the app (Gmail only). Off until the user turns it on and grants gmail.send."""
+
+    enabled: bool = False
+    max_recipients: int = Field(default=10, ge=1, le=50)
+    per_hour: int = Field(default=20, ge=1, le=200)
+    per_day: int = Field(default=100, ge=1, le=1000)
+    max_body: int = Field(default=20000, ge=100, le=100000)
+    undo_seconds: int = Field(default=5, ge=3, le=30)
+
+
 class ConnectorSettings(BaseModel):
     """Non-secret settings of one connector. Passwords and tokens live in the credential store."""
 
@@ -197,6 +208,7 @@ class AppSettings(BaseModel):
     # Background mail refresh while the app runs (no model calls). Seconds between checks.
     mail_poll_enabled: bool = True
     mail_poll_seconds: int = Field(default=60, ge=30, le=600)
+    mail_send: MailSendSettings = Field(default_factory=MailSendSettings)
     # Folders checked at the same time; each folder still runs one job at a time.
     folder_workers: int = Field(default=2, ge=1, le=4)
     connector_interval_minutes: int = Field(default=5, ge=1, le=60)

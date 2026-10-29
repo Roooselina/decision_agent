@@ -698,6 +698,11 @@
           d.findings ? "고칠 곳 " + d.findings + "건 보기" : "점검 결과 보기")));
       const messages = t.messages.map((m, i) => message(m, i === last));
       const latest = t.messages[last];
+      const gmail = (t.connectors || []).includes("gmail");
+      const replyRow = gmail
+        ? h("div", {class: "conv-reply"}, button("답장", {size: "sm", onClick: () => compose(replyDraft(t, false))}),
+            button("전체 답장", {size: "sm", onClick: () => compose(replyDraft(t, true))}))
+        : h("p", {class: "small muted"}, "이 연결은 읽기 전용입니다.");
       return h("div", {class: "conv"},
         h("div", {class: "conv-head"},
           h("button", {type: "button", class: "btn sm conv-back", onclick: back}, "목록으로"),
@@ -705,6 +710,7 @@
           labels, ...found,
           t.analysis === "점검 안 함" ? h("p", {class: "small muted"}, "이 메일 연결은 AI로 점검하지 않습니다.") : null),
         h("div", {class: "conv-msgs"}, ...messages),
+        replyRow,
         relatedBlock("비슷한 메일", t.subject + " " + (latest.body || "").slice(0, 400), {exclude: latest.id, hideEmpty: true}));
     }
 
@@ -793,6 +799,97 @@
     return h("div", {class: "mbox-wrap"}, statusBar, root);
   }
 
+
+  // ---------------------------------------------------------------- compose (Gmail only)
+
+  // One compose window. The mail goes out only when 보내기 is pressed, after a short undo
+  // period; recipients are typed or picked from the address book, never filled from mail text.
+  async function compose(prefill) {
+    const p = Object.assign({to: [], cc: [], subject: "", body: "", reply_to: "", title: "메일 쓰기"}, prefill || {});
+    let status;
+    try { status = await api("/api/mail/send/status"); } catch (e) { toast(e.message, "danger"); return; }
+    const to = input({value: p.to.join(", "), "aria-label": "받는 사람", placeholder: "이름이나 주소", autocomplete: "off"});
+    const cc = input({value: p.cc.join(", "), "aria-label": "참조", placeholder: "이름이나 주소", autocomplete: "off"});
+    const subject = input({value: p.subject, "aria-label": "제목", maxlength: "300"});
+    const body = textarea({"aria-label": "본문", rows: "10", maxlength: String(status.max_body)});
+    body.value = p.body;
+    const suggest = h("ul", {class: "compose-suggest", "aria-label": "주소록 추천"});
+    const confirmLine = h("p", {class: "compose-confirm small"});
+    const note = h("p", {class: "compose-note small muted", role: "status"});
+    const split = (v) => v.split(/[,;]/).map(x => x.trim()).filter(Boolean);
+    const drawConfirm = () => {
+      const all = split(to.value).concat(split(cc.value));
+      confirmLine.textContent = all.length ? "받는 사람 " + all.length + "명에게 보냅니다. " + all.join(", ") : "받는 사람을 입력하세요.";
+    };
+    let target = to, timer = null;
+    const lookup = () => {
+      clearTimeout(timer);
+      const typed = split(target.value).pop() || "";
+      if (typed.length < 1 || typed.includes("@")) { set(suggest); return; }
+      timer = setTimeout(async () => {
+        const rows = await api("/api/mail/suggest?q=" + encodeURIComponent(typed)).catch(() => []);
+        set(suggest, ...rows.map(r => h("li", {}, h("button", {type: "button", class: "link small", onclick: () => {
+          const parts = split(target.value); parts.pop(); parts.push(r.address);
+          target.value = parts.join(", ") + ", "; set(suggest); drawConfirm(); target.focus();
+        }}, (r.name || r.address) + " <" + r.address + ">" + (r.team ? " · " + r.team : "")))));
+      }, 200);
+    };
+    for (const field_ of [to, cc]) {
+      field_.addEventListener("focus", () => { target = field_; });
+      field_.addEventListener("input", () => { target = field_; drawConfirm(); lookup(); });
+    }
+    drawConfirm();
+    if (!status.available) {
+      note.textContent = !status.enabled ? "메일 보내기가 꺼져 있습니다. 설정 > 연결에서 '메일 보내기'를 켜세요."
+        : "보내기 권한이 없습니다. 설정 > 연결에서 '메일 보내기'를 다시 켜세요.";
+    }
+    const form = h("div", {class: "compose"},
+      field("받는 사람", to), suggest, field("참조", cc), field("제목", subject), field("본문", body),
+      status.account ? h("p", {class: "small muted"}, "보내는 계정: " + status.account) : null,
+      confirmLine, note);
+    let pending = null;
+    const close = modal({title: p.title, wide: true, plain: true, body: form, actions: []});
+    const idle = () => close.setActions([
+      {label: "취소"},
+      {label: "보내기", variant: "primary", disabled: !status.available, closes: false, onClick: async () => {
+        const item = await api("/api/mail/send", "POST", {to: split(to.value), cc: split(cc.value), subject: subject.value.trim(),
+          body: body.value, reply_to: p.reply_to});
+        pending = item;
+        waiting();
+        return false;
+      }}]);
+    const waiting = () => {
+      note.textContent = Math.max(1, Math.round(status.undo_seconds)) + "초 뒤에 보냅니다.";
+      close.setActions([{label: "보내기 취소", closes: false, onClick: async () => {
+        await api("/api/mail/send/" + pending.id + "/cancel", "POST", {});
+        note.textContent = "보내기를 취소했습니다. 내용은 그대로 있습니다.";
+        pending = null; idle();
+        return false;
+      }}]);
+      const poll = async () => {
+        if (!pending) return;
+        const view = await api("/api/mail/send/" + pending.id).catch(() => null);
+        if (!view || view.state === "waiting" || view.state === "sending") { setTimeout(poll, 500); return; }
+        if (view.state === "sent") { close(); toast("메일을 보냈습니다.", "success"); renderRoute(false); return; }
+        if (view.state === "failed") { note.textContent = view.message; pending = null; idle(); }
+      };
+      setTimeout(poll, 500);
+    };
+    idle();
+  }
+
+  function replyDraft(t, all) {
+    const msgs = t.messages;
+    const last = msgs[msgs.length - 1];
+    const lastIn = [...msgs].reverse().find(m => !m.mine) || last;
+    const me = (t.account || "").toLowerCase();
+    let to = last.mine ? last.to : [lastIn.sender_address];
+    if (all) to = [...new Set([lastIn.sender_address, ...last.to, ...(last.mine ? [] : [])])];
+    to = to.filter(a => a && a.toLowerCase() !== me);
+    return {to, subject: "Re: " + t.subject.replace(/^((re|fw|fwd|회신|전달|답장)\s*:\s*)+/i, ""), body: "", reply_to: t.id,
+      title: all ? "전체 답장" : "답장"};
+  }
+
   // Stored mail similar to a text, ranked on this computer. Each row opens the mail view.
   function relatedBlock(title, text, opts) {
     const o = opts || {};
@@ -831,7 +928,8 @@
         toast("메일을 확인하는 중입니다. 새 메일은 자동으로 나타납니다.", "info");
       })});
       const book = button("주소록", {size: "sm", icon: "user", onClick: () => go("settings", {tab: "connect", focus: "contacts"})});
-      return page("메일", "메일은 자동으로 새로 고쳐집니다. 검색과 라벨은 이 컴퓨터에서만 처리합니다.", [check, book],
+      const write = button("메일 쓰기", {size: "sm", variant: "primary", icon: "plus", onClick: () => compose({})});
+      return page("메일", "메일은 자동으로 새로 고쳐집니다. 검색과 라벨은 이 컴퓨터에서만 처리합니다.", [write, check, book],
         h("section", {class: "card mail-page"}, mailPage()));
     },
   };
@@ -1291,8 +1389,14 @@
       await refreshAll();
     };
     const link = (label, fn) => h("button", {type: "button", class: "link detail-link", onclick: (e) => busy(e.currentTarget, fn)}, label);
+    const notify = link("담당자에게 알리기", async () => {
+      const d = await api("/api/findings/draft?" + new URLSearchParams({root: f.root, topic: f.topic, artifact_id: f.artifact_id}));
+      await compose({to: d.to, subject: d.subject, body: d.body, title: "담당자에게 알리기"});
+      if (!d.owner_known) toast(d.owner ? "주소록에 '" + d.owner + "'의 주소가 없습니다. 받는 사람을 입력하세요." : "담당자가 정해지지 않았습니다. 받는 사람을 입력하세요.", "info");
+    });
     const actions = status === "open"
-      ? [link("확인 완료", () => setStatus("dismissed")), link("잘못된 탐지", () => reportFalse(f, setStatus)), link("내일 다시 알림", () => setStatus("snoozed"))]
+      ? [link("확인 완료", () => setStatus("dismissed")), link("잘못된 탐지", () => reportFalse(f, setStatus)), link("내일 다시 알림", () => setStatus("snoozed")),
+        f.label === "CONSISTENT" ? null : notify].filter(Boolean)
       : [h("span", {class: "small muted"}, HIDDEN[status] + "로 표시됨" + (status === "snoozed" && f.snooze_until ? " (" + fmtTime(f.snooze_until) + "까지)" : "")),
         link("다시 열기", () => setStatus("open"))];
     const confidence = typeof f.confidence === "number" && f.label !== "UNCERTAIN" ? Math.round(f.confidence * 100) + "%" : "-";
@@ -2125,10 +2229,44 @@
         result, preview.out);
     });
     const add = button("메일 연결 추가", {variant: "primary", size: "sm", icon: "plus", onClick: () => sourceForm(c, s, null)});
+    const sending = c.id === "gmail" ? sendSetting() : h("p", {class: "small muted"}, "이 연결은 읽기 전용입니다.");
     return h("section", {class: "card set-card mail-sources", id: "sources-" + c.id},
       h("div", {class: "source-top"}, h("h2", {}, "메일 연결"), add),
       h("p", {class: "small muted"}, "메일함에서 무엇을 읽을지 정합니다."),
-      rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "메일 연결이 없습니다. '메일 연결 추가'를 누르세요."));
+      rows.length ? h("ul", {class: "source-list"}, ...rows) : h("p", {class: "muted"}, "메일 연결이 없습니다. '메일 연결 추가'를 누르세요."),
+      sending);
+  }
+
+  // "메일 보내기": off by default. Turning it on asks Google once for the send permission.
+  function sendSetting() {
+    const line = h("p", {class: "small muted", role: "status"}, "불러오는 중입니다.");
+    const box = h("div", {class: "send-setting", id: "set-send"}, h("h3", {}, "메일 보내기"), line);
+    const draw = (st) => {
+      const sw = switchCtl(st.available, async (on) => {
+        const r = await api("/api/mail/send/setting", "POST", {enabled: on, open_browser: S.status && S.status.ui_mode === "window"});
+        if (on && r.consent_url) {
+          if (!r.opened) window.open(r.consent_url, "_blank", "noopener");
+          line.textContent = "브라우저의 동의 화면에서 '이메일 보내기'를 허용하세요.";
+          for (let i = 0; i < 60; i++) {
+            await new Promise(res => setTimeout(res, 2000));
+            const now = await api("/api/mail/send/status");
+            if (now.granted) { draw(now); toast("메일 보내기를 켰습니다.", "success"); return true; }
+          }
+          line.textContent = "보내기 권한을 받지 못했습니다. 다시 켜고 동의 화면에서 '이메일 보내기'를 허용하세요.";
+          await api("/api/mail/send/setting", "POST", {enabled: false});
+          return false;
+        }
+        draw(await api("/api/mail/send/status"));
+        return true;
+      }, "메일 보내기");
+      set(box, h("div", {class: "row-between"}, h("h3", {}, "메일 보내기"), sw),
+        h("p", {class: "small muted"}, st.available
+          ? "보내기를 누른 메일만 보냅니다. 받는 사람 " + st.max_recipients + "명, 한 시간 " + st.per_hour + "통, 하루 " + st.per_day + "통까지입니다."
+          : st.enabled && !st.granted ? "보내기 권한이 없습니다. 다시 켜고 동의 화면에서 '이메일 보내기'를 허용하세요."
+            : "켜면 Google에 보내기 권한을 한 번 요청합니다. 읽기 권한은 그대로입니다."));
+    };
+    api("/api/mail/send/status").then(draw).catch(e => { line.textContent = e.message; });
+    return box;
   }
 
   function linesOf(t) { return t.value.split("\n").map(x => x.trim()).filter(Boolean); }

@@ -131,6 +131,17 @@ class ConnectorManager:
         self.oauth.port = self.get_settings().ui_port
         return self.oauth.begin(connector_id, connector.oauth_app())
 
+    def start_send_consent(self) -> str:
+        """The Google consent that adds gmail.send to the Gmail login (only from the setting)."""
+        connector = self.instance("gmail")
+        self.oauth.port = self.get_settings().ui_port
+        return self.oauth.begin("gmail", connector.send_app())
+
+    def send_granted(self) -> bool:
+        from decision_agent.connectors.google import GMAIL_SEND_SCOPE
+
+        return GMAIL_SEND_SCOPE in (self.oauth.granted_scopes("gmail") or [])
+
     def finish_login(self, state: str, code: str) -> str:
         connector_id = self.oauth.complete(state, code)
         self.accounts.pop(connector_id, None)

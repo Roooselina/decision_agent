@@ -69,7 +69,9 @@ OVERLAP_JS = """
 # Visible controls whose boxes intersect (not nested in each other) on the current screen.
 CONTROLS_OVERLAP_JS = """
 () => {
-  const nodes = Array.from(document.querySelectorAll('button, a, input, select, textarea'))
+  // With a dialog open, only the dialog is in front; the page behind it is covered.
+  const layer = document.querySelector('.modal') || document;
+  const nodes = Array.from(layer.querySelectorAll('button, a, input, select, textarea'))
     .filter(el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
       return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none'
         && r.bottom > 0 && r.top < window.innerHeight; });
@@ -128,6 +130,7 @@ def start(work: Path):
     controller = DecisionAgentApp(settings, settings_file=work / "home" / "settings.json", start_watchers=False,
                                   connector_http=FakeGmailHttp(), secret_store=logged_in())
     controller.path_opener = lambda path: None
+    controller.settings.mail_send.enabled = True
     controller.mail_analysis_delay = 1.0
     controller.start()
     controller.wait_idle(180)
@@ -202,6 +205,22 @@ def main() -> int:
                     for hit in page.evaluate(CONTROLS_OVERLAP_JS):
                         problems.append(f"[{tag}] mail: overlapping controls: {hit}")
                     page.screenshot(path=str(out / f"{tag}-mail-thread.png"))
+                    # The compose window: inside the viewport, nothing overlapping, reply prefilled.
+                    for label, shot in (("답장", "reply"), ("메일 쓰기", "compose")):
+                        page.get_by_role("button", name=label, exact=True).first.click()
+                        page.wait_for_selector(".compose", timeout=10000)
+                        page.wait_for_timeout(400)
+                        box = page.evaluate("(() => { const r = document.querySelector('.modal').getBoundingClientRect();"
+                                            " return [r.left, r.top, r.right, r.bottom, innerWidth, innerHeight]; })()")
+                        if box[0] < 0 or box[1] < 0 or box[2] > box[4] + 1 or box[3] > box[5] + 1:
+                            problems.append(f"[{tag}] {shot} window is outside the viewport: {box}")
+                        for hit in page.evaluate(CONTROLS_OVERLAP_JS):
+                            problems.append(f"[{tag}] {shot}: overlapping controls: {hit}")
+                        if shot == "reply" and "Re: 배포 서버 비용 문의" not in page.input_value(".compose input[aria-label='제목']"):
+                            problems.append(f"[{tag}] reply subject is not prefilled")
+                        page.screenshot(path=str(out / f"{tag}-{shot}.png"))
+                        page.keyboard.press("Escape")
+                        page.wait_for_timeout(300)
                     for name, route in SCREENS:
                         page.goto(f"http://127.0.0.1:{port}/{route}")
                         page.wait_for_timeout(900)

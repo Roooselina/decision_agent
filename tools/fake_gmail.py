@@ -100,5 +100,5 @@ class MemorySecrets:
 
 def logged_in() -> MemorySecrets:
     token = {"refresh_token": "R", "access_token": "A", "expires_at": 4e9,
-             "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]}
+             "scopes": ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"]}
     return MemorySecrets(**{"connector.gmail.oauth": json.dumps(token)})
