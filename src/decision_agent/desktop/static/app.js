@@ -2688,6 +2688,7 @@
       setRow("버전", h("span", {class: "set-text"}, info.version || "")),
       setRow("커밋", h("span", {class: "set-text mono"}, info.commit || "알 수 없음")),
       info.installed_at ? setRow("설치한 때", h("span", {class: "set-text"}, info.installed_at)) : null,
+      setRow("시연 설정", h("span", {class: "set-text"}, demoProfileText(info.demo_profile))),
       setRow("데이터 폴더", h("span", {class: "set-text mono about-path"}, info.data_dir || "")),
       setRow("로그 파일", h("span", {class: "set-text mono about-path"}, info.log_path || "")),
       h("div", {class: "set-links"},
@@ -2699,6 +2700,17 @@
 
     const advanced = h("section", {class: "card set-card"}, h("h2", {}, "기타"), advancedBody(s, access));
     return {profile, alerts, running, data, advanced};
+  }
+
+  // Demo profile line for the 정보 card (tools\demo_profile.ps1 turns it on and off).
+  function demoProfileText(p) {
+    if (!p || !p.on) return "꺼짐";
+    const v = p.values || {};
+    const parts = [];
+    if (v.debounce_seconds != null) parts.push(`변경 대기 ${v.debounce_seconds}초`);
+    if (v.mail_poll_seconds != null) parts.push(`메일 확인 ${v.mail_poll_seconds}초`);
+    if (v.confirm_over_calls != null) parts.push(`확인 기준 ${v.confirm_over_calls}회`);
+    return `켜짐${parts.length ? " (" + parts.join(", ") + ")" : ""}`;
   }
 
   function hotkeyDialog(s, hk) {

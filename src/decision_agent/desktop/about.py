@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from decision_agent import __version__
+from decision_agent.desktop.demo_profile import status as demo_status
 from decision_agent.desktop.paths import app_home, log_path, settings_path
 
 INSTALL_INFO = "install_info.json"
@@ -63,4 +64,5 @@ def about() -> dict:
         "log_path": str(log_path()),
         "python": sys.version.split()[0],
         "os": platform.platform(),
+        "demo_profile": demo_status(),
     }

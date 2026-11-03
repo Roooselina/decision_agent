@@ -210,7 +210,7 @@ class AppSettings(BaseModel):
     mail_cycle_cap: int = Field(default=500, ge=1, le=2000)
     # Background mail refresh while the app runs (no model calls). Seconds between checks.
     mail_poll_enabled: bool = True
-    mail_poll_seconds: int = Field(default=60, ge=30, le=600)
+    mail_poll_seconds: int = Field(default=60, ge=10, le=600)
     mail_send: MailSendSettings = Field(default_factory=MailSendSettings)
     # Folders checked at the same time; each folder still runs one job at a time.
     folder_workers: int = Field(default=2, ge=1, le=4)

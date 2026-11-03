@@ -557,6 +557,32 @@ def state_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def demo_profile_command(args: argparse.Namespace) -> int:
+    from decision_agent.desktop import demo_profile
+    from decision_agent.desktop.selftest import _is_this_app
+
+    if args.action != "status":
+        port = load_settings().ui_port
+        if _is_this_app(port):
+            print("프로그램이 실행 중입니다. 트레이에서 종료한 뒤 다시 실행하세요 (tools\\demo_profile.ps1은 자동으로 껐다 켭니다).")
+            return 1
+        try:
+            result = demo_profile.turn_on() if args.action == "on" else demo_profile.turn_off()
+        except ValueError as exc:
+            print(f"시연 설정을 바꾸지 못했습니다: {exc}")
+            return 1
+    else:
+        result = demo_profile.status()
+    if args.json:
+        _print_json(result)
+    elif result["on"]:
+        values = ", ".join(f"{k}={v}" for k, v in result["values"].items())
+        print(f"시연 설정: 켜짐 ({result['since']} 부터) {values}")
+    else:
+        print("시연 설정: 꺼짐")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="decision-agent", description="결정 변경 전파 점검 상주 프로그램"
@@ -609,6 +635,11 @@ def build_parser() -> argparse.ArgumentParser:
     state = sub.add_parser("state", help="저장된 상태를 읽기 전용으로 출력합니다.")
     state.add_argument("--json", action="store_true", help="JSON으로 출력")
     state.set_defaults(func=state_command)
+
+    demo = sub.add_parser("demo-profile", help="시연 설정을 켜거나 끕니다(이전 값으로 되돌림).")
+    demo.add_argument("action", choices=["on", "off", "status"])
+    demo.add_argument("--json", action="store_true", help="JSON으로 출력")
+    demo.set_defaults(func=demo_profile_command)
     return parser
 
 
