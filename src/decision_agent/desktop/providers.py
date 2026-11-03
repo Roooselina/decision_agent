@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import threading
@@ -13,7 +14,7 @@ from dataclasses import dataclass
 from decision_agent.desktop.secrets import get_api_key
 from decision_agent.desktop.settings import AppSettings
 from decision_agent.desktop.state import StateDB
-from decision_agent.llm.base import LLMProvider
+from decision_agent.llm.base import LLMProvider, extract_json_text
 from decision_agent.llm.mock_provider import MockProvider
 
 
@@ -271,13 +272,24 @@ class PersistentCachingProvider(LLMProvider):
             return self.inner.complete(system, user, temperature, json_schema)
         key = self._key(system, user)
         cached = self.db.cache_get(key)
-        if cached is not None:
+        # A JSON request whose stored answer does not parse (a cut-off response saved before
+        # this check existed) is asked again; reusing it would fail every retry the same way.
+        if cached is not None and (json_schema is None or _parses_as_json(cached)):
             self.hits += 1
             return cached
         self.misses += 1
         response = self.inner.complete(system, user, temperature, json_schema)
-        self.db.cache_put(key, response)
+        if json_schema is None or _parses_as_json(response):
+            self.db.cache_put(key, response)
         return response
+
+
+def _parses_as_json(text: str) -> bool:
+    try:
+        json.loads(extract_json_text(text))
+    except ValueError:
+        return False
+    return True
 
 
 def is_loopback_url(url: str) -> bool:

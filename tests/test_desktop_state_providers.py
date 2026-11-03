@@ -80,6 +80,35 @@ def test_persistent_cache_only_for_temperature_zero():
     assert inner.calls == 4
 
 
+def test_persistent_cache_skips_cut_off_json_so_retries_ask_again():
+    """QA E01/E04: a cut-off JSON answer was cached, so every retry got the same broken text."""
+
+    class Flaky(LLMProvider):
+        def __init__(self):
+            self.answers = ['```json\n{"items": [{"index": 1, "te', '{"items": []}']
+            self.calls = 0
+
+        def complete(self, system, user, temperature=0.0, json_schema=None):
+            self.calls += 1
+            return self.answers.pop(0)
+
+    db = StateDB()
+    inner = Flaky()
+    provider = PersistentCachingProvider(inner, db, "p1")
+    schema = {"type": "object"}
+    assert provider.complete("s", "u", 0.0, schema).startswith("```json")
+    assert provider.complete("s", "u", 0.0, schema) == '{"items": []}'
+    assert provider.complete("s", "u", 0.0, schema) == '{"items": []}'
+    assert inner.calls == 2
+
+    # A broken answer stored by an older version is not reused either.
+    key = provider._key("s", "old")
+    db.cache_put(key, '{"items": [')
+    inner.answers = ['{"items": [1]}']
+    assert provider.complete("s", "old", 0.0, schema) == '{"items": [1]}'
+    assert db.cache_get(key) == '{"items": [1]}'
+
+
 def test_counting_provider_budget():
     counter = CountingProvider(Echo(), 2)
     counter.complete("s", "1")

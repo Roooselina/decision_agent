@@ -31,7 +31,9 @@ class AnthropicProvider(LLMProvider):
             )
         params = {
             "model": self.model,
-            "max_tokens": 1800,
+            # A batch of eight Korean extraction rows can pass 1800 tokens; a cut-off answer
+            # is not valid JSON. Only the tokens actually written are billed.
+            "max_tokens": 4096,
             "system": system + schema_note,
             "messages": [{"role": "user", "content": user}],
         }
