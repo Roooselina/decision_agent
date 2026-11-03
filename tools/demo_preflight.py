@@ -25,7 +25,7 @@ from decision_agent.desktop.paths import app_home
 from decision_agent.desktop.secrets import get_api_key
 from decision_agent.desktop.statedump import read_settings
 
-DEFAULT_FOLDER = r"C:\Users\kuroc\Downloads\demo_capstone\demo_capstone"
+DEFAULT_FOLDER = r"C:\Users\kuroc\Downloads\demo_bookswap"
 REPO = Path(__file__).resolve().parent.parent
 WEBVIEW2_ID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
@@ -56,15 +56,17 @@ def api(port: int, path: str, method: str = "GET", timeout: float = 10.0):
         return json.loads(response.read().decode("utf-8"))
 
 
-def repo_head() -> str:
+def program_changed_since(commit: str) -> bool | None:
+    """True when the program code (src, pyproject.toml) in the repository differs from the
+    installed commit; tools and documents do not need a new install."""
     try:
         out = subprocess.run(
-            ["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
+            ["git", "-C", str(REPO), "diff", "--quiet", commit, "HEAD", "--", "src", "pyproject.toml"],
             capture_output=True, text=True, timeout=10,
         )
-        return out.stdout.strip()
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return None
+    return {0: False, 1: True}.get(out.returncode)
 
 
 def webview2_version() -> str:
@@ -128,10 +130,10 @@ def main() -> int:
                "바탕화면의 프로그램 아이콘으로 실행하고 1~2분 뒤 다시 점검하세요.")
         print("\n시연 불가: 프로그램이 꺼져 있습니다.")
         return 1
-    head = repo_head()
     commit = about.get("commit", "")
-    if head and commit and not head.startswith(commit[:7]) and not commit.startswith(head[:7]):
-        r.line("WARN", "버전", f"{about.get('version')} 설치본 {commit}, 저장소 {head}",
+    changed = program_changed_since(commit) if commit else None
+    if changed:
+        r.line("WARN", "버전", f"{about.get('version')} 설치본 {commit}, 저장소에 더 새 프로그램 코드가 있음",
                "powershell -ExecutionPolicy Bypass -File tools\\update_windows.ps1 로 최신본을 설치하세요.")
     else:
         r.line("OK", "버전", f"{about.get('version')} (커밋 {commit}, 설치 {about.get('installed_at', '')[:16]})")

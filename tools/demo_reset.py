@@ -39,22 +39,46 @@ from decision_agent.desktop.statedump import read_settings
 
 REPO = Path(__file__).resolve().parent.parent
 DOWNLOADS = Path.home() / "Downloads"
-DEFAULT_VARIANT = "demo_capstone"
+DEFAULT_VARIANT = "demo_bookswap"
 WORK = Path.home() / "AppData" / "Local" / "DecisionAgent_demo"
 
-LIVE_EDIT = {
-    "file": r"requirements\requirements_frontend.md",
-    "old": "FE-05 매물 등록 화면에서 사진은 최대 3장까지 첨부할 수 있다",
-    "new": "FE-05 매물 등록 화면에서 사진은 최대 5장까지 첨부할 수 있다",
+# root: the registered folder. generator: make_demo_capstone.py variant (None: the pristine copy
+# is the folder as it is on the first run). key: answer key JSON with line-level expectations, or
+# None (then the result is compared with the baseline saved by "warm --save-baseline").
+VARIANTS = {
+    "demo_bookswap": {
+        "root": DOWNLOADS / "demo_bookswap",
+        "generator": None,
+        "key": None,
+        "live_edit": {
+            "file": "demo_bookswap/requirements/requirements_backend.md",
+            "old": "- 서버는 AWS EC2에 배포한다",
+            "new": "- 서버는 AWS Lightsail에 배포한다",
+            "expect": "몇 초 뒤 이 줄의 '반영 안 됨' 지적(서버 배포 Lightsail 결정)이 사라지고 결과가 1개 줄어듭니다.",
+        },
+    },
+    "demo_capstone": {
+        "root": DOWNLOADS / "demo_capstone" / "demo_capstone",
+        "generator": "capstone",
+        "key": DOWNLOADS / "demo_capstone" / "demo_capstone_answer_key.json",
+        "live_edit": {
+            "file": "requirements/requirements_frontend.md",
+            "old": "FE-05 매물 등록 화면에서 사진은 최대 3장까지 첨부할 수 있다",
+            "new": "FE-05 매물 등록 화면에서 사진은 최대 5장까지 첨부할 수 있다",
+            "expect": "몇 초 뒤 이 줄의 '반영 안 됨' 지적이 사라지고 결과가 1개 줄어듭니다.",
+        },
+    },
 }
 
 
 def folder_of(variant: str) -> Path:
-    return DOWNLOADS / variant / variant
+    return VARIANTS[variant]["root"]
 
 
-def answer_key(variant: str) -> list[dict]:
-    path = DOWNLOADS / variant / f"{variant}_answer_key.json"
+def answer_key(variant: str) -> list[dict] | None:
+    path = VARIANTS[variant]["key"]
+    if path is None:
+        return None
     data = json.loads(path.read_text(encoding="utf-8"))
     seen = set()
     rows = []
@@ -95,12 +119,16 @@ def ensure_pristine(variant: str) -> Path:
     pristine = WORK / "pristine" / variant
     if pristine.exists():
         return pristine
+    if VARIANTS[variant]["generator"] is None:
+        shutil.copytree(folder_of(variant), pristine)
+        print(f"원본 사본을 만들었습니다: {pristine} (지금 폴더 기준)")
+        return pristine
     fresh_root = Path(tempfile.mkdtemp(prefix="demo_fresh_"))
     # The generator needs the document libraries of the development environment.
     dev = REPO / ".venv" / "Scripts" / "python.exe"
     made = subprocess.run(
         [str(dev if dev.exists() else sys.executable), str(REPO / "tools" / "make_demo_capstone.py"),
-         "--out", str(fresh_root), "--variant", "full" if variant.endswith("_full") else "capstone"],
+         "--out", str(fresh_root), "--variant", VARIANTS[variant]["generator"]],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if made.returncode != 0:
@@ -187,7 +215,10 @@ class Api:
         return None
 
 
-def warm(variant: str, max_requests: int, timeout_minutes: float, forget_mail: bool = False) -> int:
+def warm(
+    variant: str, max_requests: int, timeout_minutes: float, forget_mail: bool = False,
+    save_baseline: bool = False,
+) -> int:
     root = str(folder_of(variant))
     api = Api()
     if not api.wait_up():
@@ -243,42 +274,64 @@ def warm(variant: str, max_requests: int, timeout_minutes: float, forget_mail: b
     findings = [f for f in api.call("/api/findings") if str(Path(f["root"])).lower() == root.lower()]
     stale = [f for f in findings if f["label"] == "INCONSISTENT" and f.get("status", "open") == "open"]
     key = answer_key(variant)
-    found = []
-    for row in key:
-        hit = any(
-            Path(f["source_doc"]).as_posix().endswith(row["file"]) and row["text"] in f["text"]
-            for f in stale
-        )
-        found.append(hit)
-        print(f"  [{'O' if hit else 'X'}] {row['item']:>2}. {row['file']}: {row['text'][:50]}")
-    extra = [
-        f for f in stale
-        if not any(Path(f["source_doc"]).as_posix().endswith(r["file"]) and r["text"] in f["text"] for r in key)
-    ]
-    for f in extra:
-        print(f"  [+] 정답표에 없는 지적: {f['source_doc']} {f.get('location', '')}: {f['text'][:60]}")
-    print(f"정답표 {sum(found)}/{len(key)}개 찾음, 정답표 밖 지적 {len(extra)}개, 반영 안 됨 총 {len(stale)}개")
+    ok = True
+    if key is not None:
+        found = []
+        for row in key:
+            hit = any(
+                Path(f["source_doc"]).as_posix().endswith(row["file"]) and row["text"] in f["text"]
+                for f in stale
+            )
+            found.append(hit)
+            print(f"  [{'O' if hit else 'X'}] {row['item']:>2}. {row['file']}: {row['text'][:50]}")
+        extra = [
+            f for f in stale
+            if not any(Path(f["source_doc"]).as_posix().endswith(r["file"]) and r["text"] in f["text"] for r in key)
+        ]
+        for f in extra:
+            print(f"  [+] 정답표에 없는 지적: {f['source_doc']} {f.get('location', '')}: {f['text'][:60]}")
+        print(f"정답표 {sum(found)}/{len(key)}개 찾음, 정답표 밖 지적 {len(extra)}개, 반영 안 됨 총 {len(stale)}개")
+        ok = sum(found) == len(key) and not extra
+    lines = sorted({(f["source_doc"], str(f.get("location", "")), f["text"]) for f in stale})
+    baseline = WORK / f"baseline_{variant}.json"
+    if save_baseline:
+        baseline.write_text(json.dumps(lines, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"기준 결과를 저장했습니다: 반영 안 됨 {len(lines)}줄 ({baseline})")
+    elif baseline.exists():
+        want = {tuple(x) for x in json.loads(baseline.read_text(encoding="utf-8"))}
+        have = set(lines)
+        for doc, loc, text in sorted(want - have):
+            print(f"  [-] 기준에 있는데 없음: {doc} {loc}: {text[:60]}")
+        for doc, loc, text in sorted(have - want):
+            print(f"  [+] 기준에 없는 지적: {doc} {loc}: {text[:60]}")
+        same = want == have
+        print(f"기준 결과와 {'같음' if same else '다름'}: 반영 안 됨 {len(have)}줄 (기준 {len(want)}줄)")
+        ok = ok and same
+    else:
+        print(f"반영 안 됨 {len(lines)}줄 (기준 결과 없음: --save-baseline 으로 저장)")
 
+    edit = VARIANTS[variant]["live_edit"]
     print()
     print("라이브 편집에서 입력할 것:")
-    print(f"  파일: {root}\\{LIVE_EDIT['file']}")
-    print(f"  바꿀 줄: {LIVE_EDIT['old']}")
-    print(f"  새 문장: {LIVE_EDIT['new']}   (3장 -> 5장, 저장)")
-    print("  예상: 몇 초 뒤 이 줄의 '반영 안 됨' 지적이 사라지고 결과가 1개 줄어듭니다.")
-    return 0 if sum(found) == len(key) and not extra else 2
+    print(f"  파일: {Path(root) / edit['file']}")
+    print(f"  바꿀 줄: {edit['old']}")
+    print(f"  새 문장: {edit['new']}   (저장)")
+    print(f"  예상: {edit['expect']}")
+    return 0 if ok else 2
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="시연 폴더 초기화와 웜업")
     parser.add_argument("action", choices=["prepare", "warm"])
-    parser.add_argument("--variant", default=DEFAULT_VARIANT)
+    parser.add_argument("--variant", default=DEFAULT_VARIANT, choices=sorted(VARIANTS))
     parser.add_argument("--max-requests", type=int, default=450)
     parser.add_argument("--timeout-minutes", type=float, default=30)
     parser.add_argument("--forget-mail", action="store_true", help="메일 출처를 지우고 다시 읽음")
+    parser.add_argument("--save-baseline", action="store_true", help="이번 결과를 기준 결과로 저장")
     args = parser.parse_args()
     if args.action == "prepare":
         return prepare(args.variant)
-    return warm(args.variant, args.max_requests, args.timeout_minutes, args.forget_mail)
+    return warm(args.variant, args.max_requests, args.timeout_minutes, args.forget_mail, args.save_baseline)
 
 
 if __name__ == "__main__":

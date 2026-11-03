@@ -12,7 +12,7 @@
 # 5. starts the program, runs the first check if needed (warm cache), and prints the requests
 #    used, the stale lines against the answer key and the exact live edit to type
 param(
-    [string]$Variant = "demo_capstone",
+    [string]$Variant = "demo_bookswap",
     [int]$MaxRequests = 450,
     [switch]$ForgetMail,
     [string]$InstallDir = ""
