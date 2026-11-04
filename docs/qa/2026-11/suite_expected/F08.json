@@ -1,0 +1,15 @@
+{
+  "id": "F08",
+  "title": "5에서 3에서 5로 번복",
+  "stale_substrings": [
+    "FR-01",
+    "상품 사진 3장"
+  ],
+  "correct_substrings": [
+    "FR-02",
+    "상품 사진 5장",
+    "사진 5장 업로드"
+  ],
+  "root": "C:\\qa_work\\suite\\F08",
+  "question_expected": false
+}

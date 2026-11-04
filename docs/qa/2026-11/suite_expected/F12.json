@@ -1,0 +1,11 @@
+{
+  "id": "F12",
+  "title": "메일 인용문 제외",
+  "stale_substrings": [],
+  "correct_substrings": [
+    "FR-01",
+    "이메일 인증 메일 구현"
+  ],
+  "root": "C:\\qa_work\\suite\\F12",
+  "question_expected": false
+}

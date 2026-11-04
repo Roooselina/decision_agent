@@ -1,0 +1,6 @@
+{
+  "requests_observed": 1199,
+  "budget": 2000,
+  "stop_at": 1600,
+  "source": "All isolated QA app HTTP response logs + one selftest model probe; failed HTTP responses included"
+}

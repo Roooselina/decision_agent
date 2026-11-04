@@ -1,0 +1,86 @@
+{
+  "root": "C:\\qa_work\\suite\\gate_A",
+  "files": {
+    "ok": 7,
+    "error": 0,
+    "unsupported": 0
+  },
+  "topics": 1,
+  "topics_by_judge": {
+    "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+  },
+  "watcher": "native",
+  "watch_alive": true,
+  "pending_events": 8,
+  "progress": {
+    "phase": "awaiting_confirm",
+    "phase_label": "확인 대기",
+    "files_total": 7,
+    "files_done": 7,
+    "topics_total": 1,
+    "topics_done": 0,
+    "topics_unchanged": 0,
+    "extract_total": 3,
+    "extract_done": 3,
+    "llm_calls": 0,
+    "current": "",
+    "elapsed_seconds": 0.5
+  },
+  "completion": {
+    "at": "2026-10-30T00:31:03",
+    "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+    "local_only": false,
+    "verified": true,
+    "mode": "agent",
+    "files_ok": 7,
+    "files_error": 0,
+    "files_unsupported": 0,
+    "topics": 1,
+    "topics_rechecked": 1,
+    "judges": {
+      "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+    },
+    "llm_calls": 5,
+    "cost_profile": "balanced",
+    "calls_by_task": {
+      "DECISION_EXTRACT_BATCH": 1,
+      "RELATION_CLASSIFY_BATCH": 1,
+      "IMPACT_SELECT": 1,
+      "CONSISTENCY_BATCH": 2
+    },
+    "local_answers": 1,
+    "reused_lines": 0,
+    "judged_lines": 6,
+    "phase_seconds": {
+      "parse": 0.05,
+      "ingest": 0.002,
+      "extract": 7.167,
+      "retrieval": 0.011,
+      "judge": 11.173,
+      "store": 0.0
+    },
+    "cache_hits": 0,
+    "cache_misses": 3
+  },
+  "pending_confirm": {
+    "estimated_calls": 13,
+    "calls_so_far": 0,
+    "topics": 1,
+    "limit": 10,
+    "reused_lines": 0
+  },
+  "failure": null,
+  "scan_stats": {
+    "at": "2026-10-30T03:04:02",
+    "seen": 7,
+    "skipped": {}
+  },
+  "last_checked": "2026-10-30T03:04:02",
+  "last_analyzed": "2026-10-30T03:04:02",
+  "state": {
+    "state": "awaiting_confirm",
+    "label": "확인 대기",
+    "detail": "AI 요청 약 13회 예상 (기준 10회)",
+    "later": false
+  }
+}

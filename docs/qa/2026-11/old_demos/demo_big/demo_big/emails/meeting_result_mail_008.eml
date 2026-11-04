@@ -1,0 +1,17 @@
+From: minjun@example.com
+To: team@example.com
+Subject: 6월 15일 회의 결과 공유
+Date: Mon, 15 Jun 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 6월 15일 회의 결과를 공유합니다.
+
+2026-06-15 회의 결정
+- 채팅 구현 방식을 1:1 쪽지 폴링으로 변경한다.
+- 모바일 앱 개발 기술을 Flutter로 변경한다.
+- CI 도구를 Jenkins로 변경한다.
+- 스탠드업 시간을 오후 9시로 바꾼다.
+- 중간 점검을 10월 29일로 옮긴다.
+- 관리자 페이지는 정식 출시 이후로 연기하고 MVP에서는 제외한다.
+
+서연 드림

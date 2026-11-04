@@ -1,0 +1,64 @@
+{
+  "samples": [
+    {
+      "elapsed_seconds": 0.02,
+      "matching_threads": 1
+    }
+  ],
+  "threads": [
+    {
+      "id": "f60114f3635f8b84",
+      "subject": "스터디룸 예약 안내",
+      "participants": [
+        "Cicula"
+      ],
+      "count": 1,
+      "unread": 0,
+      "has_sent": false,
+      "date": "2026-10-29",
+      "time": "14:29",
+      "snippet": "내일 오후 3시에 3층 302호 스터디룸 예약했어욥^^",
+      "chips": [
+        {
+          "text": "요구사항 변경",
+          "kind": "purpose",
+          "color": "",
+          "key": "purpose:requirement"
+        }
+      ],
+      "keys": [
+        "purpose:requirement"
+      ],
+      "analysis": "점검됨",
+      "deadline": false
+    }
+  ],
+  "mail_state": {
+    "seq": 11,
+    "status": {
+      "line": "마지막 확인 23:57",
+      "running": true,
+      "interval": 60.0,
+      "sources": [
+        {
+          "id": "src-b7aec7",
+          "name": "캡스톤 회의록",
+          "checked_at": "23:57",
+          "new": 0,
+          "ok": true,
+          "stopped": false,
+          "message": "",
+          "lines": [
+            "마지막 확인 23:57",
+            "검색 조건: newer_than:90d from:(qa-gmail@example.com OR qa-naver@example.com)",
+            "조건에 맞는 메일 13통, 새로 읽은 메일 20통, 저장된 메일 20통",
+            "건너뜀: 없음",
+            "같은 대화에서 함께 읽은 메일 7통 (내가 보낸 답장 포함)"
+          ]
+        }
+      ]
+    },
+    "events": []
+  },
+  "observed_at": "2026-10-29T23:57:49.638475+09:00"
+}

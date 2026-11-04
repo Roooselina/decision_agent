@@ -1,0 +1,11 @@
+{
+  "id": "F14",
+  "title": "완료된 과거 작업",
+  "stale_substrings": [],
+  "correct_substrings": [
+    "FR-01",
+    "학교 구글 SSO"
+  ],
+  "root": "C:\\qa_work\\suite\\F14",
+  "question_expected": false
+}

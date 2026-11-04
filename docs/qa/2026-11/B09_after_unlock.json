@@ -1,0 +1,137 @@
+{
+  "folder": {
+    "root": "C:\\qa_work\\file_edges",
+    "files": {
+      "ok": 4,
+      "error": 1,
+      "unsupported": 0
+    },
+    "topics": 0,
+    "topics_by_judge": {},
+    "watcher": "native",
+    "watch_alive": true,
+    "pending_events": 4,
+    "progress": {
+      "phase": "done",
+      "phase_label": "완료",
+      "files_total": 8,
+      "files_done": 8,
+      "topics_total": 0,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 0,
+      "extract_done": 0,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 0.0
+    },
+    "completion": {
+      "at": "2026-10-30T12:56:52",
+      "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "local_only": false,
+      "verified": true,
+      "mode": "agent",
+      "files_ok": 2,
+      "files_error": 1,
+      "files_unsupported": 0,
+      "topics": 0,
+      "topics_rechecked": 0,
+      "judges": {},
+      "llm_calls": 0,
+      "cost_profile": "balanced",
+      "calls_by_task": {},
+      "local_answers": 0,
+      "reused_lines": 0,
+      "judged_lines": 0,
+      "phase_seconds": {
+        "parse": 0.041,
+        "ingest": 0.0,
+        "extract": 0.001,
+        "retrieval": 0.0,
+        "judge": 0.0,
+        "store": 0.0
+      },
+      "cache_hits": 0,
+      "cache_misses": 0
+    },
+    "pending_confirm": null,
+    "failure": null,
+    "scan_stats": {
+      "at": "2026-11-02T07:07:41",
+      "seen": 8,
+      "skipped": {
+        "파일이 최대 크기를 넘습니다.": 1,
+        "읽을 수 없는 형식입니다.": 2
+      }
+    },
+    "last_checked": "2026-11-02T07:07:41",
+    "last_analyzed": "2026-10-30T12:56:52",
+    "state": {
+      "state": "verified",
+      "label": "검사 완료",
+      "detail": "2026-10-30T12:56:52"
+    }
+  },
+  "files": [
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "path": "cp949.txt",
+      "fmt": "txt",
+      "status": "ok",
+      "message": "",
+      "kinds": [],
+      "meeting_items": 0,
+      "artifacts": 0,
+      "warnings": [],
+      "unclassified": true
+    },
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "path": "locked.md",
+      "fmt": "md",
+      "status": "ok",
+      "message": "",
+      "kinds": [],
+      "meeting_items": 0,
+      "artifacts": 0,
+      "warnings": [],
+      "unclassified": true
+    },
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "path": "locked_030941.md",
+      "fmt": "md",
+      "status": "ok",
+      "message": "",
+      "kinds": [],
+      "meeting_items": 0,
+      "artifacts": 0,
+      "warnings": [],
+      "unclassified": true
+    },
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "path": "locked_070714.md",
+      "fmt": "md",
+      "status": "ok",
+      "message": "",
+      "kinds": [],
+      "meeting_items": 0,
+      "artifacts": 0,
+      "warnings": [],
+      "unclassified": true
+    },
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "path": "protected.pdf",
+      "fmt": "pdf",
+      "status": "error",
+      "message": "File has not been decrypted",
+      "kinds": [],
+      "meeting_items": 0,
+      "artifacts": 0,
+      "warnings": [],
+      "unclassified": false
+    }
+  ]
+}

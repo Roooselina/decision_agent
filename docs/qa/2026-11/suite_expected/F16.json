@@ -1,0 +1,14 @@
+{
+  "id": "F16",
+  "title": "400개 산출물과 짧은 일치 줄",
+  "stale_substrings": [
+    "결제 연동 QA",
+    "토스페이먼츠 결제 위젯"
+  ],
+  "correct_substrings": [
+    "공통 데이터",
+    "목록 조회"
+  ],
+  "root": "C:\\qa_work\\suite\\F16",
+  "question_expected": false
+}

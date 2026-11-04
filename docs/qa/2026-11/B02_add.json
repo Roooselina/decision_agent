@@ -1,0 +1,5 @@
+{
+  "error": "TimeoutError at 30 seconds",
+  "request": "POST /api/folders/add",
+  "while": "capstone extracting, extract_done=145/326; second folder absent from status"
+}

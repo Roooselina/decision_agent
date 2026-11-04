@@ -1,0 +1,574 @@
+{
+  "strict": {
+    "expected": 160,
+    "found": 140,
+    "missed": [
+      {
+        "file": "requirements/requirements_home.md",
+        "text": "채팅은 1:1 쪽지 폴링으로 제공한다"
+      },
+      {
+        "file": "requirements/requirements_spec_06.xlsx",
+        "text": "교재 검색은 키워드와 초성 검색을 지원한다"
+      },
+      {
+        "file": "requirements/requirements_spec_08.xlsx",
+        "text": "채팅은 1:1 쪽지 폴링으로 제공한다"
+      },
+      {
+        "file": "tasks/backlog_01.md",
+        "text": "Sentry 연동"
+      },
+      {
+        "file": "tasks/jira_export_03.csv",
+        "text": "중간 점검 자료 작성 (10월 22일)"
+      },
+      {
+        "file": "tasks/jira_export_03.csv",
+        "text": "키워드 검색 구현"
+      },
+      {
+        "file": "tasks/tasks_sprint04.csv",
+        "text": "Figma 시안 파일 정리"
+      },
+      {
+        "file": "tasks/tasks_sprint08.csv",
+        "text": "키워드와 초성 검색 구현"
+      },
+      {
+        "file": "tasks/tasks_sprint20.csv",
+        "text": "키워드와 초성 검색 구현"
+      },
+      {
+        "file": "tasks/tasks_sprint22.csv",
+        "text": "베타 테스터 모집 (11월 3일 시작)"
+      },
+      {
+        "file": "tasks/tasks_sprint23.csv",
+        "text": "Figma 시안 파일 정리"
+      },
+      {
+        "file": "tests/test_cases_04.csv",
+        "text": "Figma 시안 검수 확인"
+      },
+      {
+        "file": "tests/test_cases_12.csv",
+        "text": "키워드 검색 정확도 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_14.csv",
+        "text": "WebSocket 메시지 전달 테스트 예정"
+      },
+      {
+        "file": "tests/test_plan_admin.md",
+        "text": "React Native 빌드 테스트 예정"
+      },
+      {
+        "file": "tests/test_plan_profile.md",
+        "text": "Figma 시안 검수 확인"
+      },
+      {
+        "file": "tests/test_report_01.pdf",
+        "text": "Spring Boot API 응답 테스트 예정"
+      },
+      {
+        "file": "tests/test_report_02.pdf",
+        "text": "Figma 시안 검수 확인"
+      },
+      {
+        "file": "tests/test_report_03.pdf",
+        "text": "카카오 알림톡 알림 수신 테스트 예정"
+      },
+      {
+        "file": "tests/test_report_04.pdf",
+        "text": "AWS S3 이미지 업로드 테스트 예정"
+      }
+    ],
+    "extra_flags": [
+      {
+        "file": "calendar/school_calendar.ics",
+        "text": "중간 점검 10월 29일"
+      },
+      {
+        "file": "calendar/team_calendar_2026-10.ics",
+        "text": "중간 점검 10월 22일"
+      },
+      {
+        "file": "calendar/team_calendar_2026-10.ics",
+        "text": "중간 점검 10월 29일"
+      },
+      {
+        "file": "requirements/requirements_analytics.md",
+        "text": "CI는 GitLab CI를 사용한다"
+      },
+      {
+        "file": "requirements/requirements_auth.md",
+        "text": "서버 테스트는 Jest로 작성한다"
+      },
+      {
+        "file": "requirements/requirements_chat.md",
+        "text": "가입 절차: 학번 입력 없이 바로 시작"
+      },
+      {
+        "file": "requirements/requirements_home.md",
+        "text": "중간 점검 일정은 10월 29일"
+      },
+      {
+        "file": "requirements/requirements_infra.md",
+        "text": "교재 사진은 최대 10장으로 업로드한다"
+      },
+      {
+        "file": "requirements/requirements_memo_01.docx",
+        "text": "게시글 처리 기준: 신고 5회 누적 시 숨김"
+      },
+      {
+        "file": "requirements/requirements_memo_01.docx",
+        "text": "서버는 학교 서버에 배포한다"
+      },
+      {
+        "file": "requirements/requirements_memo_04.docx",
+        "text": "모바일 앱은 Kotlin Android 네이티브로 개발한다"
+      },
+      {
+        "file": "requirements/requirements_memo_04.docx",
+        "text": "서버는 학교 서버에 배포한다"
+      },
+      {
+        "file": "requirements/requirements_memo_06.docx",
+        "text": "디자인 시안은 Adobe XD로 관리한다"
+      },
+      {
+        "file": "requirements/requirements_memo_08.docx",
+        "text": "중간 점검 일정은 10월 29일"
+      },
+      {
+        "file": "requirements/requirements_notification.md",
+        "text": "알림은 앱 내 알림함으로 보낸다"
+      },
+      {
+        "file": "requirements/requirements_profile.md",
+        "text": "코드 리뷰는 PR당 2명 승인을 원칙으로 한다"
+      },
+      {
+        "file": "requirements/requirements_release.md",
+        "text": "로그인은 학번과 비밀번호 로그인을 사용한다"
+      },
+      {
+        "file": "requirements/requirements_report.md",
+        "text": "개인정보 보관 기준: 탈퇴 즉시"
+      },
+      {
+        "file": "requirements/requirements_report.md",
+        "text": "판매 가격 정책: 가격 자유 설정"
+      },
+      {
+        "file": "requirements/requirements_search.md",
+        "text": "가입 절차: 학번 입력 없이 바로 시작"
+      },
+      {
+        "file": "requirements/requirements_search.md",
+        "text": "디자인 시안은 Adobe XD로 관리한다"
+      },
+      {
+        "file": "requirements/requirements_security.md",
+        "text": "디자인 시안은 Adobe XD로 관리한다"
+      },
+      {
+        "file": "requirements/requirements_security.md",
+        "text": "서버는 학교 서버에 배포한다"
+      },
+      {
+        "file": "requirements/requirements_settings.md",
+        "text": "로그인은 학번과 비밀번호 로그인을 사용한다"
+      },
+      {
+        "file": "requirements/requirements_slides_01.pptx",
+        "text": "CI는 GitLab CI를 사용한다"
+      },
+      {
+        "file": "requirements/requirements_slides_03.pptx",
+        "text": "가입 절차: 학번 입력 없이 바로 시작"
+      },
+      {
+        "file": "requirements/requirements_slides_04.pptx",
+        "text": "모바일 앱은 Kotlin Android 네이티브로 개발한다"
+      },
+      {
+        "file": "requirements/requirements_slides_05.pptx",
+        "text": "스탠드업은 매일 오전 9시 30분에 진행한다"
+      },
+      {
+        "file": "requirements/requirements_spec_01.xlsx",
+        "text": "스탠드업은 매일 오전 9시 30분에 진행한다"
+      },
+      {
+        "file": "requirements/requirements_spec_04.xlsx",
+        "text": "CI는 GitLab CI를 사용한다"
+      },
+      {
+        "file": "requirements/requirements_spec_09.xlsx",
+        "text": "알림은 앱 내 알림함으로 보낸다"
+      },
+      {
+        "file": "requirements/requirements_spec_10.xlsx",
+        "text": "알림은 앱 내 알림함으로 보낸다"
+      },
+      {
+        "file": "requirements/requirements_trade.md",
+        "text": "게시글 처리 기준: 신고 5회 누적 시 숨김"
+      },
+      {
+        "file": "requirements/requirements_trade.md",
+        "text": "교재 사진은 최대 10장으로 업로드한다"
+      },
+      {
+        "file": "requirements/requirements_trade.md",
+        "text": "중간 점검 일정은 10월 29일"
+      },
+      {
+        "file": "requirements/requirements_ux.md",
+        "text": "개인정보 보관 기준: 탈퇴 즉시"
+      },
+      {
+        "file": "requirements/requirements_ux.md",
+        "text": "결제는 계좌이체 직접 거래로 처리한다"
+      },
+      {
+        "file": "schedule/schedule_phase3.csv",
+        "text": "중간 점검 10월 29일"
+      },
+      {
+        "file": "schedule/schedule_phase8.csv",
+        "text": "중간 점검 10월 29일"
+      },
+      {
+        "file": "tasks/backlog_03.md",
+        "text": "사진 업로드 10장 제한 적용"
+      },
+      {
+        "file": "tasks/backlog_03.md",
+        "text": "이메일 인증 로그인 구현"
+      },
+      {
+        "file": "tasks/backlog_03.md",
+        "text": "학번과 비밀번호 로그인 로그인 구현"
+      },
+      {
+        "file": "tasks/backlog_05.md",
+        "text": "가격 입력 검증 구현 (가격 자유 설정)"
+      },
+      {
+        "file": "tasks/backlog_05.md",
+        "text": "네이버 지도 API 거래 장소 화면 구현"
+      },
+      {
+        "file": "tasks/backlog_06.md",
+        "text": "사진 업로드 10장 제한 적용"
+      },
+      {
+        "file": "tasks/backlog_07.md",
+        "text": "FCM 푸시 알림 연동"
+      },
+      {
+        "file": "tasks/backlog_07.md",
+        "text": "가격 입력 검증 구현 (정가의 50% 이하로 제한)"
+      },
+      {
+        "file": "tasks/jira_export_02.csv",
+        "text": "FastAPI 서버 프로젝트 구성"
+      },
+      {
+        "file": "tasks/jira_export_04.csv",
+        "text": "리뷰 규칙 문서화 (PR당 1명 승인)"
+      },
+      {
+        "file": "tasks/jira_export_06.csv",
+        "text": "Jenkins 파이프라인 구성"
+      },
+      {
+        "file": "tasks/jira_export_06.csv",
+        "text": "관리자 페이지 개발 (MVP에 포함)"
+      },
+      {
+        "file": "tasks/jira_export_07.csv",
+        "text": "가입 화면 구현 (약관 동의 후 학번 입력)"
+      },
+      {
+        "file": "tasks/jira_export_07.csv",
+        "text": "가입 화면 구현 (학번 입력 없이 바로 시작)"
+      },
+      {
+        "file": "tasks/tasks_sprint01.csv",
+        "text": "가격 입력 검증 구현 (정가의 50% 이하로 제한)"
+      },
+      {
+        "file": "tasks/tasks_sprint02.csv",
+        "text": "개인정보 삭제 배치 구현 (탈퇴 후 30일)"
+      },
+      {
+        "file": "tasks/tasks_sprint02.csv",
+        "text": "스탠드업 알림 설정 (오전 9시 30분)"
+      },
+      {
+        "file": "tasks/tasks_sprint03.csv",
+        "text": "사진 업로드 3장 제한 적용"
+      },
+      {
+        "file": "tasks/tasks_sprint03.csv",
+        "text": "학교 서버 서버 세팅"
+      },
+      {
+        "file": "tasks/tasks_sprint04.csv",
+        "text": "가격 입력 검증 구현 (가격 자유 설정)"
+      },
+      {
+        "file": "tasks/tasks_sprint05.csv",
+        "text": "가격 입력 검증 구현 (가격 자유 설정)"
+      },
+      {
+        "file": "tasks/tasks_sprint05.csv",
+        "text": "스탠드업 알림 설정 (오전 10시)"
+      },
+      {
+        "file": "tasks/tasks_sprint05.csv",
+        "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)"
+      },
+      {
+        "file": "tasks/tasks_sprint05.csv",
+        "text": "학번과 비밀번호 로그인 로그인 구현"
+      },
+      {
+        "file": "tasks/tasks_sprint06.csv",
+        "text": "관리자 페이지 개발 (MVP에 포함)"
+      },
+      {
+        "file": "tasks/tasks_sprint07.csv",
+        "text": "FCM 푸시 알림 연동"
+      },
+      {
+        "file": "tasks/tasks_sprint07.csv",
+        "text": "개인정보 삭제 배치 구현 (탈퇴 즉시)"
+      },
+      {
+        "file": "tasks/tasks_sprint07.csv",
+        "text": "계좌이체 직접 거래 결제 연동"
+      },
+      {
+        "file": "tasks/tasks_sprint09.csv",
+        "text": "리뷰 규칙 문서화 (PR당 2명 승인)"
+      },
+      {
+        "file": "tasks/tasks_sprint09.csv",
+        "text": "학번과 비밀번호 로그인 로그인 구현"
+      },
+      {
+        "file": "tasks/tasks_sprint10.csv",
+        "text": "unittest 테스트 환경 구성"
+      },
+      {
+        "file": "tasks/tasks_sprint10.csv",
+        "text": "스탠드업 알림 설정 (오전 9시 30분)"
+      },
+      {
+        "file": "tasks/tasks_sprint11.csv",
+        "text": "pytest 테스트 환경 구성"
+      },
+      {
+        "file": "tasks/tasks_sprint12.csv",
+        "text": "관리자 페이지 개발 (MVP에 포함)"
+      },
+      {
+        "file": "tasks/tasks_sprint13.csv",
+        "text": "Jenkins 파이프라인 구성"
+      },
+      {
+        "file": "tasks/tasks_sprint13.csv",
+        "text": "사진 업로드 10장 제한 적용"
+      },
+      {
+        "file": "tasks/tasks_sprint14.csv",
+        "text": "스탠드업 알림 설정 (오전 9시 30분)"
+      },
+      {
+        "file": "tasks/tasks_sprint15.csv",
+        "text": "앱 내 알림함 알림 연동"
+      },
+      {
+        "file": "tasks/tasks_sprint16.csv",
+        "text": "pytest 테스트 환경 구성"
+      },
+      {
+        "file": "tasks/tasks_sprint17.csv",
+        "text": "리뷰 규칙 문서화 (PR당 1명 승인)"
+      },
+      {
+        "file": "tasks/tasks_sprint19.csv",
+        "text": "FCM 푸시 알림 연동"
+      },
+      {
+        "file": "tasks/tasks_sprint19.csv",
+        "text": "개인정보 삭제 배치 구현 (탈퇴 즉시)"
+      },
+      {
+        "file": "tasks/tasks_sprint19.csv",
+        "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)"
+      },
+      {
+        "file": "tasks/tasks_sprint21.csv",
+        "text": "리뷰 규칙 문서화 (PR당 2명 승인)"
+      },
+      {
+        "file": "tasks/tasks_sprint22.csv",
+        "text": "중간 점검 자료 작성 (10월 29일)"
+      },
+      {
+        "file": "tasks/tasks_sprint23.csv",
+        "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)"
+      },
+      {
+        "file": "tasks/tasks_sprint24.csv",
+        "text": "가격 입력 검증 구현 (가격 자유 설정)"
+      },
+      {
+        "file": "tests/qa_checklist_01.md",
+        "text": "CloudWatch 오류 수집 확인"
+      },
+      {
+        "file": "tests/qa_checklist_02.md",
+        "text": "CloudWatch 오류 수집 확인"
+      },
+      {
+        "file": "tests/qa_checklist_03.md",
+        "text": "가격 입력 검증 테스트 (가격 자유 설정)"
+      },
+      {
+        "file": "tests/qa_checklist_05.md",
+        "text": "앱 내 알림함 알림 수신 테스트 예정"
+      },
+      {
+        "file": "tests/qa_checklist_06.md",
+        "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)"
+      },
+      {
+        "file": "tests/test_cases_01.csv",
+        "text": "계좌이체 직접 거래 결제 승인 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_02.csv",
+        "text": "학번과 비밀번호 로그인 로그인 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_03.csv",
+        "text": "사진 10장 초과 업로드 차단 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_04.csv",
+        "text": "계좌이체 직접 거래 결제 승인 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_04.csv",
+        "text": "중간 점검 시연 확인 (10월 29일)"
+      },
+      {
+        "file": "tests/test_cases_08.csv",
+        "text": "신고 누적 숨김 테스트 (신고 5회 누적 시 숨김)"
+      },
+      {
+        "file": "tests/test_cases_08.csv",
+        "text": "중간 점검 시연 확인 (10월 29일)"
+      },
+      {
+        "file": "tests/test_cases_09.csv",
+        "text": "사진 10장 초과 업로드 차단 테스트 예정"
+      },
+      {
+        "file": "tests/test_cases_10.csv",
+        "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)"
+      },
+      {
+        "file": "tests/test_cases_11.csv",
+        "text": "학교 서버 배포 점검 예정"
+      },
+      {
+        "file": "tests/test_plan_auth.md",
+        "text": "개인정보 삭제 테스트 (탈퇴 즉시)"
+      },
+      {
+        "file": "tests/test_plan_auth.md",
+        "text": "중간 점검 시연 확인 (10월 29일)"
+      },
+      {
+        "file": "tests/test_plan_chat.md",
+        "text": "학번과 비밀번호 로그인 로그인 테스트 예정"
+      },
+      {
+        "file": "tests/test_plan_home.md",
+        "text": "브랜치 보호 규칙 확인 (PR당 2명 승인)"
+      },
+      {
+        "file": "tests/test_plan_ops.md",
+        "text": "스탠드업 시간 공지 확인 (오전 9시 30분)"
+      },
+      {
+        "file": "tests/test_plan_ops.md",
+        "text": "앱 내 알림함 알림 수신 테스트 예정"
+      },
+      {
+        "file": "tests/test_plan_payment.md",
+        "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)"
+      },
+      {
+        "file": "tests/test_plan_profile.md",
+        "text": "가격 입력 검증 테스트 (가격 자유 설정)"
+      },
+      {
+        "file": "tests/test_plan_support.md",
+        "text": "가격 입력 검증 테스트 (가격 자유 설정)"
+      },
+      {
+        "file": "tests/test_plan_support.md",
+        "text": "스탠드업 시간 공지 확인 (오전 9시 30분)"
+      },
+      {
+        "file": "tests/test_plan_trade.md",
+        "text": "GitLab CI 빌드 통과 확인"
+      },
+      {
+        "file": "tests/test_plan_trade.md",
+        "text": "개인정보 삭제 테스트 (탈퇴 즉시)"
+      },
+      {
+        "file": "tests/test_plan_trade.md",
+        "text": "학교 서버 배포 점검 예정"
+      },
+      {
+        "file": "tests/test_plan_ux.md",
+        "text": "앱 내 알림함 알림 수신 테스트 예정"
+      },
+      {
+        "file": "tests/test_report_01.pdf",
+        "text": " Spring Boot API   응답테스트예정"
+      },
+      {
+        "file": "tests/test_report_03.pdf",
+        "text": "      카카오알림톡알림수신테스트예정"
+      },
+      {
+        "file": "tests/test_report_04.pdf",
+        "text": " AWS S3    이미지업로드테스트예정"
+      }
+    ]
+  },
+  "normalized": {
+    "expected": 160,
+    "found": 143,
+    "missed_count": 17,
+    "extra_count": 115,
+    "extra_key_labels": {
+      "CONSISTENT": 90,
+      "HISTORICAL": 22,
+      "unmatched": 3
+    }
+  },
+  "raw_bad_rows": 295
+}

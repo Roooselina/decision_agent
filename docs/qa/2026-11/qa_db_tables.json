@@ -1,0 +1,285 @@
+[
+  {
+    "db": "046afd824fad.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "2a45e1170ced.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "357364b7a24f.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "4caddf91b931.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "504c247a74f8.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "532186865401.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "6cd34f3381f3.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "732b3be38c0a.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "7e098674a764.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "af6d7518037e.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "b3a3471f977e.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "b97650d8a33c.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "ba06d7e5e3d9.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "c23634682151.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "c309d0c5dd87.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "e21660bc2612.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "f92670a6dc72.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "fbf90f48c2c8.sqlite",
+    "tables": [
+      "files",
+      "llm_cache",
+      "topics",
+      "findings",
+      "questions",
+      "answers",
+      "sqlite_sequence",
+      "meta",
+      "line_verdicts",
+      "impact_selections"
+    ]
+  },
+  {
+    "db": "mail.sqlite",
+    "tables": [
+      "mail_index",
+      "mail_meta",
+      "mail_hints",
+      "contacts",
+      "mail_threads",
+      "mail_labels",
+      "thread_labels",
+      "source_labels"
+    ]
+  }
+]

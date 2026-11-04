@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T1401,스탠드업 알림 설정 (오전 9시 30분),TODO,도윤,,,,
+T1402,발표 자료 준비 (발표일 11월 17일),IN_PROGRESS,도윤,,,,
+T1403,README 작성,IN_PROGRESS,도윤,,,,
+T1404,버그 리스트 정리,TODO,민준,,,,
+T1405,API 문서 정리,IN_PROGRESS,도윤,,,,
+T1406,교재 상세 화면 디자인,IN_PROGRESS,민준,,,,
+T1407,Cloudinary 이미지 저장 구현,TODO,하은,,,,
+T1408,Figma 시안 파일 정리,DONE,하은,,,,

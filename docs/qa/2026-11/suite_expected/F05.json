@@ -1,0 +1,14 @@
+{
+  "id": "F05",
+  "title": "기존 방식 복귀 참조",
+  "stale_substrings": [
+    "FR-01",
+    "이메일 인증 메일"
+  ],
+  "correct_substrings": [
+    "FR-02",
+    "학교 구글 SSO"
+  ],
+  "root": "C:\\qa_work\\suite\\F05",
+  "question_expected": false
+}

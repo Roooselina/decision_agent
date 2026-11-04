@@ -1,0 +1,7 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T1001,unittest 테스트 환경 구성,DONE,서연,,,,
+T1002,README 작성,TODO,서연,,,,
+T1003,홈 화면 레이아웃 정리,DONE,서연,,,,
+T1004,스탠드업 알림 설정 (오전 9시 30분),TODO,도윤,,,,
+T1005,리허설 준비 (11월 16일),DONE,민준,,,,
+T1006,가입 화면 구현 (약관 동의 후 학번 입력),TODO,서연,mvp,login,,

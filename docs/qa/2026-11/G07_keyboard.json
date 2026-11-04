@@ -1,0 +1,6 @@
+{
+  "search_rows": 1,
+  "focus_class_after_down": "trow unread",
+  "selected_after_enter": 1,
+  "selected_after_escape": 1
+}

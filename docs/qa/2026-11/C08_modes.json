@@ -1,0 +1,128 @@
+{
+  "save": [
+    {
+      "scenario": "cold first scan",
+      "wall": 13.125,
+      "requests": 91,
+      "cpu": 1.375,
+      "peak_mb": 190.9,
+      "phases": {
+        "ingest": 0.021,
+        "judge": 36.604,
+        "parse": 1.274,
+        "retrieval": 0.12,
+        "store": 0.073
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "scenario": "cold first scan",
+      "wall": 20.71,
+      "requests": 166,
+      "cpu": 1.562,
+      "peak_mb": 208.9,
+      "phases": {
+        "ingest": 0.098,
+        "judge": 66.602,
+        "parse": 1.674,
+        "retrieval": 0.137,
+        "store": 0.098
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    }
+  ],
+  "normal": [
+    {
+      "scenario": "cold first scan",
+      "wall": 5.588,
+      "requests": 91,
+      "cpu": 1.266,
+      "peak_mb": 192.6,
+      "phases": {
+        "ingest": 0.012,
+        "judge": 36.571,
+        "parse": 1.266,
+        "retrieval": 0.119,
+        "store": 0.051
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "scenario": "cold first scan",
+      "wall": 7.411,
+      "requests": 166,
+      "cpu": 1.594,
+      "peak_mb": 208.5,
+      "phases": {
+        "ingest": 0.028,
+        "judge": 67.072,
+        "parse": 1.076,
+        "retrieval": 0.196,
+        "store": 0.115
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    }
+  ],
+  "max": [
+    {
+      "scenario": "cold first scan",
+      "wall": 4.145,
+      "requests": 91,
+      "cpu": 1.344,
+      "peak_mb": 194.1,
+      "phases": {
+        "ingest": 0.012,
+        "judge": 36.601,
+        "parse": 1.23,
+        "retrieval": 0.109,
+        "store": 0.052
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "scenario": "cold first scan",
+      "wall": 4.635,
+      "requests": 166,
+      "cpu": 1.578,
+      "peak_mb": 209.5,
+      "phases": {
+        "ingest": 0.025,
+        "judge": 66.871,
+        "parse": 0.796,
+        "retrieval": 0.178,
+        "store": 0.1
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    }
+  ]
+}

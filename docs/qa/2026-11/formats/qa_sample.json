@@ -1,0 +1,54 @@
+{
+  "current_release": "mvp",
+  "scope_aliases": {
+    "release": {
+      "mvp": [
+        "MVP",
+        "이번 학기",
+        "1차 버전"
+      ],
+      "later": [
+        "다음 버전",
+        "MVP 이후"
+      ]
+    },
+    "module": {
+      "login": [
+        "로그인",
+        "SSO",
+        "가입"
+      ],
+      "listing": [
+        "매물",
+        "사진"
+      ],
+      "search": [
+        "검색"
+      ],
+      "message": [
+        "쪽지",
+        "채팅",
+        "메시지"
+      ],
+      "trade": [
+        "거래",
+        "결제",
+        "계좌"
+      ],
+      "push": [
+        "푸시",
+        "알림"
+      ]
+    },
+    "user_group": {},
+    "environment": {}
+  },
+  "kind_overrides": {
+    "ideas/*": "MEETING",
+    "status/*": "MEETING",
+    "emails/*": "MEETING",
+    "deploy/*": "REQUIREMENT",
+    "design/*": "REQUIREMENT",
+    "docs/*": "IGNORE"
+  }
+}

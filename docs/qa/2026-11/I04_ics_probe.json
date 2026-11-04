@@ -1,0 +1,200 @@
+{
+  "folder": {
+    "root": "C:\\qa_work\\suite\\calendar_probe",
+    "files": {
+      "ok": 7,
+      "error": 0,
+      "unsupported": 0
+    },
+    "topics": 1,
+    "topics_by_judge": {
+      "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+    },
+    "watcher": "native",
+    "watch_alive": true,
+    "pending_events": 6,
+    "progress": {
+      "phase": "done",
+      "phase_label": "완료",
+      "files_total": 7,
+      "files_done": 7,
+      "topics_total": 1,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 2,
+      "extract_done": 2,
+      "llm_calls": 6,
+      "current": "",
+      "elapsed_seconds": 16.5
+    },
+    "completion": {
+      "at": "2026-11-02T07:08:26",
+      "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "local_only": false,
+      "verified": true,
+      "mode": "agent",
+      "files_ok": 7,
+      "files_error": 0,
+      "files_unsupported": 0,
+      "topics": 1,
+      "topics_rechecked": 1,
+      "judges": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "llm_calls": 6,
+      "cost_profile": "balanced",
+      "calls_by_task": {
+        "DECISION_EXTRACT_BATCH": 1,
+        "RELATION_CLASSIFY": 1,
+        "IMPACT_SELECT": 1,
+        "CONSISTENCY_BATCH": 3
+      },
+      "local_answers": 0,
+      "reused_lines": 0,
+      "judged_lines": 3,
+      "phase_seconds": {
+        "parse": 0.081,
+        "ingest": 0.002,
+        "extract": 4.996,
+        "retrieval": 0.005,
+        "judge": 11.398,
+        "store": 0.0
+      },
+      "cache_hits": 0,
+      "cache_misses": 3
+    },
+    "pending_confirm": null,
+    "failure": null,
+    "scan_stats": {
+      "at": "2026-11-02T07:08:10",
+      "seen": 7,
+      "skipped": {}
+    },
+    "last_checked": "2026-11-02T07:08:26",
+    "last_analyzed": "2026-11-02T07:08:26",
+    "state": {
+      "state": "verified",
+      "label": "검사 완료",
+      "detail": "2026-11-02T07:08:26"
+    }
+  },
+  "findings": [
+    {
+      "topic": "final_presentation_date",
+      "artifact_id": "tasks:T1",
+      "kind": "TASK",
+      "text": "최종 발표 11월 10일 참석",
+      "source_doc": "tasks.csv",
+      "location": "2",
+      "label": "INCONSISTENT",
+      "confidence": 1.0,
+      "evidence": "작업이 '최종 발표 11월 10일 참석'으로 남아 있어 11월 17일 14시로 연기된 결정이 반영되지 않았다.",
+      "action": "작업명과 일정을 11월 17일 14시 최종 발표 참석으로 수정한다.",
+      "decision_id": "D02",
+      "owner": "QA팀",
+      "status": "open",
+      "snooze_until": null,
+      "first_seen": "2026-11-02T07:08:26",
+      "last_seen": "2026-11-02T07:08:26",
+      "notified": 1,
+      "root": "C:\\qa_work\\suite\\calendar_probe",
+      "topic_label": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연...",
+      "decision_text": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연기하기로 확정한다.",
+      "decision_date": "2026-10-20",
+      "decision_source": "meetings/2026-10-20_1.md",
+      "date": "2026-11-01",
+      "mail_source": "",
+      "mail_connector": "",
+      "team": ""
+    },
+    {
+      "topic": "final_presentation_date",
+      "artifact_id": "team-calendar:93a666",
+      "kind": "SCHEDULE",
+      "text": "최종 발표",
+      "source_doc": "team_calendar.ics",
+      "location": "1",
+      "label": "INCONSISTENT",
+      "confidence": 1.0,
+      "evidence": "팀 캘린더의 최종 발표 일정이 2026-11-10으로, 결정 기한인 2026-11-17보다 이르며 연기가 반영되지 않았다.",
+      "action": "캘린더의 최종 발표 일정을 2026-11-17 14시로 변경한다.",
+      "decision_id": "D02",
+      "owner": "",
+      "status": "open",
+      "snooze_until": null,
+      "first_seen": "2026-11-02T07:08:26",
+      "last_seen": "2026-11-02T07:08:26",
+      "notified": 1,
+      "root": "C:\\qa_work\\suite\\calendar_probe",
+      "topic_label": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연...",
+      "decision_text": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연기하기로 확정한다.",
+      "decision_date": "2026-10-20",
+      "decision_source": "meetings/2026-10-20_1.md",
+      "date": "2026-11-10",
+      "mail_source": "",
+      "mail_connector": "",
+      "team": ""
+    },
+    {
+      "topic": "final_presentation_date",
+      "artifact_id": "test-plan:06319f",
+      "kind": "TEST",
+      "text": "최종 발표 일정을 11월 17일로 표시하는지 확인한다.",
+      "source_doc": "test_plan.md",
+      "location": "4",
+      "label": "CONSISTENT",
+      "confidence": 1.0,
+      "evidence": "테스트가 최종 발표 일정을 11월 17일로 표시하는지 확인하므로 연기 결정을 이미 반영하고 있다.",
+      "action": "조치 불필요. 필요하면 시간(14시) 표시 확인도 추가한다.",
+      "decision_id": "D02",
+      "owner": "",
+      "status": "open",
+      "snooze_until": null,
+      "first_seen": "2026-11-02T07:08:26",
+      "last_seen": "2026-11-02T07:08:26",
+      "notified": 0,
+      "root": "C:\\qa_work\\suite\\calendar_probe",
+      "topic_label": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연...",
+      "decision_text": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연기하기로 확정한다.",
+      "decision_date": "2026-10-20",
+      "decision_source": "meetings/2026-10-20_1.md",
+      "date": "",
+      "mail_source": "",
+      "mail_connector": "",
+      "team": ""
+    }
+  ],
+  "requests": 6,
+  "calendar_week": {
+    "start": "2026-11-09",
+    "end": "2026-11-15",
+    "calendar_connected": false,
+    "has_events": true,
+    "sources": [
+      "file",
+      "ics"
+    ],
+    "nearest_week": null,
+    "events": [
+      {
+        "id": "C:\\qa_work\\suite\\calendar_probe|team-calendar:93a666",
+        "title": "최종 발표",
+        "date": "2026-11-10",
+        "time": "14:00",
+        "kind": "SCHEDULE",
+        "source": "ics",
+        "source_name": "team_calendar.ics",
+        "decision": {
+          "root": "C:\\qa_work\\suite\\calendar_probe",
+          "topic": "final_presentation_date",
+          "topic_label": "최종 발표를 2026년 11월 10일에서 11월 17일 14시로 연...",
+          "artifact_id": "team-calendar:93a666",
+          "label": "INCONSISTENT",
+          "evidence": "팀 캘린더의 최종 발표 일정이 2026-11-10으로, 결정 기한인 2026-11-17보다 이르며 연기가 반영되지 않았다."
+        }
+      }
+    ],
+    "today": "2026-11-02",
+    "mail_days": {}
+  }
+}

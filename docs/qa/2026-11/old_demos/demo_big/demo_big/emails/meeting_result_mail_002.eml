@@ -1,0 +1,14 @@
+From: minjun@example.com
+To: team@example.com
+Subject: 5월 14일 회의 결과 공유
+Date: Thu, 14 May 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 5월 14일 회의 결과를 공유합니다.
+
+2026-05-14 회의 결정
+- 로그인은 이메일 인증을 사용한다.
+- 서버 테스트는 pytest로 작성한다.
+- 오류 수집은 Sentry를 사용한다.
+
+서연 드림

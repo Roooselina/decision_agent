@@ -1,0 +1,19 @@
+{
+  "page": "/quick",
+  "width": 900,
+  "height": 900,
+  "text": "빠른 점검\n일시 중지\n외부 AI로 전송 중\n방금 정한 결정\n관련 항목 찾기\n메모로 저장\n\n'관련 항목 찾기'는 아무것도 저장하지 않습니다.\n\n반영되지 않은 것 같은 항목\n반영 안 됨\nFR-QA03 상품 등록 시 사진은 최대 3장까지 첨부할 수 있다.\nrequirements.md\n반영 안 됨\nFR-01 상품 등록 시 사진은 최대 3장까지 첨부할 수 있다.\nrequirements.md\n반영 안 됨\n사진 3장 제한 구현\ntasks.csv · 담당 QA팀\n반영 안 됨\n사진 3장을 넘으면 업로드가 거부되는지 검증한다.\ntest_plan.md\n반영 안 됨\n최종 발표 11월 10일 참석\ntasks.csv · 담당 QA팀\n반영 안 됨\nFR-01 로그인은 이메일 인증으로 처리한다.\nrequirements.md\n찾아보기",
+  "errors": [],
+  "horizontal_overflow": false,
+  "buttons": [
+    "관련 항목 찾기",
+    "메모로 저장"
+  ],
+  "inputs": [
+    {
+      "id": "",
+      "placeholder": "결정, 파일, 담당자, 메모 검색",
+      "type": "search"
+    }
+  ]
+}

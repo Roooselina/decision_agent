@@ -1,0 +1,99 @@
+{
+  "status": {
+    "paused": false,
+    "busy": false,
+    "folders": [
+      {
+        "root": "C:\\qa_work\\suite\\F13",
+        "files": {
+          "ok": 6,
+          "error": 0,
+          "unsupported": 0
+        },
+        "topics": 0,
+        "topics_by_judge": {},
+        "watcher": "native",
+        "watch_alive": true,
+        "pending_events": 0,
+        "progress": {
+          "phase": "error",
+          "phase_label": "문제 발생",
+          "files_total": 6,
+          "files_done": 6,
+          "topics_total": 0,
+          "topics_done": 0,
+          "topics_unchanged": 0,
+          "extract_total": 0,
+          "extract_done": 0,
+          "llm_calls": 6,
+          "current": "",
+          "elapsed_seconds": 2.4
+        },
+        "completion": null,
+        "pending_confirm": null,
+        "failure": {
+          "at": "2026-11-02T07:19:40",
+          "message": "결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요.",
+          "fatal": true,
+          "partial": false
+        },
+        "scan_stats": {
+          "at": "2026-11-02T07:19:38",
+          "seen": 6,
+          "skipped": {}
+        },
+        "last_checked": "2026-11-02T07:19:40",
+        "last_analyzed": null,
+        "state": {
+          "state": "failed",
+          "label": "실패",
+          "detail": "결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요."
+        }
+      }
+    ],
+    "provider": {
+      "id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "local_only": false,
+      "sends_externally": true,
+      "reason": "외부 LLM을 사용합니다."
+    },
+    "registered_folders": 1,
+    "connected_accounts": 0,
+    "onboarding_needed": false,
+    "ui_mode": "browser",
+    "version": "0.2.0",
+    "inconsistent": 0,
+    "uncertain": 0,
+    "questions": 0,
+    "last_cycle": "2026-11-02T07:19:40",
+    "last_error": "결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요.",
+    "debounce_seconds": 30.0,
+    "overall": {
+      "state": "failed",
+      "label": "폴더가 점검에 실패했습니다.",
+      "detail": "결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요.",
+      "counts": {
+        "failed": 1
+      }
+    },
+    "hotkey": {
+      "enabled": false,
+      "active": false,
+      "spec": "ctrl+alt+d",
+      "display": "Ctrl + Alt + D",
+      "reason": "",
+      "suggestions": []
+    },
+    "watch": {
+      "mode": "realtime",
+      "alive": true,
+      "rescan_minutes": 0,
+      "last_checked": "2026-11-02T07:19:40",
+      "last_analyzed": null,
+      "folders": 1
+    },
+    "last_result": null
+  },
+  "ui_text": "본문으로 건너뛰기\n작업 공간\n홈\n점검 결과\n메일\n폴더 관리\n설정\n빠른 점검\n실패\n홈\n11월 2일 월요일\n결정 변경 점검\n오류\n마지막 확인\n07:19\n방금 전\n확인 중인 폴더\n1개\nAI 연결을 확인할 수 없습니다. API 키를 확인하세요.\nF13\n실패\n결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요.\n지금 점검\n연결 설정 확인\n캘린더\n오늘\n주간\n캘린더\n메일\n\n2026년 11월 2일–8일\n\n월\n2\n화\n3\n수\n4\n목\n5\n금\n6\n토\n7\n일\n8\n종일\n2026-11-02 테스트 결과 공유\n내가 할 일\n확인 대기 0건\n현재 처리할 항목이 없습니다.\n전체 결과 보기\n최근 점검 기록\n전체 보기\n07:19\n결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요.\n07:19\n문서 6개를 확인했습니다. 회의 결정 2건, 관련 항목 9건을 찾았습니다.\n07:19\n파일 변경 6건, 삭제 0건을 반영했습니다.",
+  "http_responses": 6
+}

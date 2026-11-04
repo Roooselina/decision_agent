@@ -1,0 +1,6 @@
+{
+  "expected": "# 팀 안내\n\n문서는 팀 공유 저장소에서 관리한다.\n문의는 문서 담당자에게 전달한다.\n",
+  "actual": "# 팀 안내\n문서는 팀 공유 저장소에서 관리한다.\n문의는 문서 담당자에게 전달한다.",
+  "warnings": [],
+  "exact_korean_preserved": true
+}

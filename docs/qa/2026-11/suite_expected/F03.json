@@ -1,0 +1,16 @@
+{
+  "id": "F03",
+  "title": "MVP 범위 제한",
+  "stale_substrings": [
+    "FR-01",
+    "MVP 사진 3장 제한"
+  ],
+  "correct_substrings": [
+    "FR-02",
+    "FR-03",
+    "Production 사진 3장",
+    "MVP에서 사진"
+  ],
+  "root": "C:\\qa_work\\suite\\F03",
+  "question_expected": false
+}

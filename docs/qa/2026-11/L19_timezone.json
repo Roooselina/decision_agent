@@ -1,0 +1,61 @@
+{
+  "parsed": {
+    "path": "timezone_probe.ics",
+    "fmt": "ics",
+    "sections": [
+      {
+        "name": "schedule",
+        "blocks": [],
+        "tables": [
+          {
+            "headers": [
+              "summary",
+              "date",
+              "time",
+              "description",
+              "location"
+            ],
+            "rows": [
+              [
+                "UTC event",
+                "2026-11-16",
+                "08:30",
+                "",
+                ""
+              ],
+              [
+                "Seoul event",
+                "2026-11-17",
+                "08:30",
+                "",
+                ""
+              ]
+            ],
+            "first_row_location": 1
+          }
+        ]
+      }
+    ],
+    "meta": {},
+    "warnings": []
+  },
+  "calendar_times": [
+    [
+      [
+        "timezone_probe.ics",
+        "UTC event",
+        "2026-11-16"
+      ],
+      "08:30"
+    ],
+    [
+      [
+        "timezone_probe.ics",
+        "Seoul event",
+        "2026-11-17"
+      ],
+      "08:30"
+    ]
+  ],
+  "expected_kst": "2026-11-17 08:30 for both events"
+}

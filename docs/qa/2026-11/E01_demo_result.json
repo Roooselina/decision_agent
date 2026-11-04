@@ -1,0 +1,53 @@
+{
+  "folder": {
+    "root": "C:\\qa_work\\demo_capstone\\demo_capstone",
+    "files": {
+      "ok": 40,
+      "error": 0,
+      "unsupported": 0
+    },
+    "topics": 0,
+    "topics_by_judge": {},
+    "watcher": "native",
+    "watch_alive": true,
+    "pending_events": 0,
+    "progress": {
+      "phase": "error",
+      "phase_label": "문제 발생",
+      "files_total": 41,
+      "files_done": 41,
+      "topics_total": 0,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 326,
+      "extract_done": 256,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 0.5
+    },
+    "completion": null,
+    "pending_confirm": null,
+    "failure": {
+      "at": "2026-11-02T07:31:19",
+      "message": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)",
+      "fatal": false,
+      "partial": false
+    },
+    "scan_stats": {
+      "at": "2026-11-02T07:31:19",
+      "seen": 41,
+      "skipped": {
+        "설정 파일입니다.": 1
+      }
+    },
+    "last_checked": "2026-11-02T07:31:20",
+    "last_analyzed": null,
+    "state": {
+      "state": "retrying",
+      "label": "실패, 다시 시도 중",
+      "detail": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+    }
+  },
+  "findings": [],
+  "cached_retry_seconds": 39.93799999996554
+}

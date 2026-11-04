@@ -1,0 +1,25 @@
+[
+  {
+    "kind": "perf",
+    "mode": "save",
+    "exit_code": 0,
+    "wall_seconds": 88.70944449998206
+  },
+  {
+    "kind": "perf",
+    "mode": "normal",
+    "exit_code": 0,
+    "wall_seconds": 108.93994449998718
+  },
+  {
+    "kind": "perf",
+    "mode": "max",
+    "exit_code": 0,
+    "wall_seconds": 32.210107999970205
+  },
+  {
+    "kind": "incremental",
+    "exit_code": 0,
+    "wall_seconds": 7.9810356999514624
+  }
+]

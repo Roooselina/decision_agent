@@ -1,0 +1,117 @@
+{
+  "nochange": [
+    {
+      "mode": "save",
+      "scenario": "no change rescan",
+      "wall": 0.11,
+      "requests": 0,
+      "cpu": 0.109,
+      "peak_mb": 190.7,
+      "phases": {
+        "ingest": 0.073,
+        "parse": 0.028,
+        "store": 0.001
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "mode": "save",
+      "scenario": "no change rescan",
+      "wall": 0.14,
+      "requests": 0,
+      "cpu": 0.141,
+      "peak_mb": 197.8,
+      "phases": {
+        "ingest": 0.024,
+        "parse": 0.097
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    },
+    {
+      "mode": "normal",
+      "scenario": "no change rescan",
+      "wall": 0.11,
+      "requests": 0,
+      "cpu": 0.109,
+      "peak_mb": 191.9,
+      "phases": {
+        "ingest": 0.011,
+        "parse": 0.036
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "mode": "normal",
+      "scenario": "no change rescan",
+      "wall": 0.143,
+      "requests": 0,
+      "cpu": 0.125,
+      "peak_mb": 199.7,
+      "phases": {
+        "ingest": 0.026,
+        "parse": 0.1,
+        "store": 0.002
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    },
+    {
+      "mode": "max",
+      "scenario": "no change rescan",
+      "wall": 0.051,
+      "requests": 0,
+      "cpu": 0.062,
+      "peak_mb": 192.7,
+      "phases": {
+        "ingest": 0.011,
+        "parse": 0.033,
+        "store": 0.001
+      },
+      "found": 6,
+      "false": 0,
+      "reused": 0,
+      "folder": "capstone",
+      "profile": "balanced",
+      "files": 42
+    },
+    {
+      "mode": "max",
+      "scenario": "no change rescan",
+      "wall": 0.131,
+      "requests": 0,
+      "cpu": 0.141,
+      "peak_mb": 200.0,
+      "phases": {
+        "ingest": 0.024,
+        "parse": 0.092,
+        "store": 0.002
+      },
+      "found": 5,
+      "false": 0,
+      "reused": 0,
+      "folder": "full",
+      "profile": "balanced",
+      "files": 122
+    }
+  ],
+  "target_misses": []
+}

@@ -1,0 +1,53 @@
+{
+  "id": "1fa36866e762efaa",
+  "subject": "[참고] 세미나 포스터",
+  "participants": [
+    "Cicula"
+  ],
+  "count": 1,
+  "unread": 1,
+  "has_sent": false,
+  "date": "2026-10-29",
+  "time": "14:28",
+  "snippet": "세미나 포스터야~~",
+  "chips": [
+    {
+      "text": "결정 근거",
+      "kind": "purpose",
+      "color": "",
+      "key": "purpose:decision"
+    }
+  ],
+  "keys": [
+    "purpose:decision"
+  ],
+  "analysis": "점검 안 함",
+  "messages": [
+    {
+      "id": "e81c80e8dfe994a6",
+      "mine": false,
+      "sender": "Cicula",
+      "sender_address": "qa-naver@example.com",
+      "to": [
+        "<teammate@example.com>"
+      ],
+      "date": "2026-10-29",
+      "time": "14:28",
+      "body": "세미나 포스터야~~",
+      "quoted": "",
+      "signature": "",
+      "unread": true,
+      "included": false,
+      "uid": "e81c80e8dfe994a6",
+      "hints": [],
+      "source": "QA test threads only"
+    }
+  ],
+  "connectors": [
+    "gmail"
+  ],
+  "local_labels": [],
+  "decisions": [],
+  "deadline": false,
+  "account": "teammate@example.com"
+}

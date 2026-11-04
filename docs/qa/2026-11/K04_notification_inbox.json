@@ -1,0 +1,152 @@
+[
+  {
+    "time": "2026-11-02 07:33:39",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)"
+  },
+  {
+    "time": "2026-11-02 07:33:39",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)"
+  },
+  {
+    "time": "2026-11-02 07:31:37",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)"
+  },
+  {
+    "time": "2026-11-02 07:31:20",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:19",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:19",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:18",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:17",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:17",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:16",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:16",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:31:15",
+    "level": "error",
+    "text": "점검 중 문제가 발생했습니다: 결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '거래 장소 선택 방식을 학교 건물 목록 선택으로 바꾼다.' 결정과 맞지 않는 항목 5건 (예: 거래 장소는 카카오맵 API로 선택한다, requirements/requirements_memo_10.docx)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "확인이 필요합니다: TC2701 키워드 검색 정확도 테스트는 형태소 기반 검색 적용 후의 검색 결과를 기준으로 수행합니까? (예/아니오)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '교재 사진 업로드 제한을 최대 10장으로 바꾼다.' 결정과 맞지 않는 항목 4건 (예: 교재 사진은 최대 5장으로 업로드한다, requirements/requirements_spec_04.xlsx)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '스탠드업 시간을 오전 9시 30분으로 바꾼다.' 결정과 맞지 않는 항목 6건 (예: 스탠드업 알림 설정 (오후 9시), tasks/jira_export_03.csv, 담당 서연)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '스탠드업은 매일 오전 10시에 한다.' 결정과 맞지 않는 항목 9건 (예: 스탠드업은 매일 오전 9시 30분에 진행한다, requirements/requirements_slides_05.pptx)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '가입 절차는 약관 동의 후 학번 입력 순서로 한다.' 결정과 맞지 않는 항목 7건 (예: 가입 절차: 학번 입력 없이 바로 시작, requirements/requirements_chat.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '가입 절차를 학번 입력 없이 바로 시작으로 단순화한다.' 결정과 맞지 않는 항목 6건 (예: 가입 절차: 약관 동의 후 학번 입력, requirements/requirements_analytics.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '서버 테스트 도구를 Jest로 바꾼다.' 결정과 맞지 않는 항목 8건 (예: 서버 테스트는 unittest로 작성한다, requirements/requirements_admin.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "확인이 필요합니다: T0903·T1101의 Jest 환경은 서버가 아닌 프론트엔드(클라이언트) 테스트용인가요? (예/아니오)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '서버 테스트는 pytest로 작성한다.' 결정과 맞지 않는 항목 5건 (예: 서버 테스트는 Jest로 작성한다, requirements/requirements_auth.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '서버 배포 환경을 Render로 변경한다.' 결정과 맞지 않는 항목 9건 (예: AWS EC2 배포 점검 예정, tests/qa_checklist_01.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '판매 가격 정책을 가격 자유 설정으로 바꾼다.' 결정과 맞지 않는 항목 6건 (예: 판매 가격 정책: 정가의 50% 이하로 제한, requirements/requirements_payment.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '판매 가격은 정가의 50% 이하로 제한한다.' 결정과 맞지 않는 항목 8건 (예: 판매 가격 정책: 가격 자유 설정, requirements/requirements_report.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '리허설을 11월 16일로 옮긴다.' 결정과 맞지 않는 항목 8건 (예: 리허설 11월 5일, schedule/schedule_phase4.csv)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '게시글은 신고 3회 누적 시 숨김 처리한다.' 결정과 맞지 않는 항목 6건 (예: 게시글 처리 기준: 신고 5회 누적 시 숨김, requirements/requirements_memo_01.docx)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '게시글 숨김 기준을 신고 5회 누적 시 숨김으로 바꾼다.' 결정과 맞지 않는 항목 9건 (예: 게시글 처리 기준: 신고 3회 누적 시 숨김, requirements/requirements_memo_05.docx)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '개인정보 보관 기간을 탈퇴 즉시로 바꾼다.' 결정과 맞지 않는 항목 7건 (예: 개인정보 보관 기준: 탈퇴 후 7일, requirements/requirements_ops.md)"
+  },
+  {
+    "time": "2026-11-02 07:30:47",
+    "level": "attention",
+    "text": "결정 변경이 반영되지 않았을 수 있습니다: '개인정보는 탈퇴 후 30일간 보관한다.' 결정과 맞지 않는 항목 8건 (예: 개인정보 보관 기준: 탈퇴 후 7일, requirements/requirements_ops.md)"
+  }
+]

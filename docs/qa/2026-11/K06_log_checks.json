@@ -1,0 +1,10 @@
+{
+  "log_path": "C:\\qa_work\\appdata\\decision-agent.log",
+  "bytes": 248421,
+  "document_sentence_present": false,
+  "full_test_mail_body_matches": 0,
+  "secret_pattern_matches": 0,
+  "diagnostic_contains_local_token": false,
+  "diagnostic_secret_pattern_matches": 0,
+  "diagnostic_mail_body_matches": 0
+}

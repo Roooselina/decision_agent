@@ -1,0 +1,163 @@
+[
+  {
+    "id": "L01",
+    "title": "Decision timeline per topic",
+    "value": "High",
+    "observation": "Results group by latest decision and date; no chronological topic timeline found in reviewed controls.",
+    "reason": "A timeline lets a lead distinguish replacement, reversal, cancellation and scope changes before acting."
+  },
+  {
+    "id": "L02",
+    "title": "Per-decision history and sources",
+    "value": "High",
+    "observation": "Current evidence/source/date/line are visible. No complete per-decision provenance history view found.",
+    "reason": "A reviewer needs all source decisions, not only the latest summary, to resolve conflicting instructions."
+  },
+  {
+    "id": "L03",
+    "title": "Export findings as CSV, Markdown or PDF",
+    "value": "High",
+    "observation": "No findings export action found in Results or audited desktop API routes. Diagnostics copy is available.",
+    "reason": "Teams need reviewable findings in issue trackers, release checklists and meeting records."
+  },
+  {
+    "id": "L04",
+    "title": "Owner assignment and follow-up reminders",
+    "value": "High",
+    "observation": "Owners imported from task data can appear; no assignment/editor or owner follow-up workflow found in result actions.",
+    "reason": "A finding needs a responsible person and a due date to turn detection into completed propagation."
+  },
+  {
+    "id": "L05",
+    "title": "Mark fixed and automatically verify",
+    "value": "High",
+    "observation": "Dismiss/false-positive/snooze exist; file watcher rechecks edits. No explicit fixed-and-verify workflow found.",
+    "reason": "Hiding a finding should be distinguishable from checking that its source line was corrected."
+  },
+  {
+    "id": "L06",
+    "title": "Bulk dismiss",
+    "value": "Medium",
+    "observation": "Per-finding actions exist; no selection and bulk dismiss control found.",
+    "reason": "A large first run otherwise requires repetitive individual clicks and makes triage costly."
+  },
+  {
+    "id": "L07",
+    "title": "Finding filters and grouping",
+    "value": "High",
+    "observation": "Topic grouping and search are visible; filter control audit saved. Owner/folder/severity grouping views were not found.",
+    "reason": "Leads need a view of their own folder, release, owner and urgency rather than one long mixed list."
+  },
+  {
+    "id": "L08",
+    "title": "First-run onboarding",
+    "value": "Medium",
+    "observation": "Empty home gives folder-add guidance; model consent and data coverage require separate Settings steps.",
+    "reason": "A guided first check should explain folder boundary, external-send consent, estimate and what was skipped."
+  },
+  {
+    "id": "L09",
+    "title": "Undo dismiss",
+    "value": "High",
+    "observation": "Per-item hide actions work; no visible undo in results after dismissal found. An API can reopen a finding.",
+    "reason": "A mistaken dismissal must be reversible from the UI without editing app state."
+  },
+  {
+    "id": "L10",
+    "title": "Keyboard and accessibility",
+    "value": "High",
+    "observation": "Skip link and several ARIA names exist. Mail Escape failed after Enter; accessible-name/focus audit saved.",
+    "reason": "Reliable focus and accessible labels are required to triage quickly and to use a screen reader."
+  },
+  {
+    "id": "L11",
+    "title": "English UI option",
+    "value": "Low",
+    "observation": "No language selector found in reviewed settings. Current UI strings remain Korean.",
+    "reason": "Mixed-language teams need translated controls while preserving original evidence text."
+  },
+  {
+    "id": "L12",
+    "title": "Weekly digest",
+    "value": "Medium",
+    "observation": "Daily digest setting exists. No weekly summary schedule found.",
+    "reason": "A weekly review should collect new, resolved, dismissed and overdue findings instead of repeating a live list."
+  },
+  {
+    "id": "L13",
+    "title": "Calendar write-back preference",
+    "value": "Medium",
+    "observation": "Connections explicitly advertise read-only calendar access. User preference question sent; no answer yet.",
+    "reason": "An optional reviewed change proposal could close the loop, but should be built only if the user wants it."
+  },
+  {
+    "id": "L14",
+    "title": "Exact-line file links",
+    "value": "Medium",
+    "observation": "Details show file and line. Existing open-location action accepts a target path without a line argument.",
+    "reason": "Opening an editor at the stale line would shorten repair time and reduce wrong-file edits."
+  },
+  {
+    "id": "L15",
+    "title": "Renamed and moved files",
+    "value": "High",
+    "observation": "Identity-preservation test pending; filenames participate in source evidence and file indexing.",
+    "reason": "A rename should update evidence paths without duplicating or resurrecting dismissed findings."
+  },
+  {
+    "id": "L19",
+    "title": "Time zones for mail and calendar",
+    "value": "High",
+    "observation": "Mail shows local dates and times; ICS sample includes Asia/Seoul. Cross-zone boundary test pending.",
+    "reason": "A UTC event near midnight must be compared with the decision on the correct local calendar day."
+  },
+  {
+    "id": "L20",
+    "title": "Multiple Google accounts",
+    "value": "Medium",
+    "observation": "One Gmail connection and one account status are exposed. No account picker/add-second-account flow found.",
+    "reason": "A lead may keep school, personal and organization projects in different accounts."
+  },
+  {
+    "id": "L21",
+    "title": "Offline behavior",
+    "value": "High",
+    "observation": "Cached local UI remains usable during ordinary reads; failed model checks expose a retrying state. Scoped outage test pending.",
+    "reason": "Offline mode should preserve evidence, explain unavailable actions and avoid repeated expensive retries."
+  },
+  {
+    "id": "L22",
+    "title": "Model provider outage",
+    "value": "High",
+    "observation": "Default model extraction errors prevented both demo scans. Partial results/recovery messaging needs clearer coverage.",
+    "reason": "The core workflow needs bounded retries and a trustworthy last-verified result while the provider is failing."
+  },
+  {
+    "id": "L23",
+    "title": "Data export and delete all",
+    "value": "High",
+    "observation": "Diagnostics copy and delete-all exist; no portable user-data export found. Delete-all also removes shared credential-store entries.",
+    "reason": "Users need backup/migration and scoped project deletion without unexpectedly disconnecting every account."
+  },
+  {
+    "id": "L24",
+    "title": "Live cost and failed-run accounting",
+    "value": "High",
+    "observation": "Extraction progress showed zero requests while real HTTP calls occurred; failed scans had no completion request total.",
+    "reason": "The run budget must include extraction, failures and retries before the confirmation gate, not only a successful last cycle."
+  },
+  {
+    "id": "L25",
+    "title": "Clarification actually updates verdicts",
+    "value": "High",
+    "observation": "F06 answer cleared the question but returned zero new requests and retained all five UNCERTAIN verdicts.",
+    "reason": "Human clarification only saves effort when the answer changes the scope decision and produces actionable results."
+  },
+  {
+    "id": "L26",
+    "title": "Cache removal and recoverable invalid responses",
+    "value": "High",
+    "observation": "Malformed JSON in stored extraction responses repeatedly failed demo scans; removing a watched folder deletes its stored state.",
+    "reason": "A user needs a focused retry of a bad response and optional reuse when re-adding an unchanged project."
+  }
+]

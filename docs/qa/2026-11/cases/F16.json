@@ -1,0 +1,167 @@
+{
+  "spec": {
+    "id": "F16",
+    "title": "400개 산출물과 짧은 일치 줄",
+    "stale_substrings": [
+      "결제 연동 QA",
+      "토스페이먼츠 결제 위젯"
+    ],
+    "correct_substrings": [
+      "공통 데이터",
+      "목록 조회"
+    ],
+    "root": "C:\\qa_work\\suite\\F16",
+    "question_expected": false
+  },
+  "add": {
+    "ok": true,
+    "path": "C:\\qa_work\\suite\\F16"
+  },
+  "folder": {
+    "root": "C:\\qa_work\\suite\\F16",
+    "files": {
+      "ok": 6,
+      "error": 0,
+      "unsupported": 0
+    },
+    "topics": 1,
+    "topics_by_judge": {
+      "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+    },
+    "watcher": "native",
+    "watch_alive": true,
+    "pending_events": 0,
+    "progress": {
+      "phase": "done",
+      "phase_label": "완료",
+      "files_total": 6,
+      "files_done": 6,
+      "topics_total": 1,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 2,
+      "extract_done": 2,
+      "llm_calls": 7,
+      "current": "",
+      "elapsed_seconds": 22.1
+    },
+    "completion": {
+      "at": "2026-10-30T00:07:59",
+      "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "local_only": false,
+      "verified": true,
+      "mode": "agent",
+      "files_ok": 6,
+      "files_error": 0,
+      "files_unsupported": 0,
+      "topics": 1,
+      "topics_rechecked": 1,
+      "judges": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "llm_calls": 7,
+      "cost_profile": "balanced",
+      "calls_by_task": {
+        "DECISION_EXTRACT_BATCH": 1,
+        "RELATION_CLASSIFY": 1,
+        "IMPACT_SELECT": 1,
+        "CONSISTENCY_BATCH": 2,
+        "CONSISTENCY": 2
+      },
+      "local_answers": 0,
+      "reused_lines": 0,
+      "judged_lines": 2,
+      "phase_seconds": {
+        "parse": 0.047,
+        "ingest": 0.019,
+        "extract": 8.416,
+        "retrieval": 0.026,
+        "judge": 13.606,
+        "store": 0.0
+      },
+      "cache_hits": 0,
+      "cache_misses": 3
+    },
+    "pending_confirm": null,
+    "failure": null,
+    "scan_stats": {
+      "at": "2026-10-30T00:07:37",
+      "seen": 6,
+      "skipped": {}
+    },
+    "last_checked": "2026-10-30T00:07:59",
+    "last_analyzed": "2026-10-30T00:07:59",
+    "state": {
+      "state": "verified",
+      "label": "검사 완료",
+      "detail": "2026-10-30T00:07:59"
+    }
+  },
+  "findings": [
+    {
+      "topic": "in_app_payment",
+      "artifact_id": "tasks:T001",
+      "kind": "TASK",
+      "text": "결제 연동 QA",
+      "source_doc": "tasks.csv",
+      "location": "2",
+      "label": "INCONSISTENT",
+      "confidence": 1.0,
+      "evidence": "결정이 전체 제품(GLOBAL) 범위에서 결제 연동 QA를 명시적으로 취소했는데, 산출물 '결제 연동 QA'는 여전히 todo 상태로 남아 있다.",
+      "action": "작업 T001 '결제 연동 QA'를 취소 처리하거나 백로그에서 제거하고, 계좌이체 직접 거래 기준으로 필요한 검증 작업이 있는지 확인한다.",
+      "decision_id": "D02",
+      "owner": "QA팀",
+      "status": "open",
+      "snooze_until": null,
+      "first_seen": "2026-10-30T00:07:59",
+      "last_seen": "2026-10-30T00:07:59",
+      "notified": 1,
+      "root": "C:\\qa_work\\suite\\F16",
+      "topic_label": "토스페이먼츠 앱 내 결제와 결제 연동 QA를 모두 취소한다. 전체 ...",
+      "decision_text": "토스페이먼츠 앱 내 결제와 결제 연동 QA를 모두 취소한다. 전체 제품에서 계좌이체 직접 거래만 제공하기로 확정한다.",
+      "decision_date": "2026-10-20",
+      "decision_source": "meetings/2026-10-20.md",
+      "date": "",
+      "mail_source": "",
+      "mail_connector": "",
+      "team": ""
+    },
+    {
+      "topic": "in_app_payment",
+      "artifact_id": "tasks:T002",
+      "kind": "TASK",
+      "text": "토스페이먼츠 결제 위젯 구현",
+      "source_doc": "tasks.csv",
+      "location": "3",
+      "label": "INCONSISTENT",
+      "confidence": 1.0,
+      "evidence": "결정이 토스페이먼츠 앱 내 결제를 취소하고 계좌이체 직접 거래만 제공하기로 했는데, 토스페이먼츠 결제 위젯 구현이 todo 상태로 남아 있다.",
+      "action": "토스페이먼츠 결제 위젯 구현 작업을 취소하거나 삭제하고, 필요하면 계좌이체 직접 거래 관련 작업으로 대체한다.",
+      "decision_id": "D02",
+      "owner": "개발팀",
+      "status": "open",
+      "snooze_until": null,
+      "first_seen": "2026-10-30T00:07:59",
+      "last_seen": "2026-10-30T00:07:59",
+      "notified": 1,
+      "root": "C:\\qa_work\\suite\\F16",
+      "topic_label": "토스페이먼츠 앱 내 결제와 결제 연동 QA를 모두 취소한다. 전체 ...",
+      "decision_text": "토스페이먼츠 앱 내 결제와 결제 연동 QA를 모두 취소한다. 전체 제품에서 계좌이체 직접 거래만 제공하기로 확정한다.",
+      "decision_date": "2026-10-20",
+      "decision_source": "meetings/2026-10-20.md",
+      "date": "",
+      "mail_source": "",
+      "mail_connector": "",
+      "team": ""
+    }
+  ],
+  "questions": [],
+  "found": [
+    "결제 연동 QA",
+    "토스페이먼츠 결제 위젯"
+  ],
+  "missed": [],
+  "false_findings": [],
+  "requests": 7,
+  "wall_seconds": 22.814371400047094
+}

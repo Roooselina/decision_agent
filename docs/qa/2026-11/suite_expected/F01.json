@@ -1,0 +1,16 @@
+{
+  "id": "F01",
+  "title": "사진 수 단일 변경",
+  "stale_substrings": [
+    "FR-01",
+    "사진 3장 제한 구현",
+    "사진 3장을 넘으면"
+  ],
+  "correct_substrings": [
+    "FR-02",
+    "사진 5장 업로드 검증",
+    "사진 5장까지"
+  ],
+  "root": "C:\\qa_work\\suite\\F01",
+  "question_expected": false
+}

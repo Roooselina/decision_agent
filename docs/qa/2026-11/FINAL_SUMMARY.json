@@ -1,0 +1,22 @@
+{
+  "main_cases": 98,
+  "main_counts": {
+    "PARTIAL": 25,
+    "PASS": 37,
+    "BLOCKED": 16,
+    "FAIL": 19,
+    "OBSERVATION": 1
+  },
+  "all_counts": {
+    "PASS": 38,
+    "PARTIAL": 25,
+    "FAIL": 20,
+    "OBSERVATION": 29,
+    "BLOCKED": 16
+  },
+  "requests_observed": 1199,
+  "budget": 2000,
+  "stop_at": 1600,
+  "screenshots": 139,
+  "finished": "2026-11-02T07:47:56.050047+09:00"
+}

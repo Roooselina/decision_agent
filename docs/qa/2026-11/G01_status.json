@@ -1,0 +1,27 @@
+{
+  "seq": 2,
+  "status": {
+    "line": "마지막 확인 00:00",
+    "running": true,
+    "interval": 60.0,
+    "sources": [
+      {
+        "id": "qa-test-threads-only",
+        "name": "QA test threads only",
+        "checked_at": "00:00",
+        "new": 0,
+        "ok": true,
+        "stopped": false,
+        "message": "",
+        "lines": [
+          "마지막 확인 00:00",
+          "검색 조건: newer_than:90d from:(qa-gmail@example.com OR qa-naver@example.com) subject:(\"최종 발표 일정 확정 부탁드립니다\" OR \"배포 서버 비용 문의\" OR \"Re: 결제 방식 확인\" OR \"디자인 시안 A/B 의견\" OR \"이번 주 구현 현황과 중간 점검 자료\" OR \"자료 공유 요청\" OR \"[참고] 세미나 포스터\" OR \"스터디룸 예약 안내\")",
+          "조건에 맞는 메일 13통, 새로 읽은 메일 20통, 저장된 메일 20통",
+          "건너뜀: 결정 표현 없음(저장만 함) 9통",
+          "같은 대화에서 함께 읽은 메일 7통 (내가 보낸 답장 포함)"
+        ]
+      }
+    ]
+  },
+  "events": []
+}

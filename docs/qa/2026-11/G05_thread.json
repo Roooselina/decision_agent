@@ -1,0 +1,34 @@
+{
+  "message_count": 0,
+  "expanded": 1,
+  "expanded_buttons": 2,
+  "text": "배포 서버 비용 문의\n결정 근거\n라벨 편집\n\n이 메일 연결은 AI로 점검하지 않습니다.\n\n민재\n은정아, 서버 얘기 하나만.\n10월 28일 23:28\n나\n좋아, 그 정도면 고민할 필요 없겠다.\n10월 28일 23:29\n나\n오 편하긴 하겠다.\n10월 28일 23:29\n민재\n10월 28일 23:29\n\n찾아봤는데 무료 플랜은 15분 동안 요청이 없으면 잠들어서 첫 요청이 느린 게 맞아.\n\n월 7달러 유료 플랜은 안 잠들어서 그 문제가 없고.\n\n지원금으로 Lightsail 내던 거 생각하면 오히려 조금 싸.\n\n민재\n\n이 메일을 분석에 포함\n답장\n전체 답장",
+  "detail_keys": [
+    "id",
+    "subject",
+    "participants",
+    "count",
+    "unread",
+    "has_sent",
+    "date",
+    "time",
+    "snippet",
+    "chips",
+    "keys",
+    "analysis",
+    "messages",
+    "connectors",
+    "local_labels",
+    "decisions",
+    "deadline",
+    "account"
+  ],
+  "message_mine": [
+    false,
+    true,
+    true,
+    false
+  ],
+  "message_count_api": 4,
+  "quoted_count": 0
+}

@@ -1,0 +1,131 @@
+{
+  "about": {
+    "version": "0.2.0",
+    "commit": "123e20c",
+    "commit_source": "git",
+    "installed_at": "",
+    "install_dir": "",
+    "data_dir": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent",
+    "settings_path": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent\\settings.json",
+    "log_path": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent\\decision-agent.log",
+    "python": "3.11.2",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "folders": [
+    {
+      "root": "C:\\Users\\kuroc\\Downloads\\demo_bookswap",
+      "exists": true,
+      "db": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent\\state\\06b6a2588b29.sqlite",
+      "state": "verified",
+      "label": "검사 완료",
+      "findings": {
+        "CONSISTENT": 134,
+        "INCONSISTENT": 42,
+        "UNCERTAIN": 54
+      },
+      "open_findings": {
+        "CONSISTENT": 134,
+        "INCONSISTENT": 42,
+        "UNCERTAIN": 54
+      },
+      "files": {
+        "ok": 46
+      },
+      "last_cycle": {
+        "at": "2026-10-29T11:47:42",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "verified": true,
+        "requests": 0,
+        "reused_lines": 230,
+        "judged_lines": 0,
+        "topics": 36,
+        "topics_rechecked": 4,
+        "phase_seconds": {},
+        "cache_hits": 0,
+        "cache_misses": 0
+      }
+    },
+    {
+      "root": "C:\\Users\\kuroc\\Downloads\\demo_big",
+      "exists": true,
+      "db": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent\\state\\2b56881e7a31.sqlite",
+      "state": "awaiting_confirm",
+      "label": "확인 대기",
+      "findings": {
+        "CONSISTENT": 5
+      },
+      "open_findings": {
+        "CONSISTENT": 5
+      },
+      "files": {
+        "ok": 355
+      },
+      "last_cycle": {
+        "at": "2026-10-28T23:33:21",
+        "provider_id": "mock",
+        "verified": false,
+        "requests": 202,
+        "reused_lines": 0,
+        "judged_lines": 33,
+        "topics": 4,
+        "topics_rechecked": 4,
+        "phase_seconds": {},
+        "cache_hits": 0,
+        "cache_misses": 0
+      }
+    },
+    {
+      "root": "C:\\Users\\kuroc\\Downloads\\demo_capstone\\demo_capstone",
+      "exists": true,
+      "db": "C:\\Users\\kuroc\\AppData\\Roaming\\DecisionAgent\\state\\61dd86dcbfce.sqlite",
+      "state": "awaiting_confirm",
+      "label": "확인 대기",
+      "findings": {},
+      "open_findings": {},
+      "files": {
+        "ok": 53
+      },
+      "last_cycle": null
+    }
+  ],
+  "mail": {
+    "total": 20,
+    "by_connection": {
+      "gmail": 20
+    },
+    "by_source": {
+      "src-b7aec7": 20
+    }
+  },
+  "connections": [
+    {
+      "id": "gmail",
+      "enabled": true,
+      "read_only": false,
+      "connected": true,
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.readonly"
+      ],
+      "send_granted": false
+    },
+    {
+      "id": "google_calendar",
+      "enabled": true,
+      "read_only": true,
+      "connected": true,
+      "scopes": [
+        "https://www.googleapis.com/auth/calendar.readonly"
+      ],
+      "send_granted": false
+    }
+  ],
+  "settings_summary": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-5-5",
+    "original_senders": [
+      "qa-gmail@example.com",
+      "qa-naver@example.com"
+    ],
+    "mail_send_enabled": false
+  }
+}

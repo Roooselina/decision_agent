@@ -1,0 +1,3215 @@
+{
+ "as_of": "2026-10-24",
+ "topics": [
+  {
+   "key": "auth",
+   "values": [
+    "이메일 인증",
+    "학교 구글 SSO",
+    "카카오 로그인",
+    "학번과 비밀번호 로그인"
+   ],
+   "dates": [
+    "2026-05-14",
+    "2026-06-17",
+    "2026-07-22",
+    "2026-07-23"
+   ],
+   "latest": "학번과 비밀번호 로그인"
+  },
+  {
+   "key": "frontend",
+   "values": [
+    "React Native",
+    "Flutter",
+    "Kotlin Android 네이티브"
+   ],
+   "dates": [
+    "2026-05-06",
+    "2026-06-15",
+    "2026-07-20"
+   ],
+   "latest": "Kotlin Android 네이티브"
+  },
+  {
+   "key": "backend",
+   "values": [
+    "FastAPI",
+    "Spring Boot",
+    "Django"
+   ],
+   "dates": [
+    "2026-05-25",
+    "2026-06-10",
+    "2026-07-29"
+   ],
+   "latest": "Django"
+  },
+  {
+   "key": "database",
+   "values": [
+    "MySQL",
+    "PostgreSQL",
+    "MongoDB"
+   ],
+   "dates": [
+    "2026-05-11",
+    "2026-06-10",
+    "2026-07-02"
+   ],
+   "latest": "MongoDB"
+  },
+  {
+   "key": "payment",
+   "values": [
+    "토스페이먼츠",
+    "카카오페이",
+    "계좌이체 직접 거래"
+   ],
+   "dates": [
+    "2026-05-18",
+    "2026-07-01",
+    "2026-07-06"
+   ],
+   "latest": "계좌이체 직접 거래"
+  },
+  {
+   "key": "chat",
+   "values": [
+    "WebSocket",
+    "1:1 쪽지 폴링",
+    "Firebase 실시간 채팅"
+   ],
+   "dates": [
+    "2026-05-11",
+    "2026-06-15",
+    "2026-08-03"
+   ],
+   "latest": "Firebase 실시간 채팅"
+  },
+  {
+   "key": "push",
+   "values": [
+    "FCM 푸시",
+    "카카오 알림톡",
+    "앱 내 알림함"
+   ],
+   "dates": [
+    "2026-05-18",
+    "2026-06-10",
+    "2026-08-03"
+   ],
+   "latest": "앱 내 알림함"
+  },
+  {
+   "key": "image_limit",
+   "values": [
+    "5장",
+    "3장",
+    "10장"
+   ],
+   "dates": [
+    "2026-05-07",
+    "2026-06-22",
+    "2026-08-06"
+   ],
+   "latest": "10장"
+  },
+  {
+   "key": "deploy",
+   "values": [
+    "AWS EC2",
+    "AWS Lightsail",
+    "Render",
+    "학교 서버"
+   ],
+   "dates": [
+    "2026-05-25",
+    "2026-06-10",
+    "2026-08-03",
+    "2026-09-07"
+   ],
+   "latest": "학교 서버"
+  },
+  {
+   "key": "search",
+   "values": [
+    "키워드 검색",
+    "키워드와 초성 검색",
+    "형태소 기반 검색"
+   ],
+   "dates": [
+    "2026-05-06",
+    "2026-06-22",
+    "2026-06-29"
+   ],
+   "latest": "형태소 기반 검색"
+  },
+  {
+   "key": "admin_release",
+   "values": [
+    "MVP에 포함",
+    "정식 출시 이후로 연기"
+   ],
+   "dates": [
+    "2026-05-21",
+    "2026-06-15"
+   ],
+   "latest": "정식 출시 이후로 연기"
+  },
+  {
+   "key": "final_date",
+   "values": [
+    "11월 10일",
+    "11월 17일",
+    "11월 24일"
+   ],
+   "dates": [
+    "2026-05-13",
+    "2026-07-06",
+    "2026-07-08"
+   ],
+   "latest": "11월 24일"
+  },
+  {
+   "key": "midterm_date",
+   "values": [
+    "10월 22일",
+    "10월 29일"
+   ],
+   "dates": [
+    "2026-05-21",
+    "2026-06-15"
+   ],
+   "latest": "10월 29일"
+  },
+  {
+   "key": "color",
+   "values": [
+    "파란색 계열",
+    "초록색 계열",
+    "보라색 계열"
+   ],
+   "dates": [
+    "2026-05-25",
+    "2026-06-29",
+    "2026-08-03"
+   ],
+   "latest": "보라색 계열"
+  },
+  {
+   "key": "ci",
+   "values": [
+    "GitHub Actions",
+    "Jenkins",
+    "GitLab CI"
+   ],
+   "dates": [
+    "2026-05-11",
+    "2026-06-15",
+    "2026-08-03"
+   ],
+   "latest": "GitLab CI"
+  },
+  {
+   "key": "review",
+   "values": [
+    "PR당 1명 승인",
+    "PR당 2명 승인"
+   ],
+   "dates": [
+    "2026-05-25",
+    "2026-06-22"
+   ],
+   "latest": "PR당 2명 승인"
+  },
+  {
+   "key": "standup",
+   "values": [
+    "오전 10시",
+    "오후 9시",
+    "오전 9시 30분"
+   ],
+   "dates": [
+    "2026-05-18",
+    "2026-06-15",
+    "2026-08-03"
+   ],
+   "latest": "오전 9시 30분"
+  },
+  {
+   "key": "storage",
+   "values": [
+    "서버 로컬 디스크",
+    "AWS S3",
+    "Cloudinary"
+   ],
+   "dates": [
+    "2026-05-06",
+    "2026-06-10",
+    "2026-08-05"
+   ],
+   "latest": "Cloudinary"
+  },
+  {
+   "key": "map",
+   "values": [
+    "카카오맵 API",
+    "네이버 지도 API",
+    "학교 건물 목록 선택"
+   ],
+   "dates": [
+    "2026-05-11",
+    "2026-07-08",
+    "2026-08-10"
+   ],
+   "latest": "학교 건물 목록 선택"
+  },
+  {
+   "key": "retention",
+   "values": [
+    "탈퇴 후 30일",
+    "탈퇴 후 7일",
+    "탈퇴 즉시"
+   ],
+   "dates": [
+    "2026-05-21",
+    "2026-07-06",
+    "2026-08-17"
+   ],
+   "latest": "탈퇴 즉시"
+  },
+  {
+   "key": "test_fw",
+   "values": [
+    "pytest",
+    "unittest",
+    "Jest"
+   ],
+   "dates": [
+    "2026-05-14",
+    "2026-07-06",
+    "2026-08-03"
+   ],
+   "latest": "Jest"
+  },
+  {
+   "key": "design_tool",
+   "values": [
+    "Figma",
+    "Adobe XD"
+   ],
+   "dates": [
+    "2026-05-18",
+    "2026-07-01"
+   ],
+   "latest": "Adobe XD"
+  },
+  {
+   "key": "app_name",
+   "values": [
+    "BookSwap",
+    "북스왑",
+    "교환서점"
+   ],
+   "dates": [
+    "2026-05-13",
+    "2026-06-22",
+    "2026-08-17"
+   ],
+   "latest": "교환서점"
+  },
+  {
+   "key": "price",
+   "values": [
+    "정가의 50% 이하로 제한",
+    "가격 자유 설정"
+   ],
+   "dates": [
+    "2026-05-11",
+    "2026-06-22"
+   ],
+   "latest": "가격 자유 설정"
+  },
+  {
+   "key": "report",
+   "values": [
+    "신고 3회 누적 시 숨김",
+    "신고 5회 누적 시 숨김"
+   ],
+   "dates": [
+    "2026-05-06",
+    "2026-06-29"
+   ],
+   "latest": "신고 5회 누적 시 숨김"
+  },
+  {
+   "key": "onboarding",
+   "values": [
+    "약관 동의 후 학번 입력",
+    "학번 입력 없이 바로 시작"
+   ],
+   "dates": [
+    "2026-05-20",
+    "2026-07-08"
+   ],
+   "latest": "학번 입력 없이 바로 시작"
+  },
+  {
+   "key": "log",
+   "values": [
+    "Sentry",
+    "자체 로그 파일",
+    "CloudWatch"
+   ],
+   "dates": [
+    "2026-05-14",
+    "2026-07-06",
+    "2026-07-15"
+   ],
+   "latest": "CloudWatch"
+  },
+  {
+   "key": "rehearsal",
+   "values": [
+    "11월 5일",
+    "11월 16일"
+   ],
+   "dates": [
+    "2026-05-25",
+    "2026-06-11"
+   ],
+   "latest": "11월 16일"
+  },
+  {
+   "key": "beta",
+   "values": [
+    "11월 3일",
+    "11월 12일"
+   ],
+   "dates": [
+    "2026-05-07",
+    "2026-07-06"
+   ],
+   "latest": "11월 12일"
+  }
+ ],
+ "decisions": [
+  {
+   "topic": "search",
+   "value": "키워드 검색",
+   "date": "2026-05-06",
+   "text": "교재 검색은 키워드 검색을 지원한다."
+  },
+  {
+   "topic": "frontend",
+   "value": "React Native",
+   "date": "2026-05-06",
+   "text": "모바일 앱은 React Native로 개발한다."
+  },
+  {
+   "topic": "storage",
+   "value": "서버 로컬 디스크",
+   "date": "2026-05-06",
+   "text": "이미지 저장소는 서버 로컬 디스크를 사용한다."
+  },
+  {
+   "topic": "report",
+   "value": "신고 3회 누적 시 숨김",
+   "date": "2026-05-06",
+   "text": "게시글은 신고 3회 누적 시 숨김 처리한다."
+  },
+  {
+   "topic": "image_limit",
+   "value": "5장",
+   "date": "2026-05-07",
+   "text": "교재 사진 업로드는 최대 5장으로 제한한다."
+  },
+  {
+   "topic": "beta",
+   "value": "11월 3일",
+   "date": "2026-05-07",
+   "text": "베타 테스트는 11월 3일에 시작한다."
+  },
+  {
+   "topic": "ci",
+   "value": "GitHub Actions",
+   "date": "2026-05-11",
+   "text": "CI는 GitHub Actions를 사용한다."
+  },
+  {
+   "topic": "price",
+   "value": "정가의 50% 이하로 제한",
+   "date": "2026-05-11",
+   "text": "판매 가격은 정가의 50% 이하로 제한한다."
+  },
+  {
+   "topic": "database",
+   "value": "MySQL",
+   "date": "2026-05-11",
+   "text": "데이터베이스는 MySQL을 사용한다."
+  },
+  {
+   "topic": "map",
+   "value": "카카오맵 API",
+   "date": "2026-05-11",
+   "text": "거래 장소 선택은 카카오맵 API로 한다."
+  },
+  {
+   "topic": "chat",
+   "value": "WebSocket",
+   "date": "2026-05-11",
+   "text": "채팅은 WebSocket로 구현한다."
+  },
+  {
+   "topic": "final_date",
+   "value": "11월 10일",
+   "date": "2026-05-13",
+   "text": "최종 발표는 11월 10일에 한다."
+  },
+  {
+   "topic": "app_name",
+   "value": "BookSwap",
+   "date": "2026-05-13",
+   "text": "앱 이름은 BookSwap으로 한다."
+  },
+  {
+   "topic": "auth",
+   "value": "이메일 인증",
+   "date": "2026-05-14",
+   "text": "로그인은 이메일 인증을 사용한다."
+  },
+  {
+   "topic": "test_fw",
+   "value": "pytest",
+   "date": "2026-05-14",
+   "text": "서버 테스트는 pytest로 작성한다."
+  },
+  {
+   "topic": "log",
+   "value": "Sentry",
+   "date": "2026-05-14",
+   "text": "오류 수집은 Sentry를 사용한다."
+  },
+  {
+   "topic": "standup",
+   "value": "오전 10시",
+   "date": "2026-05-18",
+   "text": "스탠드업은 매일 오전 10시에 한다."
+  },
+  {
+   "topic": "payment",
+   "value": "토스페이먼츠",
+   "date": "2026-05-18",
+   "text": "결제는 토스페이먼츠로 처리한다."
+  },
+  {
+   "topic": "push",
+   "value": "FCM 푸시",
+   "date": "2026-05-18",
+   "text": "알림은 FCM 푸시로 보낸다."
+  },
+  {
+   "topic": "design_tool",
+   "value": "Figma",
+   "date": "2026-05-18",
+   "text": "디자인 시안은 Figma로 만든다."
+  },
+  {
+   "topic": "onboarding",
+   "value": "약관 동의 후 학번 입력",
+   "date": "2026-05-20",
+   "text": "가입 절차는 약관 동의 후 학번 입력 순서로 한다."
+  },
+  {
+   "topic": "admin_release",
+   "value": "MVP에 포함",
+   "date": "2026-05-21",
+   "text": "관리자 페이지는 MVP에 포함한다."
+  },
+  {
+   "topic": "midterm_date",
+   "value": "10월 22일",
+   "date": "2026-05-21",
+   "text": "중간 점검은 10월 22일에 한다."
+  },
+  {
+   "topic": "retention",
+   "value": "탈퇴 후 30일",
+   "date": "2026-05-21",
+   "text": "개인정보는 탈퇴 후 30일간 보관한다."
+  },
+  {
+   "topic": "backend",
+   "value": "FastAPI",
+   "date": "2026-05-25",
+   "text": "API 서버는 FastAPI로 개발한다."
+  },
+  {
+   "topic": "color",
+   "value": "파란색 계열",
+   "date": "2026-05-25",
+   "text": "앱의 대표 색상은 파란색 계열로 한다."
+  },
+  {
+   "topic": "review",
+   "value": "PR당 1명 승인",
+   "date": "2026-05-25",
+   "text": "코드 리뷰는 PR당 1명 승인을 원칙으로 한다."
+  },
+  {
+   "topic": "rehearsal",
+   "value": "11월 5일",
+   "date": "2026-05-25",
+   "text": "리허설은 11월 5일에 한다."
+  },
+  {
+   "topic": "deploy",
+   "value": "AWS EC2",
+   "date": "2026-05-25",
+   "text": "서버 배포는 AWS EC2에서 한다."
+  },
+  {
+   "topic": "database",
+   "value": "PostgreSQL",
+   "date": "2026-06-10",
+   "text": "데이터베이스를 PostgreSQL로 변경한다."
+  },
+  {
+   "topic": "backend",
+   "value": "Spring Boot",
+   "date": "2026-06-10",
+   "text": "API 서버 프레임워크를 Spring Boot로 변경한다."
+  },
+  {
+   "topic": "push",
+   "value": "카카오 알림톡",
+   "date": "2026-06-10",
+   "text": "알림 방식을 카카오 알림톡으로 변경한다."
+  },
+  {
+   "topic": "deploy",
+   "value": "AWS Lightsail",
+   "date": "2026-06-10",
+   "text": "서버 배포 환경을 AWS Lightsail로 변경한다."
+  },
+  {
+   "topic": "storage",
+   "value": "AWS S3",
+   "date": "2026-06-10",
+   "text": "이미지 저장소를 AWS S3로 변경한다."
+  },
+  {
+   "topic": "rehearsal",
+   "value": "11월 16일",
+   "date": "2026-06-11",
+   "text": "리허설을 11월 16일로 옮긴다."
+  },
+  {
+   "topic": "chat",
+   "value": "1:1 쪽지 폴링",
+   "date": "2026-06-15",
+   "text": "채팅 구현 방식을 1:1 쪽지 폴링으로 변경한다."
+  },
+  {
+   "topic": "frontend",
+   "value": "Flutter",
+   "date": "2026-06-15",
+   "text": "모바일 앱 개발 기술을 Flutter로 변경한다."
+  },
+  {
+   "topic": "ci",
+   "value": "Jenkins",
+   "date": "2026-06-15",
+   "text": "CI 도구를 Jenkins로 변경한다."
+  },
+  {
+   "topic": "standup",
+   "value": "오후 9시",
+   "date": "2026-06-15",
+   "text": "스탠드업 시간을 오후 9시로 바꾼다."
+  },
+  {
+   "topic": "midterm_date",
+   "value": "10월 29일",
+   "date": "2026-06-15",
+   "text": "중간 점검을 10월 29일로 옮긴다."
+  },
+  {
+   "topic": "admin_release",
+   "value": "정식 출시 이후로 연기",
+   "date": "2026-06-15",
+   "text": "관리자 페이지는 정식 출시 이후로 연기하고 MVP에서는 제외한다."
+  },
+  {
+   "topic": "auth",
+   "value": "학교 구글 SSO",
+   "date": "2026-06-17",
+   "text": "로그인 방식을 학교 구글 SSO로 변경한다."
+  },
+  {
+   "topic": "review",
+   "value": "PR당 2명 승인",
+   "date": "2026-06-22",
+   "text": "코드 리뷰 기준을 PR당 2명 승인으로 바꾼다."
+  },
+  {
+   "topic": "image_limit",
+   "value": "3장",
+   "date": "2026-06-22",
+   "text": "교재 사진 업로드 제한을 최대 3장으로 바꾼다."
+  },
+  {
+   "topic": "search",
+   "value": "키워드와 초성 검색",
+   "date": "2026-06-22",
+   "text": "교재 검색을 키워드와 초성 검색으로 확장한다."
+  },
+  {
+   "topic": "app_name",
+   "value": "북스왑",
+   "date": "2026-06-22",
+   "text": "앱 이름을 북스왑으로 확정한다."
+  },
+  {
+   "topic": "price",
+   "value": "가격 자유 설정",
+   "date": "2026-06-22",
+   "text": "판매 가격 정책을 가격 자유 설정으로 바꾼다."
+  },
+  {
+   "topic": "color",
+   "value": "초록색 계열",
+   "date": "2026-06-29",
+   "text": "앱의 대표 색상을 초록색 계열로 바꾼다."
+  },
+  {
+   "topic": "report",
+   "value": "신고 5회 누적 시 숨김",
+   "date": "2026-06-29",
+   "text": "게시글 숨김 기준을 신고 5회 누적 시 숨김으로 바꾼다."
+  },
+  {
+   "topic": "search",
+   "value": "형태소 기반 검색",
+   "date": "2026-06-29",
+   "text": "교재 검색을 형태소 기반 검색으로 확장한다."
+  },
+  {
+   "topic": "design_tool",
+   "value": "Adobe XD",
+   "date": "2026-07-01",
+   "text": "디자인 도구를 Adobe XD로 바꾼다."
+  },
+  {
+   "topic": "payment",
+   "value": "카카오페이",
+   "date": "2026-07-01",
+   "text": "결제 방식을 카카오페이로 변경한다."
+  },
+  {
+   "topic": "database",
+   "value": "MongoDB",
+   "date": "2026-07-02",
+   "text": "데이터베이스를 MongoDB로 변경한다."
+  },
+  {
+   "topic": "payment",
+   "value": "계좌이체 직접 거래",
+   "date": "2026-07-06",
+   "text": "결제 방식을 계좌이체 직접 거래로 변경한다."
+  },
+  {
+   "topic": "final_date",
+   "value": "11월 17일",
+   "date": "2026-07-06",
+   "text": "최종 발표를 11월 17일로 연기한다."
+  },
+  {
+   "topic": "beta",
+   "value": "11월 12일",
+   "date": "2026-07-06",
+   "text": "베타 테스트 시작일을 11월 12일로 미룬다."
+  },
+  {
+   "topic": "retention",
+   "value": "탈퇴 후 7일",
+   "date": "2026-07-06",
+   "text": "개인정보 보관 기간을 탈퇴 후 7일로 바꾼다."
+  },
+  {
+   "topic": "log",
+   "value": "자체 로그 파일",
+   "date": "2026-07-06",
+   "text": "오류 수집 도구를 자체 로그 파일로 바꾼다."
+  },
+  {
+   "topic": "test_fw",
+   "value": "unittest",
+   "date": "2026-07-06",
+   "text": "서버 테스트 도구를 unittest로 바꾼다."
+  },
+  {
+   "topic": "final_date",
+   "value": "11월 24일",
+   "date": "2026-07-08",
+   "text": "최종 발표를 11월 24일로 연기한다."
+  },
+  {
+   "topic": "map",
+   "value": "네이버 지도 API",
+   "date": "2026-07-08",
+   "text": "거래 장소 선택 방식을 네이버 지도 API로 바꾼다."
+  },
+  {
+   "topic": "onboarding",
+   "value": "학번 입력 없이 바로 시작",
+   "date": "2026-07-08",
+   "text": "가입 절차를 학번 입력 없이 바로 시작으로 단순화한다."
+  },
+  {
+   "topic": "log",
+   "value": "CloudWatch",
+   "date": "2026-07-15",
+   "text": "오류 수집 도구를 CloudWatch로 바꾼다."
+  },
+  {
+   "topic": "frontend",
+   "value": "Kotlin Android 네이티브",
+   "date": "2026-07-20",
+   "text": "모바일 앱 개발 기술을 Kotlin Android 네이티브로 변경한다."
+  },
+  {
+   "topic": "auth",
+   "value": "카카오 로그인",
+   "date": "2026-07-22",
+   "text": "로그인 방식을 카카오 로그인으로 변경한다."
+  },
+  {
+   "topic": "auth",
+   "value": "학번과 비밀번호 로그인",
+   "date": "2026-07-23",
+   "text": "로그인 방식을 학번과 비밀번호 로그인으로 변경한다."
+  },
+  {
+   "topic": "backend",
+   "value": "Django",
+   "date": "2026-07-29",
+   "text": "API 서버 프레임워크를 Django로 변경한다."
+  },
+  {
+   "topic": "chat",
+   "value": "Firebase 실시간 채팅",
+   "date": "2026-08-03",
+   "text": "채팅 구현 방식을 Firebase 실시간 채팅으로 변경한다."
+  },
+  {
+   "topic": "color",
+   "value": "보라색 계열",
+   "date": "2026-08-03",
+   "text": "앱의 대표 색상을 보라색 계열로 바꾼다."
+  },
+  {
+   "topic": "standup",
+   "value": "오전 9시 30분",
+   "date": "2026-08-03",
+   "text": "스탠드업 시간을 오전 9시 30분으로 바꾼다."
+  },
+  {
+   "topic": "push",
+   "value": "앱 내 알림함",
+   "date": "2026-08-03",
+   "text": "알림 방식을 앱 내 알림함으로 변경한다."
+  },
+  {
+   "topic": "deploy",
+   "value": "Render",
+   "date": "2026-08-03",
+   "text": "서버 배포 환경을 Render로 변경한다."
+  },
+  {
+   "topic": "ci",
+   "value": "GitLab CI",
+   "date": "2026-08-03",
+   "text": "CI 도구를 GitLab CI로 변경한다."
+  },
+  {
+   "topic": "test_fw",
+   "value": "Jest",
+   "date": "2026-08-03",
+   "text": "서버 테스트 도구를 Jest로 바꾼다."
+  },
+  {
+   "topic": "storage",
+   "value": "Cloudinary",
+   "date": "2026-08-05",
+   "text": "이미지 저장소를 Cloudinary로 변경한다."
+  },
+  {
+   "topic": "image_limit",
+   "value": "10장",
+   "date": "2026-08-06",
+   "text": "교재 사진 업로드 제한을 최대 10장으로 바꾼다."
+  },
+  {
+   "topic": "map",
+   "value": "학교 건물 목록 선택",
+   "date": "2026-08-10",
+   "text": "거래 장소 선택 방식을 학교 건물 목록 선택으로 바꾼다."
+  },
+  {
+   "topic": "retention",
+   "value": "탈퇴 즉시",
+   "date": "2026-08-17",
+   "text": "개인정보 보관 기간을 탈퇴 즉시로 바꾼다."
+  },
+  {
+   "topic": "app_name",
+   "value": "교환서점",
+   "date": "2026-08-17",
+   "text": "앱 이름을 교환서점으로 확정한다."
+  },
+  {
+   "topic": "deploy",
+   "value": "학교 서버",
+   "date": "2026-09-07",
+   "text": "서버 배포 환경을 학교 서버로 변경한다."
+  }
+ ],
+ "artifact_lines": [
+  {
+   "file": "requirements/requirements_auth.md",
+   "text": "서버 테스트는 Jest로 작성한다",
+   "topic": "test_fw",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_auth.md",
+   "text": "앱 이름은 BookSwap으로 표기한다",
+   "topic": "app_name",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_auth.md",
+   "text": "로그인은 카카오 로그인을 사용한다",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_home.md",
+   "text": "서버는 AWS Lightsail에 배포한다",
+   "topic": "deploy",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_home.md",
+   "text": "채팅은 1:1 쪽지 폴링으로 제공한다",
+   "topic": "chat",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_home.md",
+   "text": "중간 점검 일정은 10월 29일",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_search.md",
+   "text": "앱 이름은 BookSwap으로 표기한다",
+   "topic": "app_name",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_search.md",
+   "text": "디자인 시안은 Adobe XD로 관리한다",
+   "topic": "design_tool",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_search.md",
+   "text": "가입 절차: 학번 입력 없이 바로 시작",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_trade.md",
+   "text": "중간 점검 일정은 10월 29일",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_trade.md",
+   "text": "게시글 처리 기준: 신고 5회 누적 시 숨김",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_trade.md",
+   "text": "교재 사진은 최대 10장으로 업로드한다",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_chat.md",
+   "text": "교재 검색은 형태소 기반 검색을 지원한다",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_chat.md",
+   "text": "가입 절차: 학번 입력 없이 바로 시작",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_chat.md",
+   "text": "오류 수집은 Sentry를 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_payment.md",
+   "text": "교재 사진은 최대 3장으로 업로드한다",
+   "topic": "image_limit",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_payment.md",
+   "text": "오류 수집은 Sentry를 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_payment.md",
+   "text": "판매 가격 정책: 정가의 50% 이하로 제한",
+   "topic": "price",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_notification.md",
+   "text": "앱의 대표 색상은 초록색 계열로 한다",
+   "topic": "color",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_notification.md",
+   "text": "알림은 카카오 알림톡으로 보낸다",
+   "topic": "push",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_notification.md",
+   "text": "알림은 앱 내 알림함으로 보낸다",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_admin.md",
+   "text": "서버 테스트는 pytest로 작성한다",
+   "topic": "test_fw",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_admin.md",
+   "text": "서버 테스트는 unittest로 작성한다",
+   "topic": "test_fw",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_admin.md",
+   "text": "채팅은 Firebase 실시간 채팅으로 제공한다",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_profile.md",
+   "text": "코드 리뷰는 PR당 2명 승인을 원칙으로 한다",
+   "topic": "review",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_profile.md",
+   "text": "가입 절차: 약관 동의 후 학번 입력",
+   "topic": "onboarding",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_profile.md",
+   "text": "오류 수집은 Sentry를 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_infra.md",
+   "text": "교재 사진은 최대 10장으로 업로드한다",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_infra.md",
+   "text": "모바일 앱은 Flutter로 개발한다",
+   "topic": "frontend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_infra.md",
+   "text": "리허설 일정은 11월 16일",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_security.md",
+   "text": "앱 이름은 교환서점으로 표기한다",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_security.md",
+   "text": "디자인 시안은 Adobe XD로 관리한다",
+   "topic": "design_tool",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_security.md",
+   "text": "서버는 학교 서버에 배포한다",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ux.md",
+   "text": "데이터베이스는 MongoDB를 사용한다",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ux.md",
+   "text": "결제는 계좌이체 직접 거래로 처리한다",
+   "topic": "payment",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ux.md",
+   "text": "개인정보 보관 기준: 탈퇴 즉시",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_report.md",
+   "text": "판매 가격 정책: 가격 자유 설정",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_report.md",
+   "text": "개인정보 보관 기준: 탈퇴 즉시",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_report.md",
+   "text": "결제는 카카오페이로 처리한다",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ops.md",
+   "text": "개인정보 보관 기준: 탈퇴 후 7일",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ops.md",
+   "text": "교재 검색은 키워드 검색을 지원한다",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_ops.md",
+   "text": "오류 수집은 자체 로그 파일을 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_settings.md",
+   "text": "서버 테스트는 pytest로 작성한다",
+   "topic": "test_fw",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_settings.md",
+   "text": "로그인은 학번과 비밀번호 로그인을 사용한다",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_settings.md",
+   "text": "앱의 대표 색상은 파란색 계열로 한다",
+   "topic": "color",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_support.md",
+   "text": "개인정보 보관 기준: 탈퇴 후 30일",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_support.md",
+   "text": "API 서버는 Django로 개발한다",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_support.md",
+   "text": "거래 장소는 학교 건물 목록 선택으로 선택한다",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_analytics.md",
+   "text": "가입 절차: 약관 동의 후 학번 입력",
+   "topic": "onboarding",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_analytics.md",
+   "text": "CI는 GitLab CI를 사용한다",
+   "topic": "ci",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_analytics.md",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_legal.md",
+   "text": "로그인은 학교 구글 SSO를 사용한다",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_legal.md",
+   "text": "앱 이름은 교환서점으로 표기한다",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_legal.md",
+   "text": "앱 이름은 교환서점으로 표기한다",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_onboarding.md",
+   "text": "리허설 일정은 11월 16일",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_onboarding.md",
+   "text": "최종 발표 일정은 11월 17일",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_onboarding.md",
+   "text": "앱의 대표 색상은 보라색 계열로 한다",
+   "topic": "color",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_release.md",
+   "text": "로그인은 학번과 비밀번호 로그인을 사용한다",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_release.md",
+   "text": "관리자 페이지는 정식 출시 이후로 연기한다",
+   "topic": "admin_release",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_release.md",
+   "text": "오류 수집은 Sentry를 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_01.docx",
+   "text": "이미지는 Cloudinary에 저장한다",
+   "topic": "storage",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_01.docx",
+   "text": "게시글 처리 기준: 신고 5회 누적 시 숨김",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_01.docx",
+   "text": "서버는 학교 서버에 배포한다",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_02.docx",
+   "text": "결제는 토스페이먼츠로 처리한다",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_02.docx",
+   "text": "채팅은 Firebase 실시간 채팅으로 제공한다",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_02.docx",
+   "text": "코드 리뷰는 PR당 1명 승인을 원칙으로 한다",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_03.docx",
+   "text": "교재 검색은 형태소 기반 검색을 지원한다",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_03.docx",
+   "text": "이미지는 Cloudinary에 저장한다",
+   "topic": "storage",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_03.docx",
+   "text": "거래 장소는 학교 건물 목록 선택으로 선택한다",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_04.docx",
+   "text": "서버는 학교 서버에 배포한다",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_04.docx",
+   "text": "API 서버는 Django로 개발한다",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_04.docx",
+   "text": "모바일 앱은 Kotlin Android 네이티브로 개발한다",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_05.docx",
+   "text": "게시글 처리 기준: 신고 3회 누적 시 숨김",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_05.docx",
+   "text": "API 서버는 Spring Boot로 개발한다",
+   "topic": "backend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_05.docx",
+   "text": "결제는 토스페이먼츠로 처리한다",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_06.docx",
+   "text": "코드 리뷰는 PR당 1명 승인을 원칙으로 한다",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_06.docx",
+   "text": "디자인 시안은 Adobe XD로 관리한다",
+   "topic": "design_tool",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_06.docx",
+   "text": "알림은 카카오 알림톡으로 보낸다",
+   "topic": "push",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_07.docx",
+   "text": "CI는 Jenkins를 사용한다",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_07.docx",
+   "text": "최종 발표 일정은 11월 24일",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_07.docx",
+   "text": "이미지는 AWS S3에 저장한다",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_08.docx",
+   "text": "중간 점검 일정은 10월 22일",
+   "topic": "midterm_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_08.docx",
+   "text": "채팅은 Firebase 실시간 채팅으로 제공한다",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_08.docx",
+   "text": "중간 점검 일정은 10월 29일",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_09.docx",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_09.docx",
+   "text": "데이터베이스는 MySQL을 사용한다",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_09.docx",
+   "text": "이미지는 서버 로컬 디스크에 저장한다",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_10.docx",
+   "text": "거래 장소는 카카오맵 API로 선택한다",
+   "topic": "map",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_10.docx",
+   "text": "스탠드업은 매일 오후 9시에 진행한다",
+   "topic": "standup",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_memo_10.docx",
+   "text": "데이터베이스는 PostgreSQL을 사용한다",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_01.xlsx",
+   "text": "이미지는 AWS S3에 저장한다",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_01.xlsx",
+   "text": "모바일 앱은 React Native로 개발한다",
+   "topic": "frontend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_01.xlsx",
+   "text": "스탠드업은 매일 오전 9시 30분에 진행한다",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_02.xlsx",
+   "text": "앱 이름은 BookSwap으로 표기한다",
+   "topic": "app_name",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_02.xlsx",
+   "text": "관리자 페이지는 MVP에 포함한다",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_02.xlsx",
+   "text": "최종 발표 일정은 11월 17일",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_03.xlsx",
+   "text": "게시글 처리 기준: 신고 3회 누적 시 숨김",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_03.xlsx",
+   "text": "데이터베이스는 MySQL을 사용한다",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_03.xlsx",
+   "text": "판매 가격 정책: 정가의 50% 이하로 제한",
+   "topic": "price",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_04.xlsx",
+   "text": "교재 사진은 최대 5장으로 업로드한다",
+   "topic": "image_limit",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_04.xlsx",
+   "text": "모바일 앱은 Flutter로 개발한다",
+   "topic": "frontend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_04.xlsx",
+   "text": "CI는 GitLab CI를 사용한다",
+   "topic": "ci",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_05.xlsx",
+   "text": "디자인 시안은 Figma로 관리한다",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_05.xlsx",
+   "text": "중간 점검 일정은 10월 22일",
+   "topic": "midterm_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_05.xlsx",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_06.xlsx",
+   "text": "관리자 페이지는 MVP에 포함한다",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_06.xlsx",
+   "text": "리허설 일정은 11월 5일",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_06.xlsx",
+   "text": "교재 검색은 키워드와 초성 검색을 지원한다",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_07.xlsx",
+   "text": "스탠드업은 매일 오전 10시에 진행한다",
+   "topic": "standup",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_07.xlsx",
+   "text": "API 서버는 Django로 개발한다",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_07.xlsx",
+   "text": "API 서버는 Django로 개발한다",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_08.xlsx",
+   "text": "오류 수집은 자체 로그 파일을 사용한다",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_08.xlsx",
+   "text": "게시글 처리 기준: 신고 3회 누적 시 숨김",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_08.xlsx",
+   "text": "채팅은 1:1 쪽지 폴링으로 제공한다",
+   "topic": "chat",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_09.xlsx",
+   "text": "관리자 페이지는 MVP에 포함한다",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_09.xlsx",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_09.xlsx",
+   "text": "알림은 앱 내 알림함으로 보낸다",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_10.xlsx",
+   "text": "API 서버는 Spring Boot로 개발한다",
+   "topic": "backend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_10.xlsx",
+   "text": "리허설 일정은 11월 16일",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_spec_10.xlsx",
+   "text": "알림은 앱 내 알림함으로 보낸다",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_01.pptx",
+   "text": "CI는 GitLab CI를 사용한다",
+   "topic": "ci",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_01.pptx",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_02.pptx",
+   "text": "데이터베이스는 MongoDB를 사용한다",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_02.pptx",
+   "text": "디자인 시안은 Figma로 관리한다",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_03.pptx",
+   "text": "앱의 대표 색상은 보라색 계열로 한다",
+   "topic": "color",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_03.pptx",
+   "text": "가입 절차: 학번 입력 없이 바로 시작",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_04.pptx",
+   "text": "모바일 앱은 Kotlin Android 네이티브로 개발한다",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_04.pptx",
+   "text": "모바일 앱은 Kotlin Android 네이티브로 개발한다",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_05.pptx",
+   "text": "판매 가격 정책: 정가의 50% 이하로 제한",
+   "topic": "price",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_05.pptx",
+   "text": "스탠드업은 매일 오전 9시 30분에 진행한다",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_06.pptx",
+   "text": "거래 장소는 학교 건물 목록 선택으로 선택한다",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_06.pptx",
+   "text": "로그인은 이메일 인증을 사용한다",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_07.pptx",
+   "text": "베타 테스트는 11월 12일에 시작한다",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_07.pptx",
+   "text": "코드 리뷰는 PR당 1명 승인을 원칙으로 한다",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_08.pptx",
+   "text": "판매 가격 정책: 정가의 50% 이하로 제한",
+   "topic": "price",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "requirements/requirements_slides_08.pptx",
+   "text": "최종 발표 일정은 11월 10일",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint01.csv",
+   "text": "CloudWatch 연동",
+   "topic": "log",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint01.csv",
+   "text": "가격 입력 검증 구현 (정가의 50% 이하로 제한)",
+   "topic": "price",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint01.csv",
+   "text": "Django 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint01.csv",
+   "text": "베타 테스터 모집 (11월 12일 시작)",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint02.csv",
+   "text": "Jenkins 파이프라인 구성",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint02.csv",
+   "text": "자체 로그 파일 연동",
+   "topic": "log",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint02.csv",
+   "text": "스탠드업 알림 설정 (오전 9시 30분)",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint02.csv",
+   "text": "개인정보 삭제 배치 구현 (탈퇴 후 30일)",
+   "topic": "retention",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint03.csv",
+   "text": "사진 업로드 3장 제한 적용",
+   "topic": "image_limit",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint03.csv",
+   "text": "초록색 계열 팔레트 정리",
+   "topic": "color",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint03.csv",
+   "text": "Django 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint03.csv",
+   "text": "학교 서버 서버 세팅",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint04.csv",
+   "text": "WebSocket 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint04.csv",
+   "text": "Figma 시안 파일 정리",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint04.csv",
+   "text": "초록색 계열 팔레트 정리",
+   "topic": "color",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint04.csv",
+   "text": "가격 입력 검증 구현 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint05.csv",
+   "text": "학번과 비밀번호 로그인 로그인 구현",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint05.csv",
+   "text": "스탠드업 알림 설정 (오전 10시)",
+   "topic": "standup",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint05.csv",
+   "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint05.csv",
+   "text": "가격 입력 검증 구현 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint06.csv",
+   "text": "교환서점 앱 아이콘 제작",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint06.csv",
+   "text": "카카오페이 결제 연동",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint06.csv",
+   "text": "관리자 페이지 개발 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint06.csv",
+   "text": "Firebase 실시간 채팅 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint07.csv",
+   "text": "FCM 푸시 알림 연동",
+   "topic": "push",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint07.csv",
+   "text": "개인정보 삭제 배치 구현 (탈퇴 즉시)",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint07.csv",
+   "text": "중간 점검 자료 작성 (10월 22일)",
+   "topic": "midterm_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint07.csv",
+   "text": "계좌이체 직접 거래 결제 연동",
+   "topic": "payment",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint08.csv",
+   "text": "학교 건물 목록 선택 거래 장소 화면 구현",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint08.csv",
+   "text": "키워드와 초성 검색 구현",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint08.csv",
+   "text": "MySQL 스키마 작성",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint08.csv",
+   "text": "학교 서버 서버 세팅",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint09.csv",
+   "text": "리뷰 규칙 문서화 (PR당 2명 승인)",
+   "topic": "review",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint09.csv",
+   "text": "Jest 테스트 환경 구성",
+   "topic": "test_fw",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint09.csv",
+   "text": "학번과 비밀번호 로그인 로그인 구현",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint09.csv",
+   "text": "관리자 페이지 개발 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint10.csv",
+   "text": "unittest 테스트 환경 구성",
+   "topic": "test_fw",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint10.csv",
+   "text": "스탠드업 알림 설정 (오전 9시 30분)",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint10.csv",
+   "text": "리허설 준비 (11월 16일)",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint10.csv",
+   "text": "가입 화면 구현 (약관 동의 후 학번 입력)",
+   "topic": "onboarding",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint11.csv",
+   "text": "Jest 테스트 환경 구성",
+   "topic": "test_fw",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint11.csv",
+   "text": "Render 서버 세팅",
+   "topic": "deploy",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint11.csv",
+   "text": "베타 테스터 모집 (11월 3일 시작)",
+   "topic": "beta",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint11.csv",
+   "text": "pytest 테스트 환경 구성",
+   "topic": "test_fw",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint12.csv",
+   "text": "발표 자료 준비 (발표일 11월 24일)",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint12.csv",
+   "text": "리허설 준비 (11월 16일)",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint12.csv",
+   "text": "관리자 페이지 개발 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint12.csv",
+   "text": "카카오페이 결제 연동",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint13.csv",
+   "text": "사진 업로드 10장 제한 적용",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint13.csv",
+   "text": "Jenkins 파이프라인 구성",
+   "topic": "ci",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint13.csv",
+   "text": "형태소 기반 검색 구현",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint13.csv",
+   "text": "MongoDB 스키마 작성",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint14.csv",
+   "text": "스탠드업 알림 설정 (오전 9시 30분)",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint14.csv",
+   "text": "발표 자료 준비 (발표일 11월 17일)",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint14.csv",
+   "text": "Cloudinary 이미지 저장 구현",
+   "topic": "storage",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint14.csv",
+   "text": "Figma 시안 파일 정리",
+   "topic": "design_tool",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint15.csv",
+   "text": "서버 로컬 디스크 이미지 저장 구현",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint15.csv",
+   "text": "신고 누적 처리 구현 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint15.csv",
+   "text": "1:1 쪽지 폴링 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint15.csv",
+   "text": "앱 내 알림함 알림 연동",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint16.csv",
+   "text": "교환서점 앱 아이콘 제작",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint16.csv",
+   "text": "중간 점검 자료 작성 (10월 22일)",
+   "topic": "midterm_date",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint16.csv",
+   "text": "pytest 테스트 환경 구성",
+   "topic": "test_fw",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint16.csv",
+   "text": "학교 건물 목록 선택 거래 장소 화면 구현",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint17.csv",
+   "text": "Django 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint17.csv",
+   "text": "발표 자료 준비 (발표일 11월 24일)",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint17.csv",
+   "text": "리뷰 규칙 문서화 (PR당 1명 승인)",
+   "topic": "review",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint17.csv",
+   "text": "Kotlin Android 네이티브 화면 개발",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint18.csv",
+   "text": "베타 테스터 모집 (11월 12일 시작)",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint18.csv",
+   "text": "스탠드업 알림 설정 (오전 10시)",
+   "topic": "standup",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint18.csv",
+   "text": "개인정보 삭제 배치 구현 (탈퇴 후 30일)",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint18.csv",
+   "text": "Render 서버 세팅",
+   "topic": "deploy",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint19.csv",
+   "text": "FCM 푸시 알림 연동",
+   "topic": "push",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint19.csv",
+   "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint19.csv",
+   "text": "토스페이먼츠 결제 연동",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint19.csv",
+   "text": "개인정보 삭제 배치 구현 (탈퇴 즉시)",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint20.csv",
+   "text": "형태소 기반 검색 구현",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint20.csv",
+   "text": "서버 로컬 디스크 이미지 저장 구현",
+   "topic": "storage",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint20.csv",
+   "text": "신고 누적 처리 구현 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint20.csv",
+   "text": "키워드와 초성 검색 구현",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint21.csv",
+   "text": "리뷰 규칙 문서화 (PR당 2명 승인)",
+   "topic": "review",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint21.csv",
+   "text": "학교 서버 서버 세팅",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint21.csv",
+   "text": "Adobe XD 시안 파일 정리",
+   "topic": "design_tool",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint21.csv",
+   "text": "PostgreSQL 스키마 작성",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint22.csv",
+   "text": "형태소 기반 검색 구현",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint22.csv",
+   "text": "중간 점검 자료 작성 (10월 29일)",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint22.csv",
+   "text": "베타 테스터 모집 (11월 3일 시작)",
+   "topic": "beta",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint22.csv",
+   "text": "1:1 쪽지 폴링 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/tasks_sprint23.csv",
+   "text": "Figma 시안 파일 정리",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint23.csv",
+   "text": "신고 누적 처리 구현 (신고 5회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint23.csv",
+   "text": "보라색 계열 팔레트 정리",
+   "topic": "color",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint23.csv",
+   "text": "GitHub Actions 파이프라인 구성",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint24.csv",
+   "text": "교환서점 앱 아이콘 제작",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint24.csv",
+   "text": "가격 입력 검증 구현 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/tasks_sprint24.csv",
+   "text": "발표 자료 준비 (발표일 11월 10일)",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_01.csv",
+   "text": "학교 구글 SSO 로그인 구현",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_01.csv",
+   "text": "리허설 준비 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_01.csv",
+   "text": "서버 로컬 디스크 이미지 저장 구현",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_02.csv",
+   "text": "FastAPI 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_02.csv",
+   "text": "리허설 준비 (11월 16일)",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_02.csv",
+   "text": "Firebase 실시간 채팅 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_03.csv",
+   "text": "키워드 검색 구현",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_03.csv",
+   "text": "스탠드업 알림 설정 (오후 9시)",
+   "topic": "standup",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_03.csv",
+   "text": "중간 점검 자료 작성 (10월 22일)",
+   "topic": "midterm_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_04.csv",
+   "text": "리뷰 규칙 문서화 (PR당 1명 승인)",
+   "topic": "review",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_04.csv",
+   "text": "베타 테스터 모집 (11월 12일 시작)",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_04.csv",
+   "text": "카카오맵 API 거래 장소 화면 구현",
+   "topic": "map",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_05.csv",
+   "text": "Kotlin Android 네이티브 화면 개발",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_05.csv",
+   "text": "Kotlin Android 네이티브 화면 개발",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_05.csv",
+   "text": "학교 건물 목록 선택 거래 장소 화면 구현",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_06.csv",
+   "text": "관리자 페이지 개발 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_06.csv",
+   "text": "Django 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_06.csv",
+   "text": "Jenkins 파이프라인 구성",
+   "topic": "ci",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_07.csv",
+   "text": "중간 점검 자료 작성 (10월 22일)",
+   "topic": "midterm_date",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_07.csv",
+   "text": "가입 화면 구현 (약관 동의 후 학번 입력)",
+   "topic": "onboarding",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/jira_export_07.csv",
+   "text": "가입 화면 구현 (학번 입력 없이 바로 시작)",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_08.csv",
+   "text": "Spring Boot 서버 프로젝트 구성",
+   "topic": "backend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_08.csv",
+   "text": "가입 화면 구현 (약관 동의 후 학번 입력)",
+   "topic": "onboarding",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/jira_export_08.csv",
+   "text": "학교 구글 SSO 로그인 구현",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_01.md",
+   "text": "BookSwap 앱 아이콘 제작",
+   "topic": "app_name",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_01.md",
+   "text": "Sentry 연동",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_01.md",
+   "text": "CloudWatch 연동",
+   "topic": "log",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_02.md",
+   "text": "리뷰 규칙 문서화 (PR당 1명 승인)",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_02.md",
+   "text": "토스페이먼츠 결제 연동",
+   "topic": "payment",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_02.md",
+   "text": "리허설 준비 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_03.md",
+   "text": "이메일 인증 로그인 구현",
+   "topic": "auth",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_03.md",
+   "text": "사진 업로드 10장 제한 적용",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_03.md",
+   "text": "학번과 비밀번호 로그인 로그인 구현",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_04.md",
+   "text": "파란색 계열 팔레트 정리",
+   "topic": "color",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_04.md",
+   "text": "Firebase 실시간 채팅 채팅 서버 구현",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_04.md",
+   "text": "개인정보 삭제 배치 구현 (탈퇴 후 30일)",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_05.md",
+   "text": "가격 입력 검증 구현 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_05.md",
+   "text": "관리자 페이지 개발 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_05.md",
+   "text": "네이버 지도 API 거래 장소 화면 구현",
+   "topic": "map",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_06.md",
+   "text": "베타 테스터 모집 (11월 12일 시작)",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_06.md",
+   "text": "사진 업로드 10장 제한 적용",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_06.md",
+   "text": "MongoDB 스키마 작성",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_07.md",
+   "text": "신고 누적 처리 구현 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_07.md",
+   "text": "FCM 푸시 알림 연동",
+   "topic": "push",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_07.md",
+   "text": "가격 입력 검증 구현 (정가의 50% 이하로 제한)",
+   "topic": "price",
+   "expected": "HISTORICAL"
+  },
+  {
+   "file": "tasks/backlog_08.md",
+   "text": "리허설 준비 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_08.md",
+   "text": "중간 점검 자료 작성 (10월 22일)",
+   "topic": "midterm_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tasks/backlog_08.md",
+   "text": "Kotlin Android 네이티브 화면 개발",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_auth.md",
+   "text": "AWS Lightsail 배포 점검 예정",
+   "topic": "deploy",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_auth.md",
+   "text": "개인정보 삭제 테스트 (탈퇴 즉시)",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_auth.md",
+   "text": "중간 점검 시연 확인 (10월 29일)",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_home.md",
+   "text": "Jest 실행 확인",
+   "topic": "test_fw",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_home.md",
+   "text": "브랜치 보호 규칙 확인 (PR당 2명 승인)",
+   "topic": "review",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_home.md",
+   "text": "MySQL 연결 테스트 예정",
+   "topic": "database",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_search.md",
+   "text": "스탠드업 시간 공지 확인 (오전 10시)",
+   "topic": "standup",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_search.md",
+   "text": "MongoDB 연결 테스트 예정",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_search.md",
+   "text": "unittest 실행 확인",
+   "topic": "test_fw",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_trade.md",
+   "text": "GitLab CI 빌드 통과 확인",
+   "topic": "ci",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_trade.md",
+   "text": "개인정보 삭제 테스트 (탈퇴 즉시)",
+   "topic": "retention",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_trade.md",
+   "text": "학교 서버 배포 점검 예정",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_chat.md",
+   "text": "학번과 비밀번호 로그인 로그인 테스트 예정",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_chat.md",
+   "text": "Kotlin Android 네이티브 빌드 테스트 예정",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_chat.md",
+   "text": "발표 시연 점검 (발표일 11월 24일)",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_payment.md",
+   "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_payment.md",
+   "text": "발표 시연 점검 (발표일 11월 24일)",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_payment.md",
+   "text": "신고 누적 숨김 테스트 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_notification.md",
+   "text": "계좌이체 직접 거래 결제 승인 테스트 예정",
+   "topic": "payment",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_notification.md",
+   "text": "관리자 페이지 테스트 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_notification.md",
+   "text": "학교 건물 목록 선택 장소 선택 테스트 예정",
+   "topic": "map",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_admin.md",
+   "text": "Django API 응답 테스트 예정",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_admin.md",
+   "text": "React Native 빌드 테스트 예정",
+   "topic": "frontend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_admin.md",
+   "text": "신고 누적 숨김 테스트 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_profile.md",
+   "text": "가격 입력 검증 테스트 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_profile.md",
+   "text": "카카오페이 결제 승인 테스트 예정",
+   "topic": "payment",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_profile.md",
+   "text": "Figma 시안 검수 확인",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_infra.md",
+   "text": "MongoDB 연결 테스트 예정",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_infra.md",
+   "text": "Firebase 실시간 채팅 메시지 전달 테스트 예정",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_infra.md",
+   "text": "앱 이름 BookSwap 표기 확인",
+   "topic": "app_name",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_security.md",
+   "text": "베타 테스트 시나리오 (11월 3일 시작)",
+   "topic": "beta",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_security.md",
+   "text": "관리자 페이지 테스트 (MVP에 포함)",
+   "topic": "admin_release",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_security.md",
+   "text": "사진 3장 초과 업로드 차단 테스트 예정",
+   "topic": "image_limit",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ux.md",
+   "text": "베타 테스트 시나리오 (11월 3일 시작)",
+   "topic": "beta",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ux.md",
+   "text": "앱 내 알림함 알림 수신 테스트 예정",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ux.md",
+   "text": "unittest 실행 확인",
+   "topic": "test_fw",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_report.md",
+   "text": "GitHub Actions 빌드 통과 확인",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_report.md",
+   "text": "파란색 계열 테마 적용 확인",
+   "topic": "color",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_report.md",
+   "text": "이메일 인증 로그인 테스트 예정",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ops.md",
+   "text": "MongoDB 연결 테스트 예정",
+   "topic": "database",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ops.md",
+   "text": "앱 내 알림함 알림 수신 테스트 예정",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_ops.md",
+   "text": "스탠드업 시간 공지 확인 (오전 9시 30분)",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_settings.md",
+   "text": "Jenkins 빌드 통과 확인",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_settings.md",
+   "text": "Cloudinary 이미지 업로드 테스트 예정",
+   "topic": "storage",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_settings.md",
+   "text": "브랜치 보호 규칙 확인 (PR당 1명 승인)",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_support.md",
+   "text": "개인정보 삭제 테스트 (탈퇴 후 30일)",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_support.md",
+   "text": "스탠드업 시간 공지 확인 (오전 9시 30분)",
+   "topic": "standup",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_plan_support.md",
+   "text": "가격 입력 검증 테스트 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_01.csv",
+   "text": "계좌이체 직접 거래 결제 승인 테스트 예정",
+   "topic": "payment",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_01.csv",
+   "text": "관리자 페이지 테스트 (정식 출시 이후로 연기)",
+   "topic": "admin_release",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_01.csv",
+   "text": "신고 누적 숨김 테스트 (신고 3회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_02.csv",
+   "text": "카카오맵 API 장소 선택 테스트 예정",
+   "topic": "map",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_02.csv",
+   "text": "학번과 비밀번호 로그인 로그인 테스트 예정",
+   "topic": "auth",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_02.csv",
+   "text": "베타 테스트 시나리오 (11월 12일 시작)",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_03.csv",
+   "text": "개인정보 삭제 테스트 (탈퇴 후 7일)",
+   "topic": "retention",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_03.csv",
+   "text": "보라색 계열 테마 적용 확인",
+   "topic": "color",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_03.csv",
+   "text": "사진 10장 초과 업로드 차단 테스트 예정",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_04.csv",
+   "text": "계좌이체 직접 거래 결제 승인 테스트 예정",
+   "topic": "payment",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_04.csv",
+   "text": "중간 점검 시연 확인 (10월 29일)",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_04.csv",
+   "text": "Figma 시안 검수 확인",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_05.csv",
+   "text": "Firebase 실시간 채팅 메시지 전달 테스트 예정",
+   "topic": "chat",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_05.csv",
+   "text": "앱 이름 교환서점 표기 확인",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_05.csv",
+   "text": "GitHub Actions 빌드 통과 확인",
+   "topic": "ci",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_06.csv",
+   "text": "학교 구글 SSO 로그인 테스트 예정",
+   "topic": "auth",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_06.csv",
+   "text": "네이버 지도 API 장소 선택 테스트 예정",
+   "topic": "map",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_07.csv",
+   "text": "형태소 기반 검색 정확도 테스트 예정",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_07.csv",
+   "text": "리허설 시연 점검 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_08.csv",
+   "text": "중간 점검 시연 확인 (10월 29일)",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_08.csv",
+   "text": "신고 누적 숨김 테스트 (신고 5회 누적 시 숨김)",
+   "topic": "report",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_09.csv",
+   "text": "사진 10장 초과 업로드 차단 테스트 예정",
+   "topic": "image_limit",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_09.csv",
+   "text": "형태소 기반 검색 정확도 테스트 예정",
+   "topic": "search",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_10.csv",
+   "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_10.csv",
+   "text": "Jest 실행 확인",
+   "topic": "test_fw",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_11.csv",
+   "text": "학교 서버 배포 점검 예정",
+   "topic": "deploy",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_11.csv",
+   "text": "발표 시연 점검 (발표일 11월 24일)",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_12.csv",
+   "text": "키워드 검색 정확도 테스트 예정",
+   "topic": "search",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_12.csv",
+   "text": "Cloudinary 이미지 업로드 테스트 예정",
+   "topic": "storage",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_13.csv",
+   "text": "가입 흐름 테스트 (약관 동의 후 학번 입력)",
+   "topic": "onboarding",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_13.csv",
+   "text": "자체 로그 파일 오류 수집 확인",
+   "topic": "log",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_14.csv",
+   "text": "WebSocket 메시지 전달 테스트 예정",
+   "topic": "chat",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_cases_14.csv",
+   "text": "브랜치 보호 규칙 확인 (PR당 1명 승인)",
+   "topic": "review",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_01.md",
+   "text": "AWS EC2 배포 점검 예정",
+   "topic": "deploy",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_01.md",
+   "text": "CloudWatch 오류 수집 확인",
+   "topic": "log",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_02.md",
+   "text": "서버 로컬 디스크 이미지 업로드 테스트 예정",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_02.md",
+   "text": "CloudWatch 오류 수집 확인",
+   "topic": "log",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_03.md",
+   "text": "초록색 계열 테마 적용 확인",
+   "topic": "color",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_03.md",
+   "text": "가격 입력 검증 테스트 (가격 자유 설정)",
+   "topic": "price",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_04.md",
+   "text": "리허설 시연 점검 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_04.md",
+   "text": "리허설 시연 점검 (11월 16일)",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_05.md",
+   "text": "리허설 시연 점검 (11월 5일)",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_05.md",
+   "text": "앱 내 알림함 알림 수신 테스트 예정",
+   "topic": "push",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_06.md",
+   "text": "가입 흐름 테스트 (학번 입력 없이 바로 시작)",
+   "topic": "onboarding",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/qa_checklist_06.md",
+   "text": "앱 이름 교환서점 표기 확인",
+   "topic": "app_name",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_report_01.pdf",
+   "text": "Spring Boot API 응답 테스트 예정",
+   "topic": "backend",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_report_01.pdf",
+   "text": "Kotlin Android 네이티브 빌드 테스트 예정",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_report_02.pdf",
+   "text": "Kotlin Android 네이티브 빌드 테스트 예정",
+   "topic": "frontend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_report_02.pdf",
+   "text": "Figma 시안 검수 확인",
+   "topic": "design_tool",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_report_03.pdf",
+   "text": "카카오 알림톡 알림 수신 테스트 예정",
+   "topic": "push",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_report_03.pdf",
+   "text": "브랜치 보호 규칙 확인 (PR당 2명 승인)",
+   "topic": "review",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "tests/test_report_04.pdf",
+   "text": "AWS S3 이미지 업로드 테스트 예정",
+   "topic": "storage",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "tests/test_report_04.pdf",
+   "text": "Django API 응답 테스트 예정",
+   "topic": "backend",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase1.csv",
+   "text": "베타 테스트 시작 11월 12일",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase2.csv",
+   "text": "리허설 11월 16일",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase3.csv",
+   "text": "중간 점검 10월 29일",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase4.csv",
+   "text": "리허설 11월 5일",
+   "topic": "rehearsal",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase5.csv",
+   "text": "최종 발표 11월 24일",
+   "topic": "final_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase6.csv",
+   "text": "최종 발표 11월 10일",
+   "topic": "final_date",
+   "expected": "INCONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase7.csv",
+   "text": "베타 테스트 시작 11월 12일",
+   "topic": "beta",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/schedule_phase8.csv",
+   "text": "중간 점검 10월 29일",
+   "topic": "midterm_date",
+   "expected": "CONSISTENT"
+  },
+  {
+   "file": "schedule/milestones_1.md",
+   "text": "리허설 11월 16일",
+   "topic": "rehearsal",
+   "expected": "CONSISTENT"
+  }
+ ]
+}

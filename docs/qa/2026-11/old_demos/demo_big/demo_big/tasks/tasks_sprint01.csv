@@ -1,0 +1,8 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T0101,CloudWatch 연동,IN_PROGRESS,민준,,,,
+T0102,가격 입력 검증 구현 (정가의 50% 이하로 제한),DONE,민준,,,,
+T0103,교재 상세 화면 디자인,IN_PROGRESS,도윤,,,,
+T0104,Django 서버 프로젝트 구성,DONE,하은,,,,
+T0105,API 문서 정리,TODO,지호,,,,
+T0106,README 작성,IN_PROGRESS,민준,,,,
+T0107,베타 테스터 모집 (11월 12일 시작),IN_PROGRESS,하은,,,,

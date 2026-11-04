@@ -1,0 +1,48 @@
+{
+  "artifacts": [
+    {
+      "id": "tasks:T1",
+      "kind": "TASK",
+      "text": "최종 발표 11월 10일 참석",
+      "source_doc": "tasks.csv",
+      "root": "C:\\qa_work\\suite\\F04",
+      "label": "INCONSISTENT",
+      "score": 0.18
+    },
+    {
+      "id": "tasks:T1",
+      "kind": "TASK",
+      "text": "최종 발표 11월 10일 참석",
+      "source_doc": "tasks.csv",
+      "root": "C:\\qa_work\\suite\\F07",
+      "label": "INCONSISTENT",
+      "score": 0.18
+    },
+    {
+      "id": "test-plan:06319f",
+      "kind": "TEST",
+      "text": "최종 발표 일정을 11월 17일로 표시하는지 확인한다.",
+      "source_doc": "test_plan.md",
+      "root": "C:\\qa_work\\suite\\F04",
+      "label": "CONSISTENT",
+      "score": 0.16
+    }
+  ],
+  "decisions": [
+    {
+      "topic": "misc",
+      "text": "상품 사진은 최대 5장으로, 로그인은 학교 구글 SSO로, 최종 발표는 11월 17일로 변경하기로 확정한다.",
+      "latest": "상품 사진은 최대 5장으로, 로그인은 학교 구글 SSO로, 최종 발표는 11월 17일로 변경하기로 확정한다.",
+      "date": "2026-10-20",
+      "judge": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "root": "C:\\qa_work\\suite\\F07",
+      "score": 0.18
+    }
+  ],
+  "checked_kinds": [
+    "REQUIREMENT",
+    "SCHEDULE",
+    "TASK",
+    "TEST"
+  ]
+}

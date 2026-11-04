@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "granted": false,
+  "available": false,
+  "account": "",
+  "max_recipients": 10,
+  "per_hour": 20,
+  "per_day": 100,
+  "max_body": 20000,
+  "undo_seconds": 5.0,
+  "used_hour": 0,
+  "used_day": 0
+}

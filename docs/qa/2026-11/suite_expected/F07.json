@@ -1,0 +1,16 @@
+{
+  "id": "F07",
+  "title": "복합 결정",
+  "stale_substrings": [
+    "FR-01",
+    "FR-02",
+    "최종 발표 11월 10일",
+    "사진 3장 제한과"
+  ],
+  "correct_substrings": [
+    "FR-03",
+    "학교 구글 SSO 콜백"
+  ],
+  "root": "C:\\qa_work\\suite\\F07",
+  "question_expected": false
+}

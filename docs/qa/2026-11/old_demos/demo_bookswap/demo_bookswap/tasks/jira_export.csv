@@ -1,0 +1,8 @@
+﻿Issue key,Summary,Status,Assignee,Due date
+BS-101,홈 화면 와이어프레임 수정,In Progress,하은,2026-10-26
+BS-102,이메일 인증 화면 디자인,To Do,하은,2026-10-27
+BS-103,SSO 로그인 버튼 디자인,To Do,하은,2026-10-27
+BS-104,React Native 앱 빌드 환경 구성,Done,도윤,2026-10-04
+BS-105,Flutter 앱 빌드 환경 구성,In Progress,도윤,2026-10-28
+BS-106,채팅 화면 UI 개발,To Do,도윤,2026-11-02
+BS-107,초성 검색 테스트 데이터 준비,To Do,서연,2026-10-30
