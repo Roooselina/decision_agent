@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T0801,README 작성,IN_PROGRESS,민준,,,,
+T0802,학교 건물 목록 선택 거래 장소 화면 구현,IN_PROGRESS,서연,,,,
+T0803,키워드와 초성 검색 구현,TODO,도윤,mvp,search,,
+T0804,API 문서 정리,TODO,지호,,,,
+T0805,버그 리스트 정리,TODO,도윤,,,,
+T0806,회원 탈퇴 화면 구현,IN_PROGRESS,도윤,,,,
+T0807,MySQL 스키마 작성,TODO,하은,,,,
+T0808,학교 서버 서버 세팅,DONE,지호,,,,

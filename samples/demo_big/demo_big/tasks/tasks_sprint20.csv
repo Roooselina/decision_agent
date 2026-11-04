@@ -1,0 +1,8 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T2001,교재 상세 화면 디자인,TODO,도윤,,,,
+T2002,형태소 기반 검색 구현,DONE,도윤,mvp,search,,
+T2003,서버 로컬 디스크 이미지 저장 구현,DONE,지호,,,,
+T2004,신고 누적 처리 구현 (신고 3회 누적 시 숨김),IN_PROGRESS,하은,mvp,admin,admin,
+T2005,키워드와 초성 검색 구현,TODO,민준,mvp,search,,
+T2006,회원 탈퇴 화면 구현,IN_PROGRESS,도윤,,,,
+T2007,README 작성,TODO,지호,,,,

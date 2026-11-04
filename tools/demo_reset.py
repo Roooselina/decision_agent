@@ -39,6 +39,7 @@ from decision_agent.desktop.statedump import read_settings
 
 REPO = Path(__file__).resolve().parent.parent
 DOWNLOADS = Path.home() / "Downloads"
+SAMPLES = REPO / "samples"  # demo_bookswap / demo_big ship here, in the same layout as under Downloads
 DEFAULT_VARIANT = "demo_bookswap"
 WORK = Path.home() / "AppData" / "Local" / "DecisionAgent_demo"
 
@@ -72,7 +73,13 @@ VARIANTS = {
 
 
 def folder_of(variant: str) -> Path:
-    return VARIANTS[variant]["root"]
+    root = VARIANTS[variant]["root"]
+    shipped = SAMPLES / variant
+    if not root.exists() and shipped.is_dir():
+        # First run on a fresh clone: put the shipped sample where the demo expects it.
+        shutil.copytree(shipped, root)
+        print(f"샘플 폴더를 만들었습니다: {root} (samples/{variant} 복사)")
+    return root
 
 
 def answer_key(variant: str) -> list[dict] | None:
@@ -120,8 +127,10 @@ def ensure_pristine(variant: str) -> Path:
     if pristine.exists():
         return pristine
     if VARIANTS[variant]["generator"] is None:
-        shutil.copytree(folder_of(variant), pristine)
-        print(f"원본 사본을 만들었습니다: {pristine} (지금 폴더 기준)")
+        shipped = SAMPLES / variant
+        source = shipped if shipped.is_dir() else folder_of(variant)
+        shutil.copytree(source, pristine)
+        print(f"원본 사본을 만들었습니다: {pristine} ({'samples/' + variant if source == shipped else '지금 폴더'} 기준)")
         return pristine
     fresh_root = Path(tempfile.mkdtemp(prefix="demo_fresh_"))
     # The generator needs the document libraries of the development environment.

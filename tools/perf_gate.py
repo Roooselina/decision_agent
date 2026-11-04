@@ -54,6 +54,8 @@ def demo_big() -> list[str]:
     from decision_agent.desktop.state import StateDB
 
     pack = DOWNLOADS / "demo_big"
+    if not pack.exists():
+        pack = ROOT / "samples" / "demo_big"
     key = json.loads((pack / "demo_big_answer_key.json").read_text(encoding="utf-8"))
     work = Path(tempfile.mkdtemp(prefix="perf_gate_")) / "demo_big"
     shutil.copytree(pack / "demo_big", work)

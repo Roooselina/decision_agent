@@ -1,0 +1,16 @@
+From: seoyeon@example.com
+To: team@example.com
+Subject: 5월 11일 회의 결과 공유
+Date: Mon, 11 May 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 5월 11일 회의 결과를 공유합니다.
+
+2026-05-11 회의 결정
+- CI는 GitHub Actions를 사용한다.
+- 판매 가격은 정가의 50% 이하로 제한한다.
+- 데이터베이스는 MySQL을 사용한다.
+- 거래 장소 선택은 카카오맵 API로 한다.
+- 채팅은 WebSocket로 구현한다.
+
+서연 드림

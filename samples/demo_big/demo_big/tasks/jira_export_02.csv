@@ -1,0 +1,8 @@
+﻿Issue key,Summary,Status,Assignee,Due date
+BS-2501,FastAPI 서버 프로젝트 구성,Done,민준,2026-10-29
+BS-2502,홈 화면 레이아웃 정리,Done,민준,2026-11-07
+BS-2503,회원 탈퇴 화면 구현,To Do,도윤,2026-11-21
+BS-2504,리허설 준비 (11월 16일),To Do,하은,2026-11-06
+BS-2505,README 작성,To Do,하은,2026-11-21
+BS-2506,교재 상세 화면 디자인,In Progress,서연,2026-11-29
+BS-2507,Firebase 실시간 채팅 채팅 서버 구현,In Progress,민준,2026-11-19

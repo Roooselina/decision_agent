@@ -1,0 +1,6 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T2401,홈 화면 레이아웃 정리,IN_PROGRESS,서연,,,,
+T2402,교환서점 앱 아이콘 제작,DONE,도윤,,,,
+T2403,버그 리스트 정리,TODO,지호,,,,
+T2404,가격 입력 검증 구현 (가격 자유 설정),IN_PROGRESS,하은,,,,
+T2405,발표 자료 준비 (발표일 11월 10일),TODO,서연,,,,

@@ -1,0 +1,16 @@
+From: seoyeon@example.com
+To: team@example.com
+Subject: 5월 25일 회의 결과 공유
+Date: Mon, 25 May 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 5월 25일 회의 결과를 공유합니다.
+
+2026-05-25 회의 결정
+- API 서버는 FastAPI로 개발한다.
+- 앱의 대표 색상은 파란색 계열로 한다.
+- 코드 리뷰는 PR당 1명 승인을 원칙으로 한다.
+- 리허설은 11월 5일에 한다.
+- 서버 배포는 AWS EC2에서 한다.
+
+서연 드림

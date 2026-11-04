@@ -263,6 +263,8 @@ decision-agent run                              # 트레이 + 감시 + 대시보
 
 메일은 앱이 켜져 있는 동안 스스로 새로 고쳐집니다(기본 60초, 30초에서 10분까지). Gmail은 users.history.list, Outlook은 delta 쿼리, IMAP은 UIDNEXT로 바뀐 것이 있는지만 먼저 묻고, 새 메일이 있을 때만 본문을 읽습니다. 이 과정에서는 모델을 부르지 않습니다. AI 분석이 켜진 소스에 새 메일이 오면 마지막 메일 뒤 30초가 지나 한 번 점검하며, 이때 비용 프로필, 이전 판정 재사용, 확인 기준이 그대로 적용됩니다. 로그인이 만료되면 확인을 멈추고 다시 로그인하라고 알립니다.
 
+샘플 데이터 `samples/demo_bookswap`(시연용, 46개 파일)과 `samples/demo_big`(벤치마크용, 355개 파일)은 저장소에 들어 있습니다. 둘 다 가상의 프로젝트이며 메일 주소는 모두 `example.com`입니다. `tools/demo_reset.py`는 `~/Downloads/demo_bookswap`이 없으면 `samples/`에서 복사해 만들고, `tools/perf_gate.py`는 `~/Downloads/demo_big`이 없으면 `samples/demo_big`을 씁니다.
+
 캡스톤 데모(`python tools/make_demo_capstone.py`)는 `~/Downloads/demo_capstone`(약 40개 파일)과 `~/Downloads/demo_capstone_full`(120개 파일)을 만들고 정답표와 구글 캘린더 가져오기 파일을 폴더 밖에 둡니다. 메일 스레드 다섯 개는 `tools/seed_mail_threads.py`(미리보기가 기본, `--send`일 때만 보냄)나 `tools/mail_thread_kit.html`로 보낼 수 있습니다. `python tools/bench_demo.py <폴더> <정답표>`는 정답표를 읽는 모의 모델로 파이프라인이 반영 안 된 줄에 닿는지 확인하며, 실제 모델의 정확도를 뜻하지 않습니다.
 
 Gmail이 기대와 다르게 동작하면 읽기 전용 진단 도구를 실행해 보세요: `python tools/diag_gmail.py [검색어]`. 저장된 로그인으로 연결된 계정, 있는 라벨, 설정한 라벨이 돌려주는 메일, 검색어가 든 메일이 계정 어딘가에 있는지를 콘솔에 출력합니다. 아무것도 저장하거나 보내거나 표시를 바꾸지 않고, 토큰은 출력하지 않습니다.

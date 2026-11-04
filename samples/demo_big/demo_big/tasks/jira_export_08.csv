@@ -1,0 +1,6 @@
+﻿Issue key,Summary,Status,Assignee,Due date
+BS-3101,Spring Boot 서버 프로젝트 구성,To Do,지호,2026-10-30
+BS-3102,회원 탈퇴 화면 구현,In Progress,지호,2026-11-16
+BS-3103,가입 화면 구현 (약관 동의 후 학번 입력),To Do,하은,2026-11-28
+BS-3104,교재 상세 화면 디자인,Done,지호,2026-11-11
+BS-3105,학교 구글 SSO 로그인 구현,In Progress,서연,2026-11-18

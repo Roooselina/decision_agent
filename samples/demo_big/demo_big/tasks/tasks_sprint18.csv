@@ -1,0 +1,8 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T1801,버그 리스트 정리,TODO,도윤,,,,
+T1802,베타 테스터 모집 (11월 12일 시작),DONE,서연,,,,
+T1803,스탠드업 알림 설정 (오전 10시),TODO,도윤,,,,
+T1804,개인정보 삭제 배치 구현 (탈퇴 후 30일),IN_PROGRESS,민준,,,,
+T1805,README 작성,TODO,지호,,,,
+T1806,Render 서버 세팅,TODO,서연,,,,
+T1807,홈 화면 레이아웃 정리,IN_PROGRESS,지호,,,,

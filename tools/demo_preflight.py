@@ -25,7 +25,7 @@ from decision_agent.desktop.paths import app_home
 from decision_agent.desktop.secrets import get_api_key
 from decision_agent.desktop.statedump import read_settings
 
-DEFAULT_FOLDER = r"C:\Users\kuroc\Downloads\demo_bookswap"
+DEFAULT_FOLDER = str(Path.home() / "Downloads" / "demo_bookswap")
 REPO = Path(__file__).resolve().parent.parent
 WEBVIEW2_ID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 

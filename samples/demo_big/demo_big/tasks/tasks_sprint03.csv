@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T0301,교재 상세 화면 디자인,IN_PROGRESS,하은,,,,
+T0302,사진 업로드 3장 제한 적용,DONE,도윤,,,,
+T0303,초록색 계열 팔레트 정리,DONE,지호,,,,
+T0304,API 문서 정리,DONE,도윤,,,,
+T0305,버그 리스트 정리,DONE,서연,,,,
+T0306,Django 서버 프로젝트 구성,IN_PROGRESS,하은,,,,
+T0307,회원 탈퇴 화면 구현,TODO,민준,,,,
+T0308,학교 서버 서버 세팅,IN_PROGRESS,도윤,,,,

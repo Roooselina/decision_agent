@@ -1,0 +1,16 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T01,학교 구글 SSO 로그인 구현,IN_PROGRESS,민준,mvp,login,,
+T02,이메일 인증 메일 발송 구현,TODO,민준,mvp,login,,
+T03,Flutter 교재 목록 화면 개발,IN_PROGRESS,도윤,,,,
+T04,React Native 거래 상세 화면 개발,TODO,도윤,,,,
+T05,토스페이먼츠 결제 연동,TODO,지호,mvp,payment,,
+T06,계좌이체 안내 화면 개발,TODO,하은,mvp,payment,,
+T07,WebSocket 채팅 서버 구현,IN_PROGRESS,지호,mvp,chat,,
+T08,1:1 쪽지 API 구현,TODO,지호,mvp,chat,,
+T09,FCM 푸시 알림 연동,DONE,서연,,,,
+T10,초성 검색 구현,TODO,서연,,search,,
+T11,관리자 신고 처리 페이지 개발,TODO,하은,mvp,admin,admin,
+T12,교재 사진 업로드 3장 제한 적용,DONE,도윤,,,,
+T13,AWS EC2 서버 세팅,IN_PROGRESS,지호,,,,production
+T14,PostgreSQL 마이그레이션 작성,DONE,민준,,,,
+T15,MySQL 스키마 설계,DONE,민준,,,,

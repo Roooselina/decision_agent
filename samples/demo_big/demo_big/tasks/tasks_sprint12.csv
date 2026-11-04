@@ -1,0 +1,8 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T1201,교재 상세 화면 디자인,TODO,도윤,,,,
+T1202,버그 리스트 정리,TODO,하은,,,,
+T1203,발표 자료 준비 (발표일 11월 24일),DONE,서연,,,,
+T1204,홈 화면 레이아웃 정리,TODO,도윤,,,,
+T1205,리허설 준비 (11월 16일),DONE,도윤,,,,
+T1206,관리자 페이지 개발 (MVP에 포함),DONE,민준,mvp,admin,admin,
+T1207,카카오페이 결제 연동,TODO,도윤,mvp,payment,,

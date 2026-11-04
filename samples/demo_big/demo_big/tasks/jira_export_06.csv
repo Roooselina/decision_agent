@@ -1,0 +1,8 @@
+﻿Issue key,Summary,Status,Assignee,Due date
+BS-2901,교재 상세 화면 디자인,In Progress,도윤,2026-11-29
+BS-2902,README 작성,In Progress,도윤,2026-11-04
+BS-2903,관리자 페이지 개발 (MVP에 포함),Done,민준,2026-12-01
+BS-2904,회원 탈퇴 화면 구현,To Do,민준,2026-11-08
+BS-2905,Django 서버 프로젝트 구성,In Progress,하은,2026-12-02
+BS-2906,Jenkins 파이프라인 구성,Done,민준,2026-11-19
+BS-2907,API 문서 정리,To Do,지호,2026-11-11

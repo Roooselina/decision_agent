@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T1501,서버 로컬 디스크 이미지 저장 구현,IN_PROGRESS,도윤,,,,
+T1502,신고 누적 처리 구현 (신고 3회 누적 시 숨김),TODO,서연,mvp,admin,admin,
+T1503,README 작성,DONE,서연,,,,
+T1504,1:1 쪽지 폴링 채팅 서버 구현,TODO,도윤,mvp,chat,,
+T1505,홈 화면 레이아웃 정리,TODO,하은,,,,
+T1506,앱 내 알림함 알림 연동,IN_PROGRESS,민준,,,,
+T1507,버그 리스트 정리,DONE,서연,,,,
+T1508,교재 상세 화면 디자인,IN_PROGRESS,지호,,,,
