@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T2201,교재 상세 화면 디자인,IN_PROGRESS,민준,,,,
+T2202,API 문서 정리,TODO,서연,,,,
+T2203,홈 화면 레이아웃 정리,TODO,지호,,,,
+T2204,형태소 기반 검색 구현,DONE,지호,mvp,search,,
+T2205,중간 점검 자료 작성 (10월 29일),TODO,서연,,,,
+T2206,베타 테스터 모집 (11월 3일 시작),IN_PROGRESS,하은,,,,
+T2207,1:1 쪽지 폴링 채팅 서버 구현,DONE,민준,mvp,chat,,
+T2208,버그 리스트 정리,DONE,도윤,,,,

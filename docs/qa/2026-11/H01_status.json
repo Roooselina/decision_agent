@@ -1,0 +1,31 @@
+{
+  "status": {
+    "enabled": false,
+    "granted": false,
+    "available": false,
+    "account": "",
+    "max_recipients": 10,
+    "per_hour": 20,
+    "per_day": 100,
+    "max_body": 20000,
+    "undo_seconds": 5.0,
+    "used_hour": 0,
+    "used_day": 0
+  },
+  "buttons": [
+    "빠른 점검",
+    "메일 쓰기",
+    "지금 확인",
+    "주소록",
+    "메일 연결 상태",
+    "전체",
+    "받은 편지",
+    "보낸 편지",
+    "+ 라벨",
+    "전체 기간",
+    "7일",
+    "30일",
+    "90일",
+    "메일 연결 추가"
+  ]
+}

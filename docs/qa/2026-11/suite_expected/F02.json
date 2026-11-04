@@ -1,0 +1,14 @@
+{
+  "id": "F02",
+  "title": "기능 취소",
+  "stale_substrings": [
+    "토스페이먼츠 결제 위젯",
+    "토스페이먼츠 승인"
+  ],
+  "correct_substrings": [
+    "FR-01",
+    "계좌이체 안내"
+  ],
+  "root": "C:\\qa_work\\suite\\F02",
+  "question_expected": false
+}

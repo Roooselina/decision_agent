@@ -1,0 +1,3 @@
+id,title,status,owner,due
+T1,이메일 인증 메일 템플릿 작성,todo,QA팀,2026-11-01
+T2,학교 구글 SSO 콜백 점검,todo,QA팀,2026-11-01

@@ -1,0 +1,11 @@
+{
+  "id": "F15",
+  "title": "날짜 없는 회의",
+  "stale_substrings": [],
+  "correct_substrings": [
+    "FR-01",
+    "상품 사진 3장"
+  ],
+  "root": "C:\\qa_work\\suite\\F15",
+  "question_expected": false
+}

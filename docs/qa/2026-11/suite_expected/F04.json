@@ -1,0 +1,14 @@
+{
+  "id": "F04",
+  "title": "발표 일정 연기",
+  "stale_substrings": [
+    "최종 발표 11월 10일"
+  ],
+  "correct_substrings": [
+    "FR-01",
+    "접근 권한",
+    "11월 17일"
+  ],
+  "root": "C:\\qa_work\\suite\\F04",
+  "question_expected": false
+}

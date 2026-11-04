@@ -1,0 +1,240 @@
+[
+  {
+    "profile": "precise",
+    "requests": 0,
+    "seconds": 0.7054325999924913,
+    "folder": {
+      "root": "C:\\qa_work\\suite\\F01",
+      "files": {
+        "ok": 8,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "done",
+        "phase_label": "완료",
+        "files_total": 8,
+        "files_done": 8,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 0.0
+      },
+      "completion": {
+        "at": "2026-10-30T00:17:01",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 8,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 5,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 3,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 7,
+        "phase_seconds": {
+          "ingest": 0.008,
+          "extract": 0.018,
+          "retrieval": 0.005,
+          "judge": 30.67,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 3
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:30:18",
+        "seen": 8,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:30:18",
+      "last_analyzed": "2026-10-30T00:17:01",
+      "state": {
+        "state": "verified",
+        "label": "검사 완료",
+        "detail": "2026-10-30T00:17:01"
+      }
+    }
+  },
+  {
+    "profile": "balanced",
+    "requests": 0,
+    "seconds": 0.6566436999710277,
+    "folder": {
+      "root": "C:\\qa_work\\suite\\F01",
+      "files": {
+        "ok": 8,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "done",
+        "phase_label": "완료",
+        "files_total": 8,
+        "files_done": 8,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 0.0
+      },
+      "completion": {
+        "at": "2026-10-30T00:30:18",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 8,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 7,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.019,
+          "ingest": 0.001,
+          "extract": 0.008,
+          "retrieval": 0.004,
+          "judge": 0.015,
+          "store": 0.0
+        },
+        "cache_hits": 4,
+        "cache_misses": 0
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:30:18",
+        "seen": 8,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:30:18",
+      "last_analyzed": "2026-10-30T00:30:18",
+      "state": {
+        "state": "verified",
+        "label": "검사 완료",
+        "detail": "2026-10-30T00:30:18"
+      }
+    }
+  },
+  {
+    "profile": "precise",
+    "requests": 0,
+    "seconds": 1.2924246999900788,
+    "folder": {
+      "root": "C:\\qa_work\\suite\\F01",
+      "files": {
+        "ok": 8,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "done",
+        "phase_label": "완료",
+        "files_total": 8,
+        "files_done": 8,
+        "topics_total": 1,
+        "topics_done": 1,
+        "topics_unchanged": 0,
+        "extract_total": 3,
+        "extract_done": 3,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 0.6
+      },
+      "completion": {
+        "at": "2026-10-30T00:30:20",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 8,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "precise",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 7,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "ingest": 0.012,
+          "extract": 0.01,
+          "retrieval": 0.002,
+          "judge": 0.015,
+          "store": 0.0
+        },
+        "cache_hits": 5,
+        "cache_misses": 0
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:30:19",
+        "seen": 8,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:30:19",
+      "last_analyzed": "2026-10-30T00:30:20",
+      "state": {
+        "state": "verified",
+        "label": "검사 완료",
+        "detail": "2026-10-30T00:30:20"
+      }
+    }
+  }
+]

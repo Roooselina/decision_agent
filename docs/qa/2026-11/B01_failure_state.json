@@ -1,0 +1,146 @@
+{
+  "paused": false,
+  "busy": false,
+  "folders": [
+    {
+      "root": "C:\\qa_work\\demo_capstone\\demo_capstone",
+      "files": {
+        "ok": 40,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "error",
+        "phase_label": "문제 발생",
+        "files_total": 41,
+        "files_done": 41,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 326,
+        "extract_done": 256,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 113.7
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": {
+        "at": "2026-10-29T23:50:24",
+        "message": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)",
+        "fatal": false,
+        "partial": false
+      },
+      "scan_stats": {
+        "at": "2026-10-29T23:50:23",
+        "seen": 41,
+        "skipped": {
+          "설정 파일입니다.": 1
+        }
+      },
+      "last_checked": "2026-10-29T23:50:24",
+      "last_analyzed": null,
+      "state": {
+        "state": "retrying",
+        "label": "실패, 다시 시도 중",
+        "detail": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)"
+      }
+    },
+    {
+      "root": "C:\\qa_work\\demo_capstone_full\\demo_capstone_full",
+      "files": {
+        "ok": 120,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "error",
+        "phase_label": "문제 발생",
+        "files_total": 121,
+        "files_done": 121,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 703,
+        "extract_done": 198,
+        "llm_calls": 90,
+        "current": "",
+        "elapsed_seconds": 113.7
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": {
+        "at": "2026-10-29T23:51:33",
+        "message": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)",
+        "fatal": false,
+        "partial": false
+      },
+      "scan_stats": {
+        "at": "2026-10-29T23:50:24",
+        "seen": 121,
+        "skipped": {
+          "설정 파일입니다.": 1
+        }
+      },
+      "last_checked": "2026-10-29T23:51:33",
+      "last_analyzed": null,
+      "state": {
+        "state": "retrying",
+        "label": "실패, 다시 시도 중",
+        "detail": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)"
+      }
+    }
+  ],
+  "provider": {
+    "id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+    "local_only": false,
+    "sends_externally": true,
+    "reason": "외부 LLM을 사용합니다."
+  },
+  "registered_folders": 2,
+  "connected_accounts": 0,
+  "onboarding_needed": false,
+  "ui_mode": "browser",
+  "version": "0.2.0",
+  "inconsistent": 0,
+  "uncertain": 0,
+  "questions": 0,
+  "last_cycle": "2026-10-29T23:51:33",
+  "last_error": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)",
+  "debounce_seconds": 30.0,
+  "overall": {
+    "state": "retrying",
+    "label": "폴더 2개 모두 점검에 실패해 다시 시도합니다.",
+    "detail": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)",
+    "counts": {
+      "retrying": 2
+    }
+  },
+  "hotkey": {
+    "enabled": false,
+    "active": false,
+    "spec": "ctrl+alt+d",
+    "display": "Ctrl + Alt + D",
+    "reason": "",
+    "suggestions": []
+  },
+  "watch": {
+    "mode": "realtime",
+    "alive": true,
+    "rescan_minutes": 60,
+    "last_checked": "2026-10-29T23:51:33",
+    "last_analyzed": null,
+    "folders": 2
+  },
+  "last_result": null
+}

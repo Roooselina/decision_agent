@@ -1,0 +1,9 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T2301,Figma 시안 파일 정리,TODO,하은,,,,
+T2302,신고 누적 처리 구현 (신고 5회 누적 시 숨김),TODO,민준,mvp,admin,admin,
+T2303,README 작성,DONE,민준,,,,
+T2304,회원 탈퇴 화면 구현,DONE,하은,,,,
+T2305,보라색 계열 팔레트 정리,DONE,민준,,,,
+T2306,교재 상세 화면 디자인,IN_PROGRESS,민준,,,,
+T2307,GitHub Actions 파이프라인 구성,TODO,지호,,,,
+T2308,API 문서 정리,IN_PROGRESS,서연,,,,

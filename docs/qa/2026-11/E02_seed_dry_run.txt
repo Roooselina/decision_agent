@@ -1,0 +1,19 @@
+메일 17통을 아래 순서로 보냅니다.
+  T1-1  박서연 교수님 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: 최종 발표 일정 확정 부탁드립니다
+  T1-2  이은정 (teammate@example.com) -> 박서연 교수님 (qa-gmail@example.com)  제목: Re: 최종 발표 일정 확정 부탁드립니다
+  T1-3  박서연 교수님 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 최종 발표 일정 확정 부탁드립니다
+  T1-4  이은정 (teammate@example.com) -> 박서연 교수님 (qa-gmail@example.com)  제목: Re: 최종 발표 일정 확정 부탁드립니다
+  T2-1  민재 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: 배포 서버 비용 문의
+  T2-2  이은정 (teammate@example.com) -> 민재 (qa-gmail@example.com)  제목: Re: 배포 서버 비용 문의
+  T2-3  민재 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 배포 서버 비용 문의
+  T2-4  이은정 (teammate@example.com) -> 민재 (qa-gmail@example.com)  제목: Re: 배포 서버 비용 문의
+  T3-1  하은 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 결제 방식 확인
+  T3-2  이은정 (teammate@example.com) -> 하은 (qa-gmail@example.com)  제목: Re: 결제 방식 확인
+  T3-3  하은 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 결제 방식 확인
+  T4-1  하은 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: 디자인 시안 A/B 의견
+  T4-2  이은정 (teammate@example.com) -> 하은 (qa-gmail@example.com)  제목: Re: 디자인 시안 A/B 의견
+  T4-3  준호 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 디자인 시안 A/B 의견
+  T5-1  준호 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: 이번 주 구현 현황과 중간 점검 자료
+  T5-2  이은정 (teammate@example.com) -> 준호 (qa-gmail@example.com)  제목: Re: 이번 주 구현 현황과 중간 점검 자료
+  T5-3  준호 (qa-gmail@example.com) -> 이은정 (teammate@example.com)  제목: Re: 이번 주 구현 현황과 중간 점검 자료
+미리보기만 했습니다. 실제로 보내려면 --send를 붙여 다시 실행하세요.

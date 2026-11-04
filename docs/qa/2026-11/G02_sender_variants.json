@@ -1,0 +1,284 @@
+[
+  {
+    "input": [
+      "qa-naver@example.com"
+    ],
+    "saved_senders": [
+      "qa-naver@example.com"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 3,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 3건 (보낸 사람 1개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  },
+  {
+    "input": [
+      "Cicula <qa-naver@example.com>"
+    ],
+    "saved_senders": [
+      "qa-naver@example.com"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 3,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 3건 (보낸 사람 1개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  },
+  {
+    "input": [
+      "qa-gmail@example.com, qa-naver@example.com"
+    ],
+    "saved_senders": [
+      "qa-gmail@example.com",
+      "qa-naver@example.com"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "Re: 이번 주 구현 현황과 중간 점검 자료",
+          "sender": "\"준호\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "이번 주 구현 현황과 중간 점검 자료",
+          "sender": "\"준호\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "Re: 디자인 시안 A/B 의견",
+          "sender": "\"준호\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "디자인 시안 A/B 의견",
+          "sender": "\"하은\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "Re: 결제 방식 확인",
+          "sender": "\"하은\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "Re: 결제 방식 확인",
+          "sender": "\"하은\" <qa-gmail@example.com>"
+        },
+        {
+          "date": "2026-10-28",
+          "subject": "Re: 배포 서버 비용 문의",
+          "sender": "\"민재\" <qa-gmail@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 13,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 13건 (보낸 사람 2개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  },
+  {
+    "input": [
+      "Cicula"
+    ],
+    "saved_senders": [
+      "Cicula"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 3,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 3건 (보낸 사람 1개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  },
+  {
+    "input": [
+      "CICULA12345@NAVER.COM"
+    ],
+    "saved_senders": [
+      "qa-naver@example.com"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 3,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 3건 (보낸 사람 1개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  },
+  {
+    "input": [
+      "  qa-naver@example.com  "
+    ],
+    "saved_senders": [
+      "qa-naver@example.com"
+    ],
+    "preview": {
+      "rows": [
+        {
+          "date": "2026-10-29",
+          "subject": "스터디룸 예약 안내",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "[참고] 세미나 포스터",
+          "sender": "Cicula <qa-naver@example.com>"
+        },
+        {
+          "date": "2026-10-29",
+          "subject": "자료 공유 요청",
+          "sender": "Cicula <qa-naver@example.com>"
+        }
+      ],
+      "stats": {
+        "matched": 3,
+        "read": 0,
+        "subject_only": 0,
+        "skipped_empty": 0,
+        "skipped_filtered": 0,
+        "skipped_prefilter": 0,
+        "known": 0,
+        "deferred": 0,
+        "stored_only": 0
+      },
+      "summary": "조건에 맞는 메일 3건 (보낸 사람 1개, 제목: 최종 발표 일정 확정 부탁드립니다, 배포 서버 비용 문의, Re: 결제 방식 확인, 디자인 시안 A/B 의견, 이번 주 구현 현황과 중간 점검 자료, 자료 공유 요청, [참고] 세미나 포스터, 스터디룸 예약 안내, 최근 90일)",
+      "account": "teammate@example.com",
+      "label_names": []
+    }
+  }
+]

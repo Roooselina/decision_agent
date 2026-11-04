@@ -1,0 +1,15 @@
+From: jiho@example.com
+To: team@example.com
+Subject: 5월 18일 회의 결과 공유
+Date: Mon, 18 May 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 5월 18일 회의 결과를 공유합니다.
+
+2026-05-18 회의 결정
+- 스탠드업은 매일 오전 10시에 한다.
+- 결제는 토스페이먼츠로 처리한다.
+- 알림은 FCM 푸시로 보낸다.
+- 디자인 시안은 Figma로 만든다.
+
+서연 드림

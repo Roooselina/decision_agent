@@ -1,0 +1,12 @@
+{
+  "windows_after_close": [
+    {
+      "hwnd": 1118114,
+      "visible": false
+    }
+  ],
+  "ping": {
+    "app": "decision-agent",
+    "version": "0.2.0"
+  }
+}

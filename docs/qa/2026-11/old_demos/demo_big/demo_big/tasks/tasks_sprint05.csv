@@ -1,0 +1,7 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T0501,학번과 비밀번호 로그인 로그인 구현,DONE,도윤,mvp,login,,
+T0502,API 문서 정리,DONE,도윤,,,,
+T0503,스탠드업 알림 설정 (오전 10시),DONE,민준,,,,
+T0504,신고 누적 처리 구현 (신고 5회 누적 시 숨김),DONE,민준,mvp,admin,admin,
+T0505,홈 화면 레이아웃 정리,TODO,지호,,,,
+T0506,가격 입력 검증 구현 (가격 자유 설정),DONE,도윤,,,,

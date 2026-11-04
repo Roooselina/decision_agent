@@ -1,0 +1,92 @@
+{
+  "paused": false,
+  "busy": true,
+  "folders": [
+    {
+      "root": "C:\\qa_work\\demo_capstone\\demo_capstone",
+      "files": {
+        "ok": 40,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "extracting",
+        "phase_label": "결정 추출 중",
+        "files_total": 41,
+        "files_done": 41,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 326,
+        "extract_done": 95,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 29.7
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-29T23:48:48",
+        "seen": 41,
+        "skipped": {
+          "설정 파일입니다.": 1
+        }
+      },
+      "last_checked": null,
+      "last_analyzed": null,
+      "state": {
+        "state": "running",
+        "label": "점검 중",
+        "detail": ""
+      }
+    }
+  ],
+  "provider": {
+    "id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+    "local_only": false,
+    "sends_externally": true,
+    "reason": "외부 LLM을 사용합니다."
+  },
+  "registered_folders": 1,
+  "connected_accounts": 0,
+  "onboarding_needed": false,
+  "ui_mode": "browser",
+  "version": "0.2.0",
+  "inconsistent": 0,
+  "uncertain": 0,
+  "questions": 0,
+  "last_cycle": null,
+  "last_error": null,
+  "debounce_seconds": 30.0,
+  "overall": {
+    "state": "running",
+    "label": "폴더가 점검 중입니다.",
+    "detail": "",
+    "counts": {
+      "running": 1
+    }
+  },
+  "hotkey": {
+    "enabled": false,
+    "active": false,
+    "spec": "ctrl+alt+d",
+    "display": "Ctrl + Alt + D",
+    "reason": "",
+    "suggestions": []
+  },
+  "watch": {
+    "mode": "realtime",
+    "alive": true,
+    "rescan_minutes": 60,
+    "last_checked": null,
+    "last_analyzed": null,
+    "folders": 1
+  },
+  "last_result": null
+}

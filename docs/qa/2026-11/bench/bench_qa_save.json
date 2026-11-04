@@ -1,0 +1,310 @@
+[
+ {
+  "scenario": "cold first scan",
+  "wall": 13.125,
+  "requests": 91,
+  "cpu": 1.375,
+  "peak_mb": 190.9,
+  "phases": {
+   "ingest": 0.021,
+   "judge": 36.604,
+   "parse": 1.274,
+   "retrieval": 0.12,
+   "store": 0.073
+  },
+  "found": 6,
+  "false": 0,
+  "reused": 0,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "no change rescan",
+  "wall": 0.11,
+  "requests": 0,
+  "cpu": 0.109,
+  "peak_mb": 190.7,
+  "phases": {
+   "ingest": 0.073,
+   "parse": 0.028,
+   "store": 0.001
+  },
+  "found": 6,
+  "false": 0,
+  "reused": 0,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "one line added to one file",
+  "wall": 1.112,
+  "requests": 2,
+  "cpu": 0.281,
+  "peak_mb": 191.0,
+  "phases": {
+   "ingest": 0.012,
+   "judge": 0.801,
+   "parse": 0.049,
+   "retrieval": 0.055,
+   "store": 0.004
+  },
+  "found": 6,
+  "false": 0,
+  "reused": 153,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "one new meeting with one decision",
+  "wall": 1.504,
+  "requests": 4,
+  "cpu": 0.344,
+  "peak_mb": 191.9,
+  "phases": {
+   "ingest": 0.012,
+   "judge": 1.602,
+   "parse": 0.045,
+   "retrieval": 0.063,
+   "store": 0.003
+  },
+  "found": 6,
+  "false": 0,
+  "reused": 156,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "mail threads arrive (17 mails)",
+  "wall": 2.45,
+  "requests": 13,
+  "cpu": 0.359,
+  "peak_mb": 192.7,
+  "phases": {
+   "ingest": 0.02,
+   "judge": 5.209,
+   "parse": 0.106,
+   "retrieval": 0.07,
+   "store": 0.045
+  },
+  "found": 10,
+  "false": 0,
+  "reused": 143,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "one more mail",
+  "wall": 0.073,
+  "requests": 0,
+  "cpu": 0.078,
+  "peak_mb": 192.4,
+  "phases": {
+   "ingest": 0.017,
+   "parse": 0.046,
+   "store": 0.001
+  },
+  "found": 10,
+  "false": 0,
+  "reused": 0,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "profile balanced -> precise",
+  "wall": 14.602,
+  "requests": 91,
+  "cpu": 0.531,
+  "peak_mb": 193.3,
+  "phases": {
+   "ingest": 0.012,
+   "judge": 36.519,
+   "parse": 0.031,
+   "retrieval": 0.09,
+   "store": 0.027
+  },
+  "found": 10,
+  "false": 0,
+  "reused": 0,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "profile back to balanced",
+  "wall": 0.588,
+  "requests": 0,
+  "cpu": 0.531,
+  "peak_mb": 193.7,
+  "phases": {
+   "ingest": 0.02,
+   "parse": 0.034,
+   "retrieval": 0.123,
+   "store": 0.077
+  },
+  "found": 10,
+  "false": 0,
+  "reused": 158,
+  "folder": "capstone",
+  "profile": "balanced",
+  "files": 42
+ },
+ {
+  "scenario": "cold first scan",
+  "wall": 20.71,
+  "requests": 166,
+  "cpu": 1.562,
+  "peak_mb": 208.9,
+  "phases": {
+   "ingest": 0.098,
+   "judge": 66.602,
+   "parse": 1.674,
+   "retrieval": 0.137,
+   "store": 0.098
+  },
+  "found": 5,
+  "false": 0,
+  "reused": 0,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "no change rescan",
+  "wall": 0.14,
+  "requests": 0,
+  "cpu": 0.141,
+  "peak_mb": 197.8,
+  "phases": {
+   "ingest": 0.024,
+   "parse": 0.097
+  },
+  "found": 5,
+  "false": 0,
+  "reused": 0,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "one line added to one file",
+  "wall": 5.596,
+  "requests": 24,
+  "cpu": 0.844,
+  "peak_mb": 198.4,
+  "phases": {
+   "ingest": 0.023,
+   "judge": 9.615,
+   "parse": 0.111,
+   "retrieval": 0.129,
+   "store": 0.061
+  },
+  "found": 5,
+  "false": 0,
+  "reused": 230,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "one new meeting with one decision",
+  "wall": 1.943,
+  "requests": 5,
+  "cpu": 0.625,
+  "peak_mb": 198.5,
+  "phases": {
+   "ingest": 0.09,
+   "judge": 2.004,
+   "parse": 0.127,
+   "retrieval": 0.114,
+   "store": 0.003
+  },
+  "found": 5,
+  "false": 0,
+  "reused": 252,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "mail threads arrive (17 mails)",
+  "wall": 3.505,
+  "requests": 16,
+  "cpu": 0.656,
+  "peak_mb": 199.2,
+  "phases": {
+   "ingest": 0.036,
+   "judge": 6.417,
+   "parse": 0.106,
+   "retrieval": 0.108,
+   "store": 0.011
+  },
+  "found": 9,
+  "false": 0,
+  "reused": 231,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "one more mail",
+  "wall": 0.178,
+  "requests": 0,
+  "cpu": 0.172,
+  "peak_mb": 198.9,
+  "phases": {
+   "ingest": 0.043,
+   "parse": 0.113
+  },
+  "found": 9,
+  "false": 0,
+  "reused": 0,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "profile balanced -> precise",
+  "wall": 17.68,
+  "requests": 117,
+  "cpu": 1.344,
+  "peak_mb": 199.9,
+  "phases": {
+   "ingest": 0.029,
+   "judge": 46.948,
+   "parse": 0.111,
+   "retrieval": 0.149,
+   "store": 0.041
+  },
+  "found": 9,
+  "false": 0,
+  "reused": 0,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ },
+ {
+  "scenario": "profile back to balanced",
+  "wall": 0.909,
+  "requests": 0,
+  "cpu": 0.984,
+  "peak_mb": 199.7,
+  "phases": {
+   "ingest": 0.035,
+   "parse": 0.117,
+   "retrieval": 0.156,
+   "store": 0.13
+  },
+  "found": 9,
+  "false": 0,
+  "reused": 264,
+  "folder": "full",
+  "profile": "balanced",
+  "files": 122
+ }
+]

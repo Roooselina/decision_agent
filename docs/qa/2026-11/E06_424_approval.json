@@ -1,0 +1,24 @@
+{
+  "root": "C:\\qa_work\\old_demos\\demo_big\\demo_big",
+  "estimate": {
+    "estimated_calls": 424,
+    "calls_so_far": 0,
+    "topics": 53,
+    "limit": 10,
+    "reused_lines": 0
+  },
+  "budget": {
+    "budget": 2000,
+    "stop_at": 1600,
+    "selftest_requests": 1,
+    "counted_cycle_requests": 0,
+    "started": "2026-10-29T23:48:20.277458+09:00",
+    "approval": {
+      "case": "E06 demo_big",
+      "estimated_requests": 424,
+      "user_message": "ㅇㅇ 승인함",
+      "time": "2026-11-02T07:24:29.674921+09:00"
+    }
+  },
+  "requests_main_before": 921
+}

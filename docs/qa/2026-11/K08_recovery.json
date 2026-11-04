@@ -1,0 +1,225 @@
+{
+  "initial": {
+    "paused": false,
+    "busy": false,
+    "folders": [
+      {
+        "root": "C:\\qa_work\\suite\\F13",
+        "files": {
+          "ok": 6,
+          "error": 0,
+          "unsupported": 0
+        },
+        "topics": 0,
+        "topics_by_judge": {},
+        "watcher": "native",
+        "watch_alive": true,
+        "pending_events": 0,
+        "progress": {
+          "phase": "error",
+          "phase_label": "문제 발생",
+          "files_total": 6,
+          "files_done": 6,
+          "topics_total": 0,
+          "topics_done": 0,
+          "topics_unchanged": 0,
+          "extract_total": 0,
+          "extract_done": 0,
+          "llm_calls": 6,
+          "current": "",
+          "elapsed_seconds": 3.0
+        },
+        "completion": null,
+        "pending_confirm": null,
+        "failure": {
+          "at": "2026-11-02T07:13:53",
+          "message": "결정 추출에 실패했습니다. 모델 이름을 찾을 수 없습니다. 설정의 모델 이름을 확인해 주세요.",
+          "fatal": true,
+          "partial": false
+        },
+        "scan_stats": {
+          "at": "2026-11-02T07:13:50",
+          "seen": 6,
+          "skipped": {}
+        },
+        "last_checked": "2026-11-02T07:13:53",
+        "last_analyzed": null,
+        "state": {
+          "state": "failed",
+          "label": "실패",
+          "detail": "결정 추출에 실패했습니다. 모델 이름을 찾을 수 없습니다. 설정의 모델 이름을 확인해 주세요."
+        }
+      }
+    ],
+    "provider": {
+      "id": "anthropic:qa-nonexistent-model-20261102",
+      "local_only": false,
+      "sends_externally": true,
+      "reason": "외부 LLM을 사용합니다."
+    },
+    "registered_folders": 1,
+    "connected_accounts": 0,
+    "onboarding_needed": false,
+    "ui_mode": "browser",
+    "version": "0.2.0",
+    "inconsistent": 0,
+    "uncertain": 0,
+    "questions": 0,
+    "last_cycle": "2026-11-02T07:13:53",
+    "last_error": "결정 추출에 실패했습니다. 모델 이름을 찾을 수 없습니다. 설정의 모델 이름을 확인해 주세요.",
+    "debounce_seconds": 30.0,
+    "overall": {
+      "state": "failed",
+      "label": "폴더가 점검에 실패했습니다.",
+      "detail": "결정 추출에 실패했습니다. 모델 이름을 찾을 수 없습니다. 설정의 모델 이름을 확인해 주세요.",
+      "counts": {
+        "failed": 1
+      }
+    },
+    "hotkey": {
+      "enabled": false,
+      "active": false,
+      "spec": "ctrl+alt+d",
+      "display": "Ctrl + Alt + D",
+      "reason": "",
+      "suggestions": []
+    },
+    "watch": {
+      "mode": "realtime",
+      "alive": true,
+      "rescan_minutes": 0,
+      "last_checked": "2026-11-02T07:13:53",
+      "last_analyzed": null,
+      "folders": 1
+    },
+    "last_result": null
+  },
+  "settings_response": {
+    "ok": true
+  },
+  "recovered": {
+    "paused": false,
+    "busy": false,
+    "folders": [
+      {
+        "root": "C:\\qa_work\\suite\\F13",
+        "files": {
+          "ok": 6,
+          "error": 0,
+          "unsupported": 0
+        },
+        "topics": 0,
+        "topics_by_judge": {},
+        "watcher": "native",
+        "watch_alive": true,
+        "pending_events": 0,
+        "progress": {
+          "phase": "done",
+          "phase_label": "완료",
+          "files_total": 6,
+          "files_done": 6,
+          "topics_total": 0,
+          "topics_done": 0,
+          "topics_unchanged": 0,
+          "extract_total": 2,
+          "extract_done": 2,
+          "llm_calls": 1,
+          "current": "",
+          "elapsed_seconds": 3.8
+        },
+        "completion": {
+          "at": "2026-11-02T07:14:00",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 0,
+          "topics_rechecked": 0,
+          "judges": {},
+          "llm_calls": 1,
+          "cost_profile": "balanced",
+          "calls_by_task": {
+            "DECISION_EXTRACT_BATCH": 1
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.018,
+            "ingest": 0.003,
+            "extract": 3.768,
+            "retrieval": 0.0,
+            "judge": 0.0,
+            "store": 0.0
+          },
+          "cache_hits": 0,
+          "cache_misses": 1
+        },
+        "pending_confirm": null,
+        "failure": null,
+        "scan_stats": {
+          "at": "2026-11-02T07:13:56",
+          "seen": 6,
+          "skipped": {}
+        },
+        "last_checked": "2026-11-02T07:14:00",
+        "last_analyzed": "2026-11-02T07:14:00",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-11-02T07:14:00"
+        }
+      }
+    ],
+    "provider": {
+      "id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+      "local_only": false,
+      "sends_externally": true,
+      "reason": "외부 LLM을 사용합니다."
+    },
+    "registered_folders": 1,
+    "connected_accounts": 0,
+    "onboarding_needed": false,
+    "ui_mode": "browser",
+    "version": "0.2.0",
+    "inconsistent": 0,
+    "uncertain": 0,
+    "questions": 0,
+    "last_cycle": "2026-11-02T07:14:00",
+    "last_error": null,
+    "debounce_seconds": 30.0,
+    "overall": {
+      "state": "verified",
+      "label": "검사 완료. 폴더가 최신입니다.",
+      "detail": "anthropic:claude-sonnet-5-5+claude-haiku-5-5 / 파일 6개, 결정 0건 / 2026-11-02T07:14:00",
+      "counts": {
+        "verified": 1
+      }
+    },
+    "hotkey": {
+      "enabled": false,
+      "active": false,
+      "spec": "ctrl+alt+d",
+      "display": "Ctrl + Alt + D",
+      "reason": "",
+      "suggestions": []
+    },
+    "watch": {
+      "mode": "realtime",
+      "alive": true,
+      "rescan_minutes": 0,
+      "last_checked": "2026-11-02T07:14:00",
+      "last_analyzed": "2026-11-02T07:14:00",
+      "folders": 1
+    },
+    "last_result": {
+      "at": "2026-11-02T07:14:00",
+      "files": 6,
+      "topics": 0,
+      "verified": true
+    }
+  }
+}

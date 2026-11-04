@@ -1,0 +1,15 @@
+{
+  "id": "F11",
+  "title": "내가 보낸 답장 eml",
+  "stale_substrings": [
+    "FR-01",
+    "이메일 인증 메일 구현",
+    "이메일 인증 메일 수신"
+  ],
+  "correct_substrings": [
+    "FR-02",
+    "학교 구글 SSO"
+  ],
+  "root": "C:\\qa_work\\suite\\F11",
+  "question_expected": false
+}

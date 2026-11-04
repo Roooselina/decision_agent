@@ -1,0 +1,641 @@
+[
+  {
+    "profile": "precise",
+    "response": {
+      "ok": true
+    },
+    "requests": 116,
+    "seconds": 657.1885230999906,
+    "states": [
+      {
+        "root": "C:\\qa_work\\demo_capstone\\demo_capstone",
+        "state": {
+          "state": "paused",
+          "label": "일시 중지",
+          "detail": "지금 점검을 누르면 다시 시작합니다."
+        },
+        "completion": null
+      },
+      {
+        "root": "C:\\qa_work\\demo_capstone_full\\demo_capstone_full",
+        "state": {
+          "state": "paused",
+          "label": "일시 중지",
+          "detail": "지금 점검을 누르면 다시 시작합니다."
+        },
+        "completion": null
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F01",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:17:01"
+        },
+        "completion": {
+          "at": "2026-10-30T00:17:01",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 8,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 5,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 3,
+            "CONSISTENCY_BATCH": 2
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 7,
+          "phase_seconds": {
+            "ingest": 0.008,
+            "extract": 0.018,
+            "retrieval": 0.005,
+            "judge": 30.67,
+            "store": 0.0
+          },
+          "cache_hits": 2,
+          "cache_misses": 3
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F02",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:17:31"
+        },
+        "completion": {
+          "at": "2026-10-30T00:17:31",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 22,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 11,
+            "CONSISTENCY": 2,
+            "QUESTION_GAIN": 9
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 1,
+          "phase_seconds": {
+            "ingest": 0.004,
+            "extract": 0.015,
+            "retrieval": 0.004,
+            "judge": 60.479,
+            "store": 0.0
+          },
+          "cache_hits": 3,
+          "cache_misses": 20
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F03",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:18:28"
+        },
+        "completion": {
+          "at": "2026-10-30T00:18:28",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 29,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 20,
+            "QUESTION_GAIN": 9
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "ingest": 0.005,
+            "extract": 0.011,
+            "retrieval": 0.006,
+            "judge": 87.334,
+            "store": 0.0
+          },
+          "cache_hits": 3,
+          "cache_misses": 29
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F04",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:17:46"
+        },
+        "completion": {
+          "at": "2026-10-30T00:17:46",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 5,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 3,
+            "CONSISTENCY_BATCH": 2
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 2,
+          "phase_seconds": {
+            "ingest": 0.002,
+            "extract": 0.011,
+            "retrieval": 0.003,
+            "judge": 15.614,
+            "store": 0.0
+          },
+          "cache_hits": 2,
+          "cache_misses": 3
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F05",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:18:10"
+        },
+        "completion": {
+          "at": "2026-10-30T00:18:10",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 7,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 6,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 4,
+            "CONSISTENCY_BATCH": 2
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 5,
+          "phase_seconds": {
+            "ingest": 0.003,
+            "extract": 0.008,
+            "retrieval": 0.003,
+            "judge": 23.589,
+            "store": 0.0
+          },
+          "cache_hits": 2,
+          "cache_misses": 4
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F06",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:19:26"
+        },
+        "completion": {
+          "at": "2026-10-30T00:19:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 29,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 20,
+            "QUESTION_GAIN": 9
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "ingest": 0.003,
+            "extract": 0.011,
+            "retrieval": 0.004,
+            "judge": 76.051,
+            "store": 0.001
+          },
+          "cache_hits": 3,
+          "cache_misses": 29
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F07",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:18:50"
+        },
+        "completion": {
+          "at": "2026-10-30T00:18:50",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 5,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 3,
+            "CONSISTENCY_BATCH": 2
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 6,
+          "phase_seconds": {
+            "ingest": 0.002,
+            "extract": 0.01,
+            "retrieval": 0.003,
+            "judge": 22.096,
+            "store": 0.0
+          },
+          "cache_hits": 2,
+          "cache_misses": 3
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F08",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:19:08"
+        },
+        "completion": {
+          "at": "2026-10-30T00:19:08",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 7,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 6,
+          "cost_profile": "precise",
+          "calls_by_task": {
+            "TOOL_SELECT": 4,
+            "CONSISTENCY_BATCH": 2
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 5,
+          "phase_seconds": {
+            "ingest": 0.003,
+            "extract": 0.01,
+            "retrieval": 0.004,
+            "judge": 17.45,
+            "store": 0.0
+          },
+          "cache_hits": 2,
+          "cache_misses": 4
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F13",
+        "state": {
+          "state": "verified",
+          "label": "검사 완료",
+          "detail": "2026-10-30T00:16:30"
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:30",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 0,
+          "topics_rechecked": 0,
+          "judges": {},
+          "llm_calls": 0,
+          "cost_profile": "precise",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.009,
+            "ingest": 0.001,
+            "extract": 0.005,
+            "retrieval": 0.0,
+            "judge": 0.0,
+            "store": 0.0
+          },
+          "cache_hits": 1,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F14",
+        "state": {
+          "state": "running",
+          "label": "점검 중",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 5,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.009,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F15",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 5,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 3,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.007,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F09",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 7,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 6,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.011,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F10",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 6,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.01,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F11",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 6,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.009,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F12",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 5,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.009,
+            "ingest": 0.001
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      },
+      {
+        "root": "C:\\qa_work\\suite\\F16",
+        "state": {
+          "state": "queued",
+          "label": "대기열",
+          "detail": ""
+        },
+        "completion": {
+          "at": "2026-10-30T00:16:26",
+          "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+          "local_only": false,
+          "verified": true,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 0,
+          "judges": {
+            "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+          },
+          "llm_calls": 0,
+          "cost_profile": "balanced",
+          "calls_by_task": {},
+          "local_answers": 0,
+          "reused_lines": 2,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.01,
+            "ingest": 0.007
+          },
+          "cache_hits": 0,
+          "cache_misses": 0
+        }
+      }
+    ]
+  }
+]

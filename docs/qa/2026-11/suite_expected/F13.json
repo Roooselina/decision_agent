@@ -1,0 +1,12 @@
+{
+  "id": "F13",
+  "title": "잡담과 제안",
+  "stale_substrings": [],
+  "correct_substrings": [
+    "FR-01",
+    "상품 사진 3장",
+    "사진 3장까지"
+  ],
+  "root": "C:\\qa_work\\suite\\F13",
+  "question_expected": false
+}

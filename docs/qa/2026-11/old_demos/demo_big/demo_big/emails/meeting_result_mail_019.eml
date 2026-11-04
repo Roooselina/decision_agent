@@ -1,0 +1,18 @@
+From: minjun@example.com
+To: team@example.com
+Subject: 8월 3일 회의 결과 공유
+Date: Mon, 03 Aug 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 8월 3일 회의 결과를 공유합니다.
+
+2026-08-03 회의 결정
+- 채팅 구현 방식을 Firebase 실시간 채팅으로 변경한다.
+- 앱의 대표 색상을 보라색 계열로 바꾼다.
+- 스탠드업 시간을 오전 9시 30분으로 바꾼다.
+- 알림 방식을 앱 내 알림함으로 변경한다.
+- 서버 배포 환경을 Render로 변경한다.
+- CI 도구를 GitLab CI로 변경한다.
+- 서버 테스트 도구를 Jest로 바꾼다.
+
+서연 드림

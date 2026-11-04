@@ -1,0 +1,14 @@
+From: seoyeon@example.com
+To: team@example.com
+Subject: 10월 8일 회의 결과 공유
+Date: Thu, 08 Oct 2026 21:10:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+팀원 여러분, 오늘 회의 결과를 공유합니다.
+
+2026-10-08 회의 결정
+- 결제 기능은 이번 MVP에서 제외한다.
+- 거래는 계좌이체 직접 거래로 진행한다.
+- 토스페이먼츠 연동은 정식 출시 이후에 다시 검토한다.
+
+서연 드림

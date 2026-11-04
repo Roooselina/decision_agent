@@ -1,0 +1,100 @@
+[
+  {
+    "ext": "md",
+    "result": "readable",
+    "blocks": 18,
+    "sections": 1,
+    "bytes": 1041,
+    "empty": false
+  },
+  {
+    "ext": "txt",
+    "result": "readable",
+    "blocks": 18,
+    "sections": 1,
+    "bytes": 989,
+    "empty": false
+  },
+  {
+    "ext": "docx",
+    "result": "readable",
+    "blocks": 12,
+    "sections": 1,
+    "bytes": 37903,
+    "empty": false
+  },
+  {
+    "ext": "xlsx",
+    "result": "readable",
+    "blocks": 0,
+    "sections": 2,
+    "bytes": 6426,
+    "empty": false
+  },
+  {
+    "ext": "csv",
+    "result": "readable",
+    "blocks": 0,
+    "sections": 1,
+    "bytes": 853,
+    "empty": false
+  },
+  {
+    "ext": "pdf",
+    "result": "readable",
+    "blocks": 18,
+    "sections": 1,
+    "bytes": 46063,
+    "empty": false
+  },
+  {
+    "ext": "pptx",
+    "result": "readable",
+    "blocks": 20,
+    "sections": 6,
+    "bytes": 33186,
+    "empty": false
+  },
+  {
+    "ext": "html",
+    "result": "readable",
+    "blocks": 3,
+    "sections": 1,
+    "bytes": 240,
+    "empty": false
+  },
+  {
+    "ext": "json",
+    "result": "readable",
+    "blocks": 26,
+    "sections": 1,
+    "bytes": 905,
+    "empty": false
+  },
+  {
+    "ext": "ics",
+    "result": "readable",
+    "blocks": 2,
+    "sections": 2,
+    "bytes": 2302,
+    "empty": false
+  },
+  {
+    "ext": "eml",
+    "result": "readable",
+    "blocks": 5,
+    "sections": 1,
+    "bytes": 318,
+    "empty": false
+  },
+  {
+    "ext": "db",
+    "result": "UnsupportedFormat",
+    "message": "지원하지 않는 형식입니다: .db"
+  },
+  {
+    "ext": "sqlite",
+    "result": "UnsupportedFormat",
+    "message": "지원하지 않는 형식입니다: .sqlite"
+  }
+]

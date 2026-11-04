@@ -1,0 +1,1391 @@
+{
+  "paused": false,
+  "busy": true,
+  "folders": [
+    {
+      "root": "C:\\qa_work\\demo_capstone\\demo_capstone",
+      "files": {
+        "ok": 40,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": {
+        "at": "2026-10-29T23:52:56",
+        "message": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Unterminated string starting at: line 1 column 246 (char 245)",
+        "fatal": false,
+        "partial": false
+      },
+      "scan_stats": {
+        "at": "2026-10-29T23:52:56",
+        "seen": 41,
+        "skipped": {
+          "설정 파일입니다.": 1
+        }
+      },
+      "last_checked": "2026-10-29T23:52:56",
+      "last_analyzed": null,
+      "state": {
+        "state": "paused",
+        "label": "일시 중지",
+        "detail": "지금 점검을 누르면 다시 시작합니다."
+      }
+    },
+    {
+      "root": "C:\\qa_work\\demo_capstone_full\\demo_capstone_full",
+      "files": {
+        "ok": 120,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": {
+        "at": "2026-10-29T23:52:56",
+        "message": "결정 추출에 실패했습니다. 모델 호출에 실패했습니다: Extra data: line 3 column 1 (char 1277)",
+        "fatal": false,
+        "partial": false
+      },
+      "scan_stats": {
+        "at": "2026-10-29T23:52:56",
+        "seen": 121,
+        "skipped": {
+          "설정 파일입니다.": 1
+        }
+      },
+      "last_checked": "2026-10-29T23:52:56",
+      "last_analyzed": null,
+      "state": {
+        "state": "paused",
+        "label": "일시 중지",
+        "detail": "지금 점검을 누르면 다시 시작합니다."
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F01",
+      "files": {
+        "ok": 8,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:17:01",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 8,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 5,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 3,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 7,
+        "phase_seconds": {
+          "ingest": 0.008,
+          "extract": 0.018,
+          "retrieval": 0.005,
+          "judge": 30.67,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 3
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 8,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:17:01",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F02",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:17:31",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 22,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 11,
+          "CONSISTENCY": 2,
+          "QUESTION_GAIN": 9
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 1,
+        "phase_seconds": {
+          "ingest": 0.004,
+          "extract": 0.015,
+          "retrieval": 0.004,
+          "judge": 60.479,
+          "store": 0.0
+        },
+        "cache_hits": 3,
+        "cache_misses": 20
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:17:31",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F03",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:18:28",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 29,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 20,
+          "QUESTION_GAIN": 9
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "ingest": 0.005,
+          "extract": 0.011,
+          "retrieval": 0.006,
+          "judge": 87.334,
+          "store": 0.0
+        },
+        "cache_hits": 3,
+        "cache_misses": 29
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:18:28",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F04",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:17:46",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 5,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 3,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 2,
+        "phase_seconds": {
+          "ingest": 0.002,
+          "extract": 0.011,
+          "retrieval": 0.003,
+          "judge": 15.614,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 3
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:17:46",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F05",
+      "files": {
+        "ok": 7,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:18:10",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 7,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 6,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 4,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 5,
+        "phase_seconds": {
+          "ingest": 0.003,
+          "extract": 0.008,
+          "retrieval": 0.003,
+          "judge": 23.589,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 4
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 7,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:18:10",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F06",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:19:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 29,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 20,
+          "QUESTION_GAIN": 9
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "ingest": 0.003,
+          "extract": 0.011,
+          "retrieval": 0.004,
+          "judge": 76.051,
+          "store": 0.001
+        },
+        "cache_hits": 3,
+        "cache_misses": 29
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:19:26",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F07",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:18:50",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 5,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 3,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 6,
+        "phase_seconds": {
+          "ingest": 0.002,
+          "extract": 0.01,
+          "retrieval": 0.003,
+          "judge": 22.096,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 3
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:18:50",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F08",
+      "files": {
+        "ok": 7,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:19:08",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 7,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 6,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 4,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 5,
+        "phase_seconds": {
+          "ingest": 0.003,
+          "extract": 0.01,
+          "retrieval": 0.004,
+          "judge": 17.45,
+          "store": 0.0
+        },
+        "cache_hits": 2,
+        "cache_misses": 4
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 7,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:19:08",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F13",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:30",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 0,
+        "topics_rechecked": 0,
+        "judges": {},
+        "llm_calls": 0,
+        "cost_profile": "precise",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.009,
+          "ingest": 0.001,
+          "extract": 0.005,
+          "retrieval": 0.0,
+          "judge": 0.0,
+          "store": 0.0
+        },
+        "cache_hits": 1,
+        "cache_misses": 0
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F14",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:28:50",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 34,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 23,
+          "CONSISTENCY_BATCH": 2,
+          "QUESTION_GAIN": 9
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 2,
+        "phase_seconds": {
+          "ingest": 0.002,
+          "extract": 0.009,
+          "retrieval": 0.005,
+          "judge": 581.945,
+          "store": 0.0
+        },
+        "cache_hits": 3,
+        "cache_misses": 32
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:28:50",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F15",
+      "files": {
+        "ok": 5,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "done",
+        "phase_label": "완료",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 1,
+        "topics_done": 1,
+        "topics_unchanged": 0,
+        "extract_total": 1,
+        "extract_done": 1,
+        "llm_calls": 5,
+        "current": "",
+        "elapsed_seconds": 13.8
+      },
+      "completion": {
+        "at": "2026-10-30T00:29:04",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 5,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 1,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 5,
+        "cost_profile": "precise",
+        "calls_by_task": {
+          "TOOL_SELECT": 3,
+          "CONSISTENCY_BATCH": 2
+        },
+        "local_answers": 0,
+        "reused_lines": 0,
+        "judged_lines": 3,
+        "phase_seconds": {
+          "ingest": 0.003,
+          "extract": 0.008,
+          "retrieval": 0.007,
+          "judge": 13.807,
+          "store": 0.0
+        },
+        "cache_hits": 1,
+        "cache_misses": 3
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 5,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:29:04",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F09",
+      "files": {
+        "ok": 7,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "checking",
+        "phase_label": "결정별 점검 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 1,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 4,
+        "extract_done": 4,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 20.5
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 7,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 0,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 6,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.011,
+          "ingest": 0.001
+        },
+        "cache_hits": 0,
+        "cache_misses": 0
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 7,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "running",
+        "label": "점검 중",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F10",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "checking",
+        "phase_label": "결정별 점검 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 1,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 3,
+        "extract_done": 3,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": 6.7
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 0,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 6,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.01,
+          "ingest": 0.001
+        },
+        "cache_hits": 0,
+        "cache_misses": 0
+      },
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "running",
+        "label": "점검 중",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F11",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 0,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 6,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.009,
+          "ingest": 0.001
+        },
+        "cache_hits": 0,
+        "cache_misses": 0
+      },
+      "pending_confirm": {
+        "estimated_calls": 13,
+        "calls_so_far": 0,
+        "topics": 1,
+        "limit": 10,
+        "reused_lines": 0
+      },
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F12",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 0,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 5,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.009,
+          "ingest": 0.001
+        },
+        "cache_hits": 0,
+        "cache_misses": 0
+      },
+      "pending_confirm": {
+        "estimated_calls": 13,
+        "calls_so_far": 0,
+        "topics": 1,
+        "limit": 10,
+        "reused_lines": 0
+      },
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\suite\\F16",
+      "files": {
+        "ok": 6,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 1,
+      "topics_by_judge": {
+        "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+      },
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": {
+        "at": "2026-10-30T00:16:26",
+        "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+        "local_only": false,
+        "verified": true,
+        "mode": "agent",
+        "files_ok": 6,
+        "files_error": 0,
+        "files_unsupported": 0,
+        "topics": 1,
+        "topics_rechecked": 0,
+        "judges": {
+          "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+        },
+        "llm_calls": 0,
+        "cost_profile": "balanced",
+        "calls_by_task": {},
+        "local_answers": 0,
+        "reused_lines": 2,
+        "judged_lines": 0,
+        "phase_seconds": {
+          "parse": 0.01,
+          "ingest": 0.007
+        },
+        "cache_hits": 0,
+        "cache_misses": 0
+      },
+      "pending_confirm": {
+        "estimated_calls": 17,
+        "calls_so_far": 0,
+        "topics": 1,
+        "limit": 10,
+        "reused_lines": 0
+      },
+      "failure": null,
+      "scan_stats": {
+        "at": "2026-10-30T00:16:30",
+        "seen": 6,
+        "skipped": {}
+      },
+      "last_checked": "2026-10-30T00:16:30",
+      "last_analyzed": "2026-10-30T00:16:30",
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    },
+    {
+      "root": "C:\\qa_work\\file_edges",
+      "files": {
+        "ok": 0,
+        "error": 0,
+        "unsupported": 0
+      },
+      "topics": 0,
+      "topics_by_judge": {},
+      "watcher": "native",
+      "watch_alive": true,
+      "pending_events": 0,
+      "progress": {
+        "phase": "idle",
+        "phase_label": "대기 중",
+        "files_total": 0,
+        "files_done": 0,
+        "topics_total": 0,
+        "topics_done": 0,
+        "topics_unchanged": 0,
+        "extract_total": 0,
+        "extract_done": 0,
+        "llm_calls": 0,
+        "current": "",
+        "elapsed_seconds": null
+      },
+      "completion": null,
+      "pending_confirm": null,
+      "failure": null,
+      "scan_stats": null,
+      "last_checked": null,
+      "last_analyzed": null,
+      "state": {
+        "state": "queued",
+        "label": "대기열",
+        "detail": ""
+      }
+    }
+  ],
+  "provider": {
+    "id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+    "local_only": false,
+    "sends_externally": true,
+    "reason": "외부 LLM을 사용합니다."
+  },
+  "registered_folders": 19,
+  "connected_accounts": 1,
+  "onboarding_needed": false,
+  "ui_mode": "browser",
+  "version": "0.2.0",
+  "inconsistent": 29,
+  "uncertain": 22,
+  "questions": 6,
+  "last_cycle": "2026-10-30T00:29:04",
+  "last_error": null,
+  "debounce_seconds": 30.0,
+  "overall": {
+    "state": "running",
+    "label": "폴더 19개 중 2개가 점검 중입니다.",
+    "detail": "",
+    "counts": {
+      "paused": 2,
+      "queued": 15,
+      "running": 2
+    }
+  },
+  "hotkey": {
+    "enabled": false,
+    "active": false,
+    "spec": "ctrl+alt+d",
+    "display": "Ctrl + Alt + D",
+    "reason": "",
+    "suggestions": []
+  },
+  "watch": {
+    "mode": "realtime",
+    "alive": true,
+    "rescan_minutes": 60,
+    "last_checked": "2026-10-30T00:16:30",
+    "last_analyzed": "2026-10-30T00:29:04",
+    "folders": 19
+  },
+  "last_result": {
+    "at": "2026-10-30T00:29:04",
+    "files": 100,
+    "topics": 15,
+    "verified": true
+  }
+}

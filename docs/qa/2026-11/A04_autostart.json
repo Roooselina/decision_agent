@@ -1,0 +1,22 @@
+{
+  "initial_enabled": false,
+  "steps": [
+    {
+      "enabled": true,
+      "response": {
+        "supported": true,
+        "enabled": true
+      },
+      "run_entry_exists": true
+    },
+    {
+      "enabled": false,
+      "response": {
+        "supported": true,
+        "enabled": false
+      },
+      "run_entry_exists": false
+    }
+  ],
+  "restored_exactly": true
+}

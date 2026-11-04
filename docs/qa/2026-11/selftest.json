@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "version": "0.2.0",
+  "commit": "123e20c",
+  "data_dir": "C:\\qa_work\\appdata",
+  "checks": [
+    {
+      "name": "imports",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "name": "data_folder",
+      "status": "ok",
+      "detail": "C:\\qa_work\\appdata"
+    },
+    {
+      "name": "settings",
+      "status": "ok",
+      "detail": "C:\\qa_work\\appdata\\settings.json"
+    },
+    {
+      "name": "databases",
+      "status": "ok",
+      "detail": "열어 본 데이터베이스 1개"
+    },
+    {
+      "name": "folders",
+      "status": "skipped",
+      "detail": "등록한 폴더가 없습니다."
+    },
+    {
+      "name": "port",
+      "status": "ok",
+      "detail": "8876번 포트는 실행 중인 이 프로그램이 쓰고 있습니다."
+    },
+    {
+      "name": "model",
+      "status": "ok",
+      "detail": "연결 확인: anthropic:claude-sonnet-5-5+claude-haiku-5-5"
+    }
+  ]
+}

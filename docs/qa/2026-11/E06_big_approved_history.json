@@ -1,0 +1,3258 @@
+[
+  {
+    "time": "2026-11-02T07:24:39.274735",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "extracting",
+      "phase_label": "결정 추출 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 3.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:41.549155",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 6.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:43.607084",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 8.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:45.538244",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 10.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:47.364713",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 0,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 0,
+      "current": "",
+      "elapsed_seconds": 11.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:49.399296",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 8,
+      "current": "admin_page_mvp_inclusion",
+      "elapsed_seconds": 14.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:51.258139",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 8,
+      "current": "admin_page_mvp_inclusion",
+      "elapsed_seconds": 15.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:53.196546",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 8,
+      "current": "admin_page_mvp_inclusion",
+      "elapsed_seconds": 17.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:55.055548",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 8,
+      "current": "admin_page_mvp_inclusion",
+      "elapsed_seconds": 19.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:56.921571",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 1,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 8,
+      "current": "admin_page_mvp_inclusion",
+      "elapsed_seconds": 21.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:24:58.834931",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 23.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:00.741670",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 25.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:02.574251",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 27.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:04.533463",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 29.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:06.363304",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 30.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:08.450804",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 3,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 16,
+      "current": "api_server_framework",
+      "elapsed_seconds": 33.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:10.380677",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 6,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 30,
+      "current": "beta_test_start_date",
+      "elapsed_seconds": 35.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:12.296812",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 6,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 30,
+      "current": "beta_test_start_date",
+      "elapsed_seconds": 36.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:14.195784",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 6,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 30,
+      "current": "beta_test_start_date",
+      "elapsed_seconds": 38.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:16.121741",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 40.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:18.080947",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 42.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:20.047470",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 44.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:21.851072",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 46.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:23.695482",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 48.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:25.570193",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 50.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:27.442126",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 52.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:29.443956",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 54.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:31.403407",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 56.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:33.307350",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 57.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:35.222170",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 59.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:37.025561",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 7,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 33,
+      "current": "book_photo_upload_limit",
+      "elapsed_seconds": 61.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:39.044764",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 63.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:41.046137",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 65.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:43.038092",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 67.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:44.820141",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 69.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:46.685542",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 71.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:48.616394",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 10,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 58,
+      "current": "ci",
+      "elapsed_seconds": 73.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:50.520661",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 12,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 67,
+      "current": "code_review_approval",
+      "elapsed_seconds": 75.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:52.530501",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 12,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 67,
+      "current": "code_review_approval",
+      "elapsed_seconds": 77.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:54.469458",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 12,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 67,
+      "current": "code_review_approval",
+      "elapsed_seconds": 79.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:56.327307",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 12,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 67,
+      "current": "code_review_approval",
+      "elapsed_seconds": 80.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:25:58.258075",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 82.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:00.120654",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 84.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:01.966366",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 86.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:03.856032",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 88.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:05.655444",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 90.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:07.652017",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 92.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:09.452265",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 94.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:11.433643",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 96.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:13.328570",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 97.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:15.152074",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 99.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:17.025960",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 15,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 76,
+      "current": "deployment_environment",
+      "elapsed_seconds": 101.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:18.856924",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 103.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:20.624698",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 105.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:22.466694",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 107.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:24.326691",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 108.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:26.190956",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 110.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:28.018212",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 112.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:29.861715",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 16,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 93,
+      "current": "design_mockup",
+      "elapsed_seconds": 114.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:31.776820",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 23,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 107,
+      "current": "error_monitoring_tool",
+      "elapsed_seconds": 116.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:33.643143",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 23,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 107,
+      "current": "error_monitoring_tool",
+      "elapsed_seconds": 118.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:35.481366",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 23,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 107,
+      "current": "error_monitoring_tool",
+      "elapsed_seconds": 120.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:37.324165",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 23,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 107,
+      "current": "error_monitoring_tool",
+      "elapsed_seconds": 121.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:39.205907",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 24,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 114,
+      "current": "final_presentation_date",
+      "elapsed_seconds": 123.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:41.190920",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 24,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 114,
+      "current": "final_presentation_date",
+      "elapsed_seconds": 125.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:43.178406",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 24,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 114,
+      "current": "final_presentation_date",
+      "elapsed_seconds": 127.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:45.113284",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 24,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 114,
+      "current": "final_presentation_date",
+      "elapsed_seconds": 129.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:46.997063",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 24,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 114,
+      "current": "final_presentation_date",
+      "elapsed_seconds": 131.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:48.873479",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 133.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:50.696150",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 135.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:52.545884",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 137.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:54.406878",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 139.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:56.291264",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 140.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:26:58.239427",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 142.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:00.194705",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 144.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:02.265891",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 25,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 120,
+      "current": "image_storage",
+      "elapsed_seconds": 146.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:04.076114",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 148.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:05.979817",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 150.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:07.808897",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 152.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:09.669368",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 154.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:11.659349",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 156.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:13.587143",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 158.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:15.627854",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 160.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:17.584914",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 26,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 131,
+      "current": "login_method",
+      "elapsed_seconds": 162.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:19.577083",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 164.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:21.494610",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 166.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:23.525986",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 168.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:25.462026",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 170.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:27.395208",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 172.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:29.454331",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 31,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 148,
+      "current": "notification_channel",
+      "elapsed_seconds": 174.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:31.332631",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 175.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:33.222744",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 177.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:35.202386",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 179.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:37.127088",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 181.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:39.039483",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 183.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:40.917378",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 185.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:42.868643",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 187.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:44.789018",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 189.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:46.658896",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 33,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 158,
+      "current": "payment_method",
+      "elapsed_seconds": 191.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:48.455686",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 193.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:50.265096",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 194.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:52.204811",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 196.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:54.188107",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 198.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:56.132843",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 200.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:27:58.234544",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 202.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:28:00.177759",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 204.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:41.645708",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 306.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:43.800671",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 308.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:45.433682",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 310.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:46.727805",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 311.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:48.788652",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 313.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:51.036571",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 315.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:53.024732",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 317.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:54.939177",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 319.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:56.910179",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 321.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:29:58.469857",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 323.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:00.057644",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 324.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:01.599480",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 326.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:03.163614",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 327.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:04.616000",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 329.2
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:06.168502",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 330.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:07.747881",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 332.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:09.337940",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 333.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:10.853757",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 335.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:12.326791",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 38,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 176,
+      "current": "post_report_hiding",
+      "elapsed_seconds": 336.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:13.850479",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 43,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 208,
+      "current": "server_cost_discussion",
+      "elapsed_seconds": 338.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:15.351358",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 44,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 210,
+      "current": "server_deployment_platform",
+      "elapsed_seconds": 339.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:16.985749",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 341.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:18.543980",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 343.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:20.127993",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 344.7
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:21.697905",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 346.3
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:23.222146",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 347.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:24.796323",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 349.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:26.312439",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 350.9
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:27.903304",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 47,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 211,
+      "current": "signup_flow",
+      "elapsed_seconds": 352.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:29.397129",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 354.0
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:30.917889",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 355.5
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:32.497842",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 357.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:34.026911",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 358.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:35.554906",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 360.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:37.050990",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 361.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:38.481936",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 363.1
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:40.028307",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 364.6
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:41.868677",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 49,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 222,
+      "current": "standup_schedule",
+      "elapsed_seconds": 366.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:43.820907",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 51,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 232,
+      "current": "textbook_photo_upload_limit",
+      "elapsed_seconds": 368.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:45.246461",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 51,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 232,
+      "current": "textbook_photo_upload_limit",
+      "elapsed_seconds": 369.8
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:46.774836",
+    "state": {
+      "state": "running",
+      "label": "점검 중",
+      "detail": ""
+    },
+    "progress": {
+      "phase": "checking",
+      "phase_label": "결정별 점검 중",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 51,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 232,
+      "current": "textbook_photo_upload_limit",
+      "elapsed_seconds": 371.4
+    }
+  },
+  {
+    "time": "2026-11-02T07:30:48.245873",
+    "state": {
+      "state": "verified",
+      "label": "검사 완료",
+      "detail": "2026-11-02T07:30:47"
+    },
+    "progress": {
+      "phase": "done",
+      "phase_label": "완료",
+      "files_total": 353,
+      "files_done": 353,
+      "topics_total": 53,
+      "topics_done": 53,
+      "topics_unchanged": 0,
+      "extract_total": 253,
+      "extract_done": 253,
+      "llm_calls": 233,
+      "current": "",
+      "elapsed_seconds": 372.5
+    }
+  }
+]

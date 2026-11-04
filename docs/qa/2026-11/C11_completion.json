@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-29T23:55:43",
+  "provider_id": "anthropic:claude-sonnet-5-5+claude-haiku-5-5",
+  "local_only": false,
+  "verified": true,
+  "mode": "agent",
+  "files_ok": 6,
+  "files_error": 0,
+  "files_unsupported": 0,
+  "topics": 1,
+  "topics_rechecked": 1,
+  "judges": {
+    "anthropic:claude-sonnet-5-5+claude-haiku-5-5": 1
+  },
+  "llm_calls": 5,
+  "cost_profile": "balanced",
+  "calls_by_task": {
+    "DECISION_EXTRACT_BATCH": 1,
+    "RELATION_CLASSIFY": 1,
+    "IMPACT_SELECT": 1,
+    "CONSISTENCY_BATCH": 2
+  },
+  "local_answers": 2,
+  "reused_lines": 0,
+  "judged_lines": 4,
+  "phase_seconds": {
+    "parse": 0.075,
+    "ingest": 0.001,
+    "extract": 4.699,
+    "retrieval": 0.012,
+    "judge": 10.138,
+    "store": 0.0
+  },
+  "cache_hits": 0,
+  "cache_misses": 3
+}

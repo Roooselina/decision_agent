@@ -1,0 +1,4 @@
+{
+  "send_disabled": true,
+  "text": "메일 쓰기\n받는 사람\n참조\n제목\n본문\n\n보내는 계정: teammate@example.com\n\n받는 사람을 입력하세요.\n\n메일 보내기가 꺼져 있습니다. 설정 > 연결에서 '메일 보내기'를 켜세요.\n\n취소\n보내기"
+}

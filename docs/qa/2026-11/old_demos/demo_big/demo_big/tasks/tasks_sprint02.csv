@@ -1,0 +1,7 @@
+﻿id,title,status,assignee,release,module,user_group,environment
+T0201,버그 리스트 정리,TODO,민준,,,,
+T0202,Jenkins 파이프라인 구성,IN_PROGRESS,서연,,,,
+T0203,자체 로그 파일 연동,DONE,서연,,,,
+T0204,스탠드업 알림 설정 (오전 9시 30분),TODO,하은,,,,
+T0205,회원 탈퇴 화면 구현,IN_PROGRESS,지호,,,,
+T0206,개인정보 삭제 배치 구현 (탈퇴 후 30일),DONE,민준,,,,

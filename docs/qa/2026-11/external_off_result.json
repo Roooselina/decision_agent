@@ -1,0 +1,134 @@
+{
+  "status": {
+    "paused": false,
+    "busy": false,
+    "folders": [
+      {
+        "root": "C:\\qa_work\\suite\\F13",
+        "files": {
+          "ok": 6,
+          "error": 0,
+          "unsupported": 0
+        },
+        "topics": 1,
+        "topics_by_judge": {
+          "mock": 1
+        },
+        "watcher": "native",
+        "watch_alive": true,
+        "pending_events": 6,
+        "progress": {
+          "phase": "done",
+          "phase_label": "완료",
+          "files_total": 6,
+          "files_done": 6,
+          "topics_total": 1,
+          "topics_done": 1,
+          "topics_unchanged": 0,
+          "extract_total": 2,
+          "extract_done": 2,
+          "llm_calls": 2,
+          "current": "",
+          "elapsed_seconds": 0.2
+        },
+        "completion": {
+          "at": "2026-11-02T07:12:45",
+          "provider_id": "mock",
+          "local_only": true,
+          "verified": false,
+          "mode": "agent",
+          "files_ok": 6,
+          "files_error": 0,
+          "files_unsupported": 0,
+          "topics": 1,
+          "topics_rechecked": 1,
+          "judges": {
+            "mock": 1
+          },
+          "llm_calls": 2,
+          "cost_profile": "balanced",
+          "calls_by_task": {
+            "DECISION_EXTRACT_BATCH": 1,
+            "IMPACT_SELECT": 1
+          },
+          "local_answers": 0,
+          "reused_lines": 0,
+          "judged_lines": 0,
+          "phase_seconds": {
+            "parse": 0.131,
+            "ingest": 0.007,
+            "extract": 0.016,
+            "retrieval": 0.006,
+            "judge": 0.01,
+            "store": 0.0
+          },
+          "cache_hits": 0,
+          "cache_misses": 2
+        },
+        "pending_confirm": null,
+        "failure": null,
+        "scan_stats": {
+          "at": "2026-11-02T07:12:45",
+          "seen": 6,
+          "skipped": {}
+        },
+        "last_checked": "2026-11-02T07:12:45",
+        "last_analyzed": "2026-11-02T07:12:45",
+        "state": {
+          "state": "demo",
+          "label": "데모로만 점검",
+          "detail": "실제 검사가 아닙니다."
+        }
+      }
+    ],
+    "provider": {
+      "id": "mock",
+      "local_only": true,
+      "sends_externally": false,
+      "reason": "외부 전송이 꺼져 있어 규칙 기반 로컬 판정기를 사용합니다."
+    },
+    "registered_folders": 1,
+    "connected_accounts": 0,
+    "onboarding_needed": false,
+    "ui_mode": "browser",
+    "version": "0.2.0",
+    "inconsistent": 0,
+    "uncertain": 0,
+    "questions": 0,
+    "last_cycle": "2026-11-02T07:12:45",
+    "last_error": null,
+    "debounce_seconds": 30.0,
+    "overall": {
+      "state": "demo",
+      "label": "데모 확인 방식으로만 점검했습니다. 실제 검사가 아닙니다.",
+      "detail": "파일 6개, 결정 1건 / 2026-11-02T07:12:45",
+      "counts": {
+        "demo": 1
+      }
+    },
+    "hotkey": {
+      "enabled": false,
+      "active": false,
+      "spec": "ctrl+alt+d",
+      "display": "Ctrl + Alt + D",
+      "reason": "",
+      "suggestions": []
+    },
+    "watch": {
+      "mode": "realtime",
+      "alive": true,
+      "rescan_minutes": 0,
+      "last_checked": "2026-11-02T07:12:45",
+      "last_analyzed": "2026-11-02T07:12:45",
+      "folders": 1
+    },
+    "last_result": {
+      "at": "2026-11-02T07:12:45",
+      "files": 6,
+      "topics": 1,
+      "verified": false
+    }
+  },
+  "ui_text": "본문으로 건너뛰기\n작업 공간\n홈\n점검 결과\n메일\n폴더 관리\n설정\n빠른 점검\n데모 모드\n홈\n11월 2일 월요일\n결정 변경 점검\n데모 모드\n\n데모 확인 방식으로 점검합니다. 실제 검사가 아닙니다.\n\n마지막 확인 07:12   ·   확인 중인 폴더 1개\nF13\n데모로만 점검\n실제 검사가 아닙니다.\n지금 점검\nAI 설정\n캘린더\n오늘\n주간\n캘린더\n메일\n\n2026년 11월 2일–8일\n\n월\n2\n화\n3\n수\n4\n목\n5\n금\n6\n토\n7\n일\n8\n종일\n2026-11-02 테스트 결과 공유\n내가 할 일\n데모 데이터\n현재 처리할 항목이 없습니다.\n전체 결과 보기\n최근 점검 기록\n전체 보기\n07:12\n처음 점검을 마쳤습니다: 파일 6개, 결정 1건. 데모 확인 방식이라 실제 검사가 아닙니다. 반영 안 됨 0건.\n07:12\n'상품 사진 수는 나중에 정하자.' 결정을 점검했습니다. 반영 안 됨 0건\n07:12\n문서 6개를 확인했습니다. 회의 결정 2건, 관련 항목 9건을 찾았습니다.\n07:12\n파일 변경 6건, 삭제 0건을 반영했습니다.",
+  "http_responses": 0
+}

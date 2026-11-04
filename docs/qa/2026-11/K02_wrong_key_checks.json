@@ -1,0 +1,12 @@
+{
+  "failure": {
+    "state": "failed",
+    "label": "실패",
+    "detail": "결정 추출에 실패했습니다. API 키가 올바르지 않거나 권한이 없습니다. 키를 다시 저장해 주세요."
+  },
+  "dummy_in_settings_or_logs": false,
+  "files_with_dummy": [],
+  "dummy_in_ui": false,
+  "dummy_in_state_export": false,
+  "shared_credential_store": "Not used: null backend only in isolated probe process"
+}

@@ -1,0 +1,21 @@
+{
+  "activation": {
+    "ok": true
+  },
+  "before": [
+    {
+      "hwnd": 1118114,
+      "visible": true
+    }
+  ],
+  "after": [
+    {
+      "hwnd": 1118114,
+      "visible": true
+    }
+  ],
+  "foreground": 265066,
+  "exit_code": 0,
+  "elapsed_seconds": 14.118470400047954,
+  "stdout": "이미 실행 중입니다. 열려 있는 창을 앞으로 가져옵니다.\r\n"
+}
