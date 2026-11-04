@@ -1,9 +1,27 @@
-﻿.venv/
-build/
-dist/
-out/
+# Python
+.venv/
 __pycache__/
 *.pyc
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
-*.egg-info/
+
+# Build output (PyInstaller / installer)
+build/
+dist/
+
+# Local run output (eval reports, QA, screenshots, presentation work files)
+out/
+
+# Local tooling / secrets
+.claude/
+claude_code_pack/
+.env
+.env.*
+*.log
+
+# OS / Office temp files
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
