@@ -1,8 +1,143 @@
-# 의사결정 변경 전파 불일치 탐지 AI Agent
+# Decision Agent: 의사결정 변경 전파 불일치 탐지 AI Agent
 
-학생 팀과 소규모 팀의 회의 결정이 바뀌었을 때, 그 변경이 Requirements, Task, Test Plan, Schedule에 실제로 반영되었는지 탐지하는 연구 프로토타입입니다. 결정이 적용되는 범위(release, module, user group, environment)를 함께 다루고, 근거가 부족하면 추측하지 않고 확인 질문을 합니다.
+회의에서 결정이 바뀌었는데 요구사항, Task, 테스트 계획, 일정 문서에는 옛 내용이 남아 있는 경우를 찾아 주는 연구 프로토타입입니다. 결정이 적용되는 범위(release, module, user group, environment)를 함께 다루고, 근거가 부족하면 추측하지 않고 사용자에게 확인 질문을 합니다. 파일을 자동으로 고치지 않고, 불일치를 근거와 함께 보여 주는 데까지만 합니다.
 
-이 도구는 자동 수정이 아니라 불일치 탐지와 사용자 판단 지원이 목적입니다.
+2026년 학술제 출품작으로 개발했습니다(`docs/presentation/`).
+
+<p align="center">
+  <img src="docs/screenshots/06_v2_점검결과_상세.png" width="820" alt="점검 결과 화면: 'Vue로 변경한다' 결정 뒤에도 requirements.md 3행에 'React로 개발한다'가 남아 있어 반영 안 됨으로 표시되고, 근거 파일과 권장 조치가 함께 보인다" />
+</p>
+
+| 항목 | 내용 |
+|---|---|
+| 핵심 기능 | 결정 추출, 결정 간 관계 분류(교체·취소·범위 제한·연기), scope별 유효 결정 계산, 산출물 일치 판정, 확인 질문 |
+| 판단 구조 | 같은 판단 함수(`agent/core.py`의 `AnalysisContext`)를 고정 순서 **Pipeline**과 도구 선택형 **Agent**가 공유 |
+| 실행 형태 | Streamlit 데모 앱, Windows 상주 데스크톱 앱(FastAPI 로컬 서버 + WebView2 창 + 트레이), CLI |
+| 모델 | Anthropic API, Ollama(로컬), 키가 없을 때의 규칙 기반 Mock 판정기 |
+| 규모 | `src/` Python 약 22,800줄, 테스트 파일 64개 |
+| 상태 | 0.2.0 연구 프로토타입. **실제 LLM에서의 탐지 품질은 아직 측정하지 않았습니다**(아래 [현재 상태](#현재-상태) 참고) |
+
+## 목차
+
+- [해결하려는 문제](#해결하려는-문제)
+- [현재 상태](#현재-상태)
+- [시스템 구조](#시스템-구조)
+- [기술별 사용 위치](#기술별-사용-위치)
+- [디렉터리](#디렉터리)
+- [빠른 시작 (Windows 데스크톱 앱)](#빠른-시작-windows-데스크톱-앱)
+- [개발 환경 설치와 실행](#개발-환경-설치와-실행)
+- [판단 방식 상세](#판단-방식-상세)
+- [테스트](#테스트)
+- [평가 하네스 요약](#평가-하네스-요약)
+- [데스크톱 상주 프로그램 요약](#데스크톱-상주-프로그램-요약)
+- [개발 정보](#개발-정보)
+- [한계](#한계)
+
+## 해결하려는 문제
+
+학생 팀이나 소규모 팀은 회의록, 요구사항 문서, 작업 표, 테스트 계획, 일정표를 따로 관리합니다. 회의에서 "MVP에서는 이메일 인증을 뺀다"처럼 결정이 바뀌어도 다른 문서에는 옛 내용이 그대로 남기 쉽습니다. 단순 키워드 검색으로는 두 가지를 구분하기 어렵습니다.
+
+- **범위가 있는 결정**: MVP에서만 뺀 기능이 Production 문서에 남아 있는 것은 불일치가 아닙니다.
+- **이전 결정을 가리키는 결정**: "기존 방식으로 돌아간다"는 결정 이력을 읽어야 무엇을 뜻하는지 알 수 있습니다.
+
+이 프로젝트는 결정과 그 적용 범위를 구조화해 저장하고, 산출물마다 지금 유효한 결정을 계산한 뒤 LLM으로 일치 여부를 판정합니다. 판단할 근거가 부족하면 UNCERTAIN으로 남기거나 사용자에게 질문합니다.
+
+## 현재 상태
+
+| 구분 | 내용 |
+|---|---|
+| 구현됨 | 결정·관계 추출, scope 정규화와 resolver, Pipeline/Agent, 확인 질문, Streamlit 데모, 평가 하네스(합성 케이스, 기준선 B1~B3, 부트스트랩 구간), 데스크톱 앱(폴더 감시, 증분 재점검, LLM 응답 캐시, 메일·캘린더·Notion·Jira·Slack 읽기 연결, Gmail 보내기), PyInstaller/Inno Setup 패키징 |
+| 저장소 기록상 확인된 것 | Windows 11에서 테스트, exe 빌드와 스모크 테스트, 조용한 설치·제거 등을 확인했다고 [docs/DESKTOP.md](docs/DESKTOP.md#이-단계의-한계)에 기록되어 있습니다 |
+| 측정하지 않은 것 | 실제 LLM(Anthropic, Ollama)에서의 정밀도·재현율. `data/eval/human_written/`, `data/eval/real/`은 아직 비어 있어 독립 평가 데이터가 없습니다 |
+| 실제 서비스에 붙여 보지 않은 것 | Google, Microsoft, Notion, Jira, Slack, IMAP 연결과 Ollama. 가짜 HTTP·IMAP 서버로 요청 형태와 오류 처리만 시험했습니다 |
+| 작성만 하고 실행하지 않은 것 | `.github/workflows/build-windows.yml` (GitHub Actions) |
+
+`docs/PROGRESS.md`의 속도·호출 수 측정값은 정답표를 읽는 시뮬레이션 모델로 잰 값이며 실제 모델의 정확도를 뜻하지 않습니다.
+
+## 시스템 구조
+
+```mermaid
+flowchart LR
+    subgraph IN[입력]
+        F[감시 폴더<br/>md, docx, xlsx, pdf, pptx, eml, ics ...]
+        C[연결<br/>Gmail, Outlook, IMAP, 캘린더, Notion, Jira, Slack]
+        N[빠른 점검 메모]
+    end
+    subgraph ING[ingest]
+        R[sources/ 리더<br/>공통 문서 모델로 변환]
+        X[extraction.py<br/>결정 추출]
+        L[relations.py<br/>결정 간 관계 분류]
+        S[scope.py<br/>scope 정규화]
+    end
+    DB[(SQLite<br/>storage.py)]
+    subgraph JUDGE[판단]
+        CTX[agent/core.py<br/>AnalysisContext]
+        P[Pipeline<br/>고정 순서]
+        A[Agent<br/>LLM이 다음 도구 선택]
+    end
+    LLM{{llm/<br/>Anthropic, Ollama, Mock<br/>+ 디스크 캐시}}
+    OUT[결과<br/>CONSISTENT, INCONSISTENT, UNCERTAIN<br/>근거, 확인 질문, 수정 초안]
+
+    F --> R
+    C --> R
+    N --> R
+    R --> X --> L --> S --> DB
+    DB --> CTX
+    P --> CTX
+    A --> CTX
+    CTX <--> LLM
+    X <--> LLM
+    L <--> LLM
+    CTX --> OUT
+```
+
+Agent의 한 단계는 다음과 같습니다(`agent/agent.py`의 `run_agent`).
+
+```mermaid
+flowchart TD
+    S0[현재 상태 STATE 생성<br/>최신 결정, 영향 대상 확인 여부, scope 관계 유무,<br/>미판단 목록, 불확실 목록, 질문 횟수] --> S1[LLM이 다음 도구 하나를 JSON으로 선택<br/>settings.routing = rules면 규칙으로 선택]
+    S1 -->|predict_affected, get_decision_history,<br/>resolve_scope, check_consistency,<br/>search_additional_evidence, ask_user| S2[AnalysisContext의 같은 함수 실행]
+    S2 --> S0
+    S1 -->|finalize| E[결과 확정]
+    S0 -->|max_steps 초과| E2[현재 결과로 종료<br/>미판단 항목은 UNCERTAIN]
+```
+
+## 기술별 사용 위치
+
+| 기술 | 사용 위치 | 역할 |
+|---|---|---|
+| Pydantic | `models.py`, `agent/agent.py` | 결정·관계·판정 결과 스키마, LLM JSON 응답 검증(`ToolChoice` 등) |
+| scikit-learn | `impact.py`, `retrieval.py` | 문자 n-gram(2~4) TF-IDF로 영향 후보 산출물 검색 |
+| Anthropic SDK | `llm/anthropic_provider.py` | 추출, 관계 분류, 판정, Agent 도구 선택 호출 |
+| Ollama HTTP | `llm/ollama_provider.py`, `desktop/embeddings.py` | 로컬 모델 판정, 선택적 임베딩 보강 |
+| SQLite | `storage.py`, `desktop/state.py`, `desktop/maildb.py` | 결정·관계 저장, 앱 상태, 메일 색인, 판정 재사용 |
+| Streamlit | `app/streamlit_app.py` | 데모 시나리오를 Agent와 Pipeline으로 비교 실행 |
+| FastAPI, uvicorn | `desktop/webapp.py` | `127.0.0.1` 전용 로컬 웹 API와 화면 |
+| watchdog | `desktop/watcher.py` | 감시 폴더 변경 이벤트 수집과 디바운스 |
+| pywebview, pystray, winotify | `desktop/shell.py`, `desktop/tray.py`, `desktop/notify.py` | 독립 창(WebView2), 트레이, 토스트 알림 |
+| keyring | `desktop/secrets.py` | API 키와 연결 토큰을 OS 자격 증명 저장소에만 저장 |
+| python-docx, openpyxl, pypdf, python-pptx, BeautifulSoup | `sources/readers_office.py`, `sources/readers_text.py` | 문서 형식별 텍스트·표 추출 |
+| PyInstaller, Inno Setup | `packaging/` | Windows exe와 설치 파일 생성 |
+| pytest, ruff | `tests/`, `pyproject.toml` | 네트워크 없는 단위·통합 테스트, 린트 |
+
+## 디렉터리
+
+| 경로 | 내용 |
+|---|---|
+| `src/decision_agent/` | 판단 엔진: `extraction.py`, `relations.py`, `scope.py`, `resolver.py`, `consistency.py`, `clarification.py`, `uncertainty.py` |
+| `src/decision_agent/agent/` | `core.py`(공유 판단 로직), `pipeline.py`, `agent.py`, `tools.py` |
+| `src/decision_agent/llm/` | Provider 추상화, Anthropic·Ollama·Mock, 캐시, 묶음 호출 |
+| `src/decision_agent/sources/`, `parsing/` | 파일 형식별 리더와 문서 구역 분류 |
+| `src/decision_agent/connectors/` | 메일·캘린더·협업 도구 읽기 연결, OAuth(PKCE) |
+| `src/decision_agent/desktop/` | 상주 앱: 엔진, 감시, 로컬 웹 서버, 트레이, CLI, 설정 |
+| `src/decision_agent/eval/` | 평가 하네스: 케이스 생성기, 기준선, 지표, 리포트 |
+| `app/streamlit_app.py` | 1단계 데모 앱 |
+| `data/demo/`, `samples/` | 가상 데모 데이터(메일 주소는 모두 `example.com`) |
+| `data/eval/` | 평가 케이스(합성 62개, 어시스턴트 작성 10개, 사람 작성·실제 문서 폴더는 비어 있음) |
+| `tests/` | pytest 테스트 |
+| `tools/`, `packaging/` | 시연·벤치마크 스크립트, 빌드 스크립트 |
+| `docs/` | [DESKTOP.md](docs/DESKTOP.md)(데스크톱 앱 상세), [EVALUATION.md](docs/EVALUATION.md)(평가 하네스), `PROGRESS.md`(작업 기록), `DEMO_SHEET.md`(시연 대본), `design/`(화면 시안), `screenshots/`, `presentation/`, `qa/` |
+
 
 ## 빠른 시작 (Windows 데스크톱 앱)
 
@@ -26,21 +161,17 @@
 
 문제가 있으면 `python -m decision_agent.desktop selftest`(설치 점검, JSON 출력, 문제가 있으면 종료 코드 1)와 `python -m decision_agent.desktop state --json`(저장된 상태를 읽기 전용으로 출력)을 실행하거나, 설정 > 고급 > 정보의 "진단 정보 복사"를 눌러 붙여 넣어 주세요. 셋 다 비밀 값과 문서 내용을 담지 않습니다.
 
-## 현재 범위
-
-1단계(데모 우선) 구현입니다. Baseline과 정량 평가 코드는 2단계에서 추가합니다.
-
-## 설치와 실행
+## 개발 환경 설치와 실행
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -e .[dev]
+pip install -e ".[dev,desktop]"   # 데스크톱 모듈 테스트까지 실행하려면 desktop 포함
 pytest
 streamlit run app/streamlit_app.py
 ```
 
-API 키가 없으면 규칙 기반 MockProvider로 실행되고 화면에 "데모 모드"가 표시됩니다.
+`streamlit run`은 데모 시나리오 화면(`app/streamlit_app.py`)을 엽니다. API 키가 없으면 규칙 기반 MockProvider로 실행되고 화면에 "데모 모드"가 표시됩니다.
 
 실제 LLM을 쓰려면 두 환경변수를 모두 설정합니다.
 
@@ -55,7 +186,11 @@ export DECISION_AGENT_MODEL=...      # 사용할 모델 이름
 | `DECISION_AGENT_MODEL` | 모델 이름 (코드에 하드코딩하지 않음) |
 | `DECISION_AGENT_LOG_CONTENT=1` | 문서 내용을 로그에 남길 때만 설정 |
 
-## 구조
+데스크톱 앱은 `pip install -e ".[desktop]"` 뒤 `decision-agent run`으로 실행합니다. 명령 목록, 읽는 파일 형식, 연결 설정, 안전 원칙, exe 빌드는 [docs/DESKTOP.md](docs/DESKTOP.md)에 있습니다. 데스크톱 앱 상태는 `%APPDATA%\DecisionAgent`(Windows) 또는 XDG 경로에 저장되며 `DECISION_AGENT_HOME`으로 바꿀 수 있습니다.
+
+## 판단 방식 상세
+
+### Agent와 Pipeline
 
 ```
 회의록, 산출물  ->  ingest (추출, 관계 분류, scope 정규화)   [Agent와 Pipeline이 공유]
@@ -66,13 +201,13 @@ export DECISION_AGENT_MODEL=...      # 사용할 모델 이름
 
 핵심 판단 로직은 `agent/core.py`의 `AnalysisContext` 한 곳에 있고, Agent와 Pipeline이 같은 함수를 호출합니다. 둘의 차이는 판단 알고리즘이 아니라 어떤 정보를 언제 더 찾고, 언제 질문하고, 언제 끝낼지를 정하는 방식뿐입니다.
 
-### Pipeline (대조군)
+#### Pipeline (대조군)
 
 `affected_prediction -> scope_resolution -> consistency_detection -> (clarification) -> finalize`
 
 항상 같은 순서입니다. 결정 이력을 따로 읽지 않습니다. `Pipeline+질문`은 마지막에 같은 질문 모듈을 호출합니다.
 
-### Agent
+#### Agent
 
 매 단계 LLM이 현재 상태(STATE)를 읽고 다음 도구 하나를 JSON으로 고릅니다. 상태에는 최신 결정문, 영향 대상 확인 여부, 범위 지정 관계 존재 여부, 미판단 목록, 불확실 목록, 질문 횟수가 들어갑니다.
 
@@ -88,7 +223,7 @@ export DECISION_AGENT_MODEL=...      # 사용할 모델 이름
 
 `max_steps`를 넘으면 현재 결과로 강제 종료하고, 판단하지 못한 항목은 UNCERTAIN으로 보고합니다.
 
-## Scope 모델
+### Scope 모델
 
 `GLOBAL`, `SCOPED`, `UNKNOWN`을 구분합니다. `UNKNOWN`은 `GLOBAL`과 같지 않습니다.
 
@@ -96,15 +231,15 @@ export DECISION_AGENT_MODEL=...      # 사용할 모델 이름
 - `POSTPONE`은 기존 결정을 ACTIVE로 두고 resolver의 `effective_due_date`로 반영합니다.
 - 산출물의 scope가 UNKNOWN이면, 그 topic에 범위가 지정된 결정이 있을 때만 불확실로 처리합니다. 모든 결정이 GLOBAL이면 어떤 scope여도 결과가 같으므로 판단을 진행합니다.
 
-## 확인 질문
+### 확인 질문
 
 불확실한 항목이 있으면 질문 후보를 최대 3개 만들고, 가정 답변("예", "아니오", "일부만")별 기대 이득을 평균해 가장 큰 후보를 고릅니다. 최대 기대 이득이 `min_gain` 미만이면 질문하지 않고 UNCERTAIN으로 보고합니다. 답변은 근거로 저장되어 해당 항목의 판단 프롬프트에 들어가며, 불확실했던 항목만 다시 판단합니다. 질문은 한 번에 하나씩, 최대 `max_questions`회입니다. 결정 범위가 불확실해 판단이 막힌 항목도 사용자가 답하면 답변과 resolver 메모(`RESOLVER_NOTE`)를 함께 LLM에 넘겨 판단합니다. 답이 없으면 계속 UNCERTAIN입니다.
 
-## 불확실성
+### 불확실성
 
 `ConsistencyResult.confidence`는 보정된 확률이 아닙니다. 같은 판단을 N회 샘플링했을 때 다수 라벨과 일치한 비율(self-consistency)이며, 결정이나 scope를 확정하지 못해 UNCERTAIN이 된 경우에는 0.0입니다. 근거 충분도는 유효한 결정을 확정할 수 있는지로만 판단합니다.
 
-## 데모 시나리오 (data/demo)
+### 데모 시나리오 (data/demo)
 
 | 시나리오 | topic | 기대 동작 |
 |---|---|---|
@@ -122,253 +257,37 @@ export DECISION_AGENT_MODEL=...      # 사용할 모델 이름
 pytest
 ```
 
-네트워크 없이 통과합니다. MockProvider 기반 테스트는 코드 배선과 규칙 확인용입니다. Agent가 실제 LLM에서 상황에 따라 다른 경로를 고르는지는 이 테스트로 증명되지 않으며, 평가 하네스의 경로 분석으로 실제 Provider에서 측정해야 합니다.
+테스트는 네트워크 없이 동작하도록 작성되어 있습니다. MockProvider 기반 테스트는 코드 배선과 규칙 확인용입니다. Agent가 실제 LLM에서 상황에 따라 다른 경로를 고르는지는 이 테스트로 증명되지 않으며, 평가 하네스의 경로 분석으로 실제 Provider에서 측정해야 합니다.
 
-## 평가 (2단계)
-
-코드는 `src/decision_agent/eval/`, 데이터는 `data/eval/`에 있습니다.
-
-### 케이스
-
-| 폴더 | 내용 | 작성자 | 독립 증거 여부 |
-| --- | --- | --- | --- |
-| `synthetic/` | 템플릿 기반 62개 (`python -m decision_agent.eval.generator`, seed 7) | 생성기 | 아님 |
-| `assistant_written/` | 직접 설계한 10개 (`build_cases.py`로 생성) | AI 어시스턴트 | 아님 |
-| `human_written/` | 팀원이 작성할 폴더. `TEMPLATE.json.example` 참고 | 사람 | 해당 |
-| `real/` | 익명화한 실제 문서 | 사람 | 해당 |
-
-레벨: 1 단일 결정, 2 전체 교체/취소, 3 범위 제한(scope 함정 포함), 4 일정 연기, 5 이전 결정 참조(이력 필요), 6 UNKNOWN scope(질문 필요), 7 복합.
-각 케이스는 회의 문장, 산출물, 정답 결정/관계(gold), 산출물별 정답(`label`, `affected`, `needs_clarification`, `scope_trap`), 질문에 대한 시뮬레이션 사용자의 답(`user_facts`)을 가집니다.
-`tags`: `scope_trap`, `retrieval_hard`(검색이 못 찾도록 만든 케이스), `vague_reference`, `unknown_scope`.
-
-### 비교 방법
-
-| 이름 | 설명 |
-| --- | --- |
-| B1_tfidf | TF-IDF 상위 후보를 전부 불일치로 표시 (검색만) |
-| B2_rag | 검색 후 가장 비슷한 결정 하나와 LLM 판정 1회. scope와 이력 없음. 임베딩 대신 희소 TF-IDF를 써서 오프라인으로 재현 가능 |
-| B3_long_context | 원문 결정 로그 전체를 넣고 산출물마다 LLM 판정 1회 |
-| P | 고정 순서 Pipeline, 질문 없음 |
-| M2 | Pipeline + 확인 질문 |
-| M1 | Agent, 질문 없음 |
-| M1c | Agent + 확인 질문 |
-| A_scope_agnostic | M1c에서 모든 scope를 GLOBAL로 지운 저장소를 사용 (scope 제거 실험) |
-
-### 재현
-
-```bash
-PYTHONPATH=src python3 -m decision_agent.eval.generator          # 합성 케이스 재생성
-PYTHONPATH=src python3 data/eval/assistant_written/build_cases.py
-PYTHONPATH=src python3 -m decision_agent.eval.runner \
-  --sources synthetic,assistant_written --methods all \
-  --oracle-stage none,decisions,full --repeats 1 --out out/eval_run
-```
-
-옵션: `--provider mock|anthropic`, `--repeats N`, `--n-samples N`(자기일관성 표본 수), `--levels 3,6`, `--limit N`, `--bootstrap N`.
-출력: `report.md`, `rows.csv`(산출물 단위), `runs.csv`(실행 단위), `summary.csv`, `errors.json`, 그래프 PNG. 기존 결과로 리포트만 다시 만들려면 `python -m decision_agent.eval.report --run out/eval_run`.
-
-실험: (1) 방법별 주 비교(F1과 95% 부트스트랩 구간, 케이스 단위 재표집), (2) 레벨과 태그별, (3) scope 제거 실험, (4) 확인 질문 효과, (5) Agent 경로 분석과 비용, (6) oracle 단계별 오류 귀속(`none`은 전부 LLM, `decisions`는 정답 결정 사용, `full`은 정답 결정과 관계 사용).
-
-지표: INCONSISTENT를 양성으로 한 정밀도/재현율/F1(UNCERTAIN은 양성 아님), 영향 후보 재현율, 3-way 정확도, UNCERTAIN 비율, 확신 오답률, scope 함정 오탐률, 질문 수, 불필요 질문률, 질문 해소율, ECE(신뢰도는 표본 일치율이며 보정된 확률이 아님), LLM 호출 수, 시간.
-
-### 읽는 법과 주의
-
-- MockProvider 결과는 배선 확인용입니다. Mock은 데모 어휘만 알아서 합성 케이스에서는 높게, 새 어휘의 `assistant_written` 케이스에서는 아무것도 못 찾아 0에 가깝게 나옵니다. 둘 다 성능 근거가 아닙니다. 리포트 첫머리에 경고 문구가 자동으로 붙습니다.
-- Mock에서는 scope 제거 실험(3)이 차이를 못 만듭니다. Mock 판정기가 산출물 문장 속 "MVP"를 직접 읽기 때문입니다.
-- `GoldOracleProvider`(`eval/oracle_provider.py`)는 정답을 아는 테스트용 대역입니다. 모든 케이스의 정답이 실제 resolver, 질문 게이트, 근거 흐름을 거쳐 도달 가능한지(케이스 설계 오류 점검)와 하네스 배선을 검증하며, 모델 성능과는 무관합니다.
-- 합성 케이스와 어시스턴트가 쓴 케이스는 시스템과 같은 쪽에서 설계했으므로 독립 증거가 아닙니다. 발표용 주장에는 `human_written`과 `real`이 필요합니다.
-- 시뮬레이션 사용자는 대본대로만 답하며 망설이거나 틀리게 답하지 않습니다. 질문이 대본과 안 맞으면 "잘 모르겠습니다"를 돌려줍니다.
-- "불필요 질문"은 정답 기준입니다. 이력을 읽으면 풀리는 레벨 5에서 Pipeline(M2)이 묻는 것도 불필요 질문으로 셉니다.
-- 후보 검색(문자 TF-IDF)이 못 찾은 산출물은 판정 기회가 없습니다. `retrieval_hard` 태그가 이 한계를 따로 보여 줍니다.
-- 실제 모델 결과는 `ANTHROPIC_API_KEY`와 `DECISION_AGENT_MODEL`을 설정하고 `--provider anthropic`으로 실행해야 얻습니다. 이 저장소에서는 실행해 보지 않았습니다.
-
-## 상주 프로그램 (3단계)
-
-폴더를 계속 지켜보다가 문서가 바뀌면 영향받는 topic만 다시 점검하고, 불일치 가능성이 새로 생기면 알림을 띄웁니다. Streamlit 대신 트레이 아이콘과 로컬 웹 화면(FastAPI)을 씁니다.
-
-### 설치와 실행
-
-```bash
-pip install -e ".[desktop]"
-decision-agent folders add "D:/team/project"   # 감시 폴더 등록 (여러 개 가능)
-decision-agent run                              # 트레이 + 감시 + 대시보드
-```
-
-| 명령 | 설명 |
-|---|---|
-| `decision-agent run` | 트레이, 폴더 감시, 독립 창(WebView2). `--background`는 창을 숨긴 채 시작, `--no-window`는 기본 브라우저 사용, `--port`로 포트 지정 |
-| `decision-agent serve [--port N]` | 트레이와 창 없이 감시와 웹 화면만 (서버, 원격 데스크톱용) |
-| `decision-agent scan [--folder 경로] [--fail-on-inconsistent] [--report 파일.json]` | 한 번만 점검하고 결과 출력. 불일치가 있으면 종료 코드 2. 보고서는 점검 폴더 밖에만 저장 |
-| `decision-agent reset-data --yes` | 저장된 API 키, 연결 비밀 값, 앱 데이터를 모두 삭제 (감시 폴더의 파일은 그대로). 제거 프로그램이 사용 |
-| `decision-agent folders list/add/remove` | 감시 폴더 관리 |
-| `decision-agent key set/clear` | API 키를 OS 자격 증명 저장소에 저장하거나 삭제 |
-| `decision-agent autostart on/off/status` | Windows 로그인 시 자동 실행 (현재 사용자 Run 키만 사용) |
-| `decision-agent selftest [--no-model] [--port N]` | 모듈, 데이터 폴더, 설정, DB(읽기 전용), 감시 폴더, 포트, 모델 연결을 점검해 JSON으로 출력. 실패가 있으면 종료 코드 1 |
-| `decision-agent state --json` | 폴더 상태, 판정 수, 마지막 점검, 메일 수, 연결 상태, 비밀을 뺀 설정을 출력. DB를 읽기 전용으로 열어 실행 중에도 됨 |
-
-앱 상태(설정, 상태 DB, 로그)는 감시 폴더 밖에 저장합니다. Windows는 `%APPDATA%\DecisionAgent`, 그 밖은 XDG 경로이며 `DECISION_AGENT_HOME`으로 바꿀 수 있습니다.
-
-### 읽는 형식
-
-회의록은 md와 docx를 중심으로 하되, 아래 형식을 읽습니다. 형식과 상관없이 같은 문서 모델(제목, 목록, 문단, 표)로 바뀐 뒤, 구역별로 회의록, 요구사항, Task, 테스트, 일정으로 분류됩니다. 분류는 파일 이름, 구역 제목, 표의 열 이름, 내용 순으로 추정하며 `kind_overrides` 설정으로 직접 지정할 수 있습니다.
-
-| 종류 | 확장자 |
-|---|---|
-| 텍스트 | md, markdown, txt, text, rst, log, rtf |
-| 표 | csv, tsv, xlsx, xlsm |
-| 문서 | docx, docm(변경 추적 삽입 포함, 삭제 제외), pdf(텍스트 레이어), odt, hwpx |
-| 발표 | pptx, pptm(발표자 노트 포함), odp |
-| 웹과 데이터 | html, htm, json, jsonl, ods |
-| 메일과 자막 | eml, vtt, srt |
-| 일정 | ics (취소된 일정은 제외, 설명이 있는 회의는 회의록으로 취급) |
-
-읽지 않는 형식: 이진 `hwp`, `doc`, `xls`, `ppt`, `msg`는 읽지 않고 "읽지 못한 파일" 목록에 이유와 변환 방법(docx, hwpx 등)을 표시합니다. 스캔 PDF는 OCR을 하지 않으므로 경고만 남깁니다.
-
-### 항상 켜 두고 쓰는 방법
-
-- `decision-agent autostart on`(또는 트레이 메뉴의 "Windows 시작 시 자동 실행")을 켜면 로그인할 때 조용히 시작하고 트레이에 상주합니다. 창을 열 필요가 없고, 감시 폴더의 파일이 바뀌면 알아서 다시 점검합니다.
-- 회의 중에는 전역 단축키(기본 `ctrl+alt+d`, Windows 전용) 또는 트레이의 "빠른 점검"으로 작은 창(`/quick`)을 엽니다. 방금 정한 결정을 입력하면 비슷한 기존 결정과 영향받을 수 있는 산출물을 글자 유사도로 찾아 보여 주고(저장하지 않음), "메모로 저장"을 누르면 그 내용이 다음 점검에 포함됩니다. 검색 창에서 결정, 점검 결과, 파일, 메모를 찾을 수 있습니다.
-- 단축키가 다른 프로그램과 겹치면 "내 정보"의 "알림과 단축키"에서 바꿀 수 있고, 등록 성공 여부가 같은 곳에 표시됩니다.
-
-### 접근 범위 (어디까지 읽는가)
-
-컴퓨터 전체를 보지 않습니다. 읽는 곳은 아래 세 가지뿐이며, "설정"의 "접근 범위"에 현재 상태가 그대로 나옵니다.
-
-1. 사용자가 등록한 폴더 (읽기 전용, 폴더 밖을 가리키는 바로가기와 심볼릭 링크 제외, 제외 패턴과 크기 한도 적용)
-2. 사용자가 켠 연결(메일, 캘린더, Notion, Jira, Slack)의 지정한 범위 (아래 표)
-3. 사용자가 직접 입력한 메모와 직접 올린 파일
-
-### 연결 (메일, 캘린더, 협업 도구)
-
-모든 연결은 읽기 전용입니다. 예외는 하나로, Gmail에서 사용자가 직접 쓰고 보내기를 누른 메일만 보낼 수 있습니다(설정에서 켠 경우, gmail.send 권한만 추가). 지우기, 읽음 표시, 라벨 붙이기, 보관, 일정 만들기와 고치기, 이슈와 페이지 만들기는 코드에 없습니다. 비밀 값(토큰, 비밀번호, 클라이언트 비밀)은 OS 자격 증명 저장소에만 저장하고 설정 파일과 로그에는 쓰지 않습니다. 가져온 내용은 폴더 안 문서와 같은 방식으로 분석되며, 텍스트 사본이 앱 상태 DB(감시 폴더 밖)에 저장됩니다. "연결 해제"를 누르면 비밀 값, 가져온 사본, 상태가 모두 지워집니다.
-
-| 연결 | 읽는 범위 | 로그인 방식 | 비고 |
+| 확인 일자 | 환경 | 명령 | 결과 |
 |---|---|---|---|
-| Google 캘린더 | 지정한 캘린더의 일정(제목, 날짜, 설명, 장소) | OAuth(PKCE, 로컬 주소로 돌아옴) | 일정은 일정 산출물, 설명은 회의록으로 취급 |
-| Gmail | 메일 소스에서 정한 라벨, 보낸 사람, 제목 키워드에 맞는 메일 | OAuth(PKCE) | 범위를 좁힌 소스만 읽음(전체 메일은 따로 동의). Google의 읽기 권한 자체는 메일 전체 범위임 |
-| Outlook 캘린더 | 일정 | OAuth(PKCE) | Microsoft Graph, Calendars.Read |
-| Outlook 메일 | 지정한 폴더의 최근 메일 | OAuth(PKCE) | Mail.Read는 메일 전체 범위이지만 지정 폴더만 조회 |
-| IMAP 메일 | 지정한 폴더 (네이버, 다음, 회사 메일 등) | 앱 비밀번호 | 폴더를 읽기 전용으로 열고 BODY.PEEK만 사용(읽음 표시 안 바뀜) |
-| Notion | 통합(integration)에 공유한 페이지와 데이터베이스 | 통합 토큰 | 공유하지 않은 페이지는 읽을 수 없음 |
-| Jira | JQL로 고른 이슈 | 계정 이메일과 API 토큰 | 작업(Task) 산출물로 취급 |
-| Slack | 지정한 채널 ID의 최근 메시지 | Bot 토큰 | 봇이 초대된 채널만 |
+| 2026-11-05 | Windows 11, Python 3.14.7, 새 venv | `pip install -e ".[dev,desktop]"` 후 `pytest` | 767 passed, 2 skipped (API 키 없음). `.[dev]`만 설치한 상태는 확인하지 않았습니다 |
+| 2026-11-05 | 같은 환경 | `ruff check .` (ruff 0.17.3) | 2건: `tools/demo_preflight.py`, `tools/demo_reset.py`의 PLW1510(`subprocess.run`에 `check` 미지정) |
+| 2026-11-05 | 같은 환경 | `PYTHONPATH=src python -m decision_agent.eval.runner --sources synthetic --methods all --oracle-stage none --repeats 1 --limit 3 --out <폴더>` | Mock으로 `report.md`, `rows.csv`, 그래프 생성 확인(배선 확인용, 성능 근거 아님) |
+| 2026-11-05 | 같은 환경 | `python -m decision_agent.desktop selftest --no-model` | `"ok": true` |
 
-각 연결의 설정 방법(Google Cloud 콘솔에서 데스크톱 앱 OAuth 클라이언트 만들기 등)은 "연결 계정" 화면의 연결 마법사에 단계별로 나옵니다. 클라이언트 ID는 사용자가 직접 만들어 입력하며, 이 프로그램에는 어떤 클라이언트 ID나 비밀도 들어 있지 않습니다.
+`pyproject.toml`은 Python 3.11 이상을 요구합니다. 위 표는 3.14에서 확인한 결과이며 3.11~3.13에서는 이번에 다시 실행하지 않았습니다.
 
-메일 연결의 상태 문장은 경우를 나눠 보여 줍니다. 조건에 맞는 메일이 없으면 "조건에 맞는 메일이 없습니다 (라벨: 회의록, 최근 14일)", 찾았지만 본문을 읽지 못한 메일이 있으면 "5건 찾음, 3건 읽음, 제목만 사용 2건"처럼 셉니다. 본문이 이미지나 첨부뿐인 메일은 버리지 않고 제목 한 줄을 날짜와 함께 남깁니다(첨부 파일 자체는 읽지 않음). Gmail 라벨은 라벨 목록에서 이름으로 찾고(대소문자와 앞뒤 공백 무시, 하위 라벨은 "A/B"), 없으면 있는 라벨 이름을 알려 줍니다. 연결 관리 창의 "미리보기"는 최대 10건의 날짜, 제목, 보낸 사람만 머리글로 읽어 보여 주며 저장하거나 AI로 보내지 않습니다. 로그인할 때 읽기 권한 항목을 빼고 허용하면 로그인을 저장하지 않고 다시 연결하라고 안내합니다.
+## 평가 하네스 요약
 
-메일은 연결(로그인)과 메일 소스(무엇을 읽을지)를 나눕니다. 연결은 서비스마다 하나이고, 메일 소스는 최대 20개를 만들 수 있습니다. 소스마다 이름, 용도(결정 근거, 할 일 요청, 요구사항 변경, 일정), 팀, 함께 분석할 프로젝트 폴더, 라벨이나 폴더, 보낸 사람, 제목 키워드, 제외 조건을 정합니다. 라벨, 보낸 사람, 제목 키워드, Gmail 검색식 중 하나도 없는 소스는 받지 않습니다. "폴더의 모든 메일" 소스는 확인란에 동의해야 만들 수 있고, 메일은 이 컴퓨터의 메일 색인(앱 폴더, 기본 180일 보관)에만 저장됩니다. AI 분석은 소스마다 따로 고르며(분석 안 함, 주소록에 팀이 있는 사람의 메일만, 결정 표현이 있는 메일만, 모든 메일), 전체 메일 소스의 기본값은 "분석 안 함"입니다. 결정 근거 소스는 기본으로 결정, 확정, 변경, 취소 같은 표현이나 목록이 없는 메일을 AI로 보내지 않고 건너뜁니다(설정 "메일 사전 분류"). 주소록(이름, 주소 또는 @도메인, 팀, 역할)도 이 컴퓨터에만 저장되고 AI로 보내지 않습니다.
+`src/decision_agent/eval/`과 `data/eval/`에 평가 코드와 케이스가 있습니다. 검색만 하는 기준선(B1 TF-IDF), 검색 후 LLM 1회 판정(B2), 전체 결정 로그를 넣는 긴 문맥 판정(B3)과 Pipeline, Pipeline+질문, Agent, Agent+질문, scope 제거 실험을 같은 케이스로 비교하도록 구성했습니다. 지표는 INCONSISTENT를 양성으로 한 정밀도·재현율·F1(케이스 단위 부트스트랩 95% 구간), UNCERTAIN 비율, scope 함정 오탐률, 질문 수, ECE, LLM 호출 수 등입니다.
 
-사이드바의 "메일" 화면은 Gmail 기본 창처럼 왼쪽에 편지함(전체, 받은 편지, 보낸 편지)과 팀, 용도, 내 라벨, 가운데에 대화 목록, 오른쪽에 대화 보기를 둡니다. 메일은 대화(스레드) 단위로 묶이고, Gmail 소스는 조건에 맞는 메일이 속한 대화 전체를 읽어 내가 보낸 답장도 함께 보여 주고 분석합니다(소스 설정 "내가 보낸 메일 포함", 기본 켬). 인용된 이전 메일은 "..." 뒤에 접히고 서명은 흐리게 보입니다. 내 라벨은 이 컴퓨터에만 저장되며 메일 계정에는 아무것도 쓰지 않습니다. 홈 카드의 "메일" 보기는 최근 대화 6개만 보여 주는 단순한 목록입니다. 검색, 메일 속 날짜(마감 힌트), 비슷한 메일 찾기는 모두 이 컴퓨터에서 처리하며 AI를 부르지 않습니다. 날짜 힌트는 확인용이며 점검 결과에는 쓰지 않습니다.
+현재 저장소의 케이스는 생성기로 만든 합성 62개와 AI 어시스턴트가 작성한 10개뿐이며, 둘 다 시스템과 같은 쪽에서 설계한 것이라 독립 증거가 아닙니다. 실제 모델 결과는 아직 없습니다. 실행 방법과 해석 시 주의점은 [docs/EVALUATION.md](docs/EVALUATION.md)에 있습니다.
 
-메일은 앱이 켜져 있는 동안 스스로 새로 고쳐집니다(기본 60초, 30초에서 10분까지). Gmail은 users.history.list, Outlook은 delta 쿼리, IMAP은 UIDNEXT로 바뀐 것이 있는지만 먼저 묻고, 새 메일이 있을 때만 본문을 읽습니다. 이 과정에서는 모델을 부르지 않습니다. AI 분석이 켜진 소스에 새 메일이 오면 마지막 메일 뒤 30초가 지나 한 번 점검하며, 이때 비용 프로필, 이전 판정 재사용, 확인 기준이 그대로 적용됩니다. 로그인이 만료되면 확인을 멈추고 다시 로그인하라고 알립니다.
+## 데스크톱 상주 프로그램 요약
 
-샘플 데이터 `samples/demo_bookswap`(시연용, 46개 파일)과 `samples/demo_big`(벤치마크용, 355개 파일)은 저장소에 들어 있습니다. 둘 다 가상의 프로젝트이며 메일 주소는 모두 `example.com`입니다. `tools/demo_reset.py`는 `~/Downloads/demo_bookswap`이 없으면 `samples/`에서 복사해 만들고, `tools/perf_gate.py`는 `~/Downloads/demo_big`이 없으면 `samples/demo_big`을 씁니다.
+3단계에서는 Streamlit 대신 트레이 상주 앱을 만들었습니다. 등록한 폴더를 읽기 전용으로 감시하다가 문서가 바뀌면 30초 동안 변경을 모아 바뀐 파일만 다시 읽고, 결정·관계·후보 산출물의 지문이 바뀐 topic만 다시 점검합니다. 같은 입력의 LLM 응답(온도 0)은 디스크 캐시에서 가져오므로 바뀌지 않은 문서는 새 호출이 없습니다. 새로 INCONSISTENT가 된 항목만 알림을 보냅니다.
 
-캡스톤 데모(`python tools/make_demo_capstone.py`)는 `~/Downloads/demo_capstone`(약 40개 파일)과 `~/Downloads/demo_capstone_full`(120개 파일)을 만들고 정답표와 구글 캘린더 가져오기 파일을 폴더 밖에 둡니다. 메일 스레드 다섯 개는 `tools/seed_mail_threads.py`(미리보기가 기본, `--send`일 때만 보냄)나 `tools/mail_thread_kit.html`로 보낼 수 있습니다. `python tools/bench_demo.py <폴더> <정답표>`는 정답표를 읽는 모의 모델로 파이프라인이 반영 안 된 줄에 닿는지 확인하며, 실제 모델의 정확도를 뜻하지 않습니다.
+외부 전송은 기본 꺼짐이며, 전송 스위치·API 키·모델 이름이 모두 있어야 문서가 외부 LLM으로 나갑니다. 웹 화면은 `127.0.0.1`에서만 열리고 Host 헤더 검사, API 토큰 헤더, CSP nonce를 적용합니다. 상세 내용은 [docs/DESKTOP.md](docs/DESKTOP.md)에 있습니다.
 
-Gmail이 기대와 다르게 동작하면 읽기 전용 진단 도구를 실행해 보세요: `python tools/diag_gmail.py [검색어]`. 저장된 로그인으로 연결된 계정, 있는 라벨, 설정한 라벨이 돌려주는 메일, 검색어가 든 메일이 계정 어딘가에 있는지를 콘솔에 출력합니다. 아무것도 저장하거나 보내거나 표시를 바꾸지 않고, 토큰은 출력하지 않습니다.
+## 개발 정보
 
-### 진행도와 "검사 완료" 표시
-
-상단 상태 배지, 홈의 진행도 카드, "활동 기록"의 "점검 기록"에서 확인합니다.
-
-- 진행도: 읽은 파일 N / M, 점검한 결정 N / M(변경이 없어 건너뛴 수 포함), LLM 호출 횟수, 지금 처리 중인 항목, 경과 시간. 폴더 안에서 확인한 파일 수와 건너뛴 이유(설정 파일, 제외 패턴, 크기 초과 등)도 보여 줍니다.
-- 최근 활동과 시스템 로그(`decision-agent.log`의 끝부분)를 같은 탭에서 봅니다.
-- 완료 표시는 정직하게 구분합니다.
-
-| 상태 | 뜻 |
+| 항목 | 내용 |
 |---|---|
-| 검사 완료 | 실제 모델(Anthropic 또는 Ollama)이 모든 폴더의 모든 결정을 끝까지 점검함 |
-| 데모 판정기로만 점검했습니다. 실제 검사가 아닙니다. | 키나 모델이 없어 내장 규칙 판정기가 돈 경우. 완료로 표시하지 않음 |
-| 점검에 실패했습니다 | 키가 틀림, 모델 이름 없음 등 설정을 고쳐야 하는 오류. 같은 오류로 반복 호출하지 않음 |
-| 일부만 점검했고 자동으로 다시 시도합니다 | 한도 초과, 파일 잠김, 일시적 네트워크 오류 |
-| 판정 방식이 바뀌어 다시 점검해야 합니다 | 키나 모델을 바꾼 뒤 예전 결과가 남아 있는 경우 |
-
-키를 저장한 뒤에는 "내 정보"의 "연결 테스트"로 한 번 호출해 보고, 점검이 끝나면 위 표의 "검사 완료"가 떠야 실제로 검사된 것입니다.
-
-### 그 밖의 기능
-
-- 수정 초안: 불일치 항목의 "수정 초안"을 누르면 고친 문장 제안(실제 모델일 때)과 담당자에게 보낼 메시지를 만듭니다. 파일을 고치거나 메시지를 보내지 않으며, 복사해서 직접 사용합니다.
-- 담당자 표시: 작업 표나 Jira에 담당자가 있으면 알림과 목록에 함께 보여 줍니다. 담당자에게 메시지를 보내지는 않습니다.
-- 확인함, 잘못된 탐지, 내일 다시(스누즈): 상태 DB에 남아 다시 점검해도 유지됩니다.
-- 파일 가져오기: 감시 폴더 밖의 회의록과 일정 파일(.ics 포함)을 한 번 올려 분석에 포함합니다. 파일 자체는 저장하지 않고 읽은 텍스트만 상태 DB에 남깁니다.
-- 일일 요약: 정한 시각 이후 처음 켜져 있을 때 하루 한 번 알림을 보내고 요약 파일을 앱 데이터 폴더의 `digests`에 저장합니다.
-- Ollama(로컬 모델): 제공자를 `ollama`로 하고 모델 이름을 넣으면 이 컴퓨터의 모델로 판정합니다. 문서가 컴퓨터 밖으로 나가지 않습니다. 주소가 이 컴퓨터가 아니면 외부 전송 스위치가 켜져 있어야 합니다.
-- 의미 검색 보강(선택): 임베딩 모델 이름을 넣으면 글자 유사도가 놓친 후보를 Ollama 임베딩으로 보충합니다. 실패하면 기존 방식으로 계속합니다. 실제 문서에서 효과를 측정하지 않았습니다.
-
-### 안전 원칙
-
-- 감시 폴더의 파일은 읽기만 합니다. 쓰기, 이름 변경, 삭제를 하지 않으며 테스트로 확인합니다.
-- 사용자가 등록한 폴더 안에서만 읽습니다. 심볼릭 링크로 폴더 밖을 가리켜도 읽지 않고, 숨김 폴더, 제외 패턴(`.git`, `node_modules` 등), 크기 한도(기본 25MB)를 적용합니다. 루트, 홈, 시스템 폴더, 앱 상태 폴더는 등록할 수 없습니다.
-- 외부 전송은 기본 꺼짐입니다. 전송 스위치, API 키, 모델 이름 세 가지가 모두 있어야 문서가 외부 LLM으로 나가며, 하나라도 없으면 로컬 규칙 기반(Mock) 판정기로 돌고 화면에 이유를 표시합니다.
-- API 키는 exe나 `settings.json`에 넣지 않습니다. OS 자격 증명 저장소(keyring)에만 저장하고, 웹 화면에서는 쓰기 전용입니다.
-- 연결의 비밀 값도 같은 저장소에만 두며, 연결은 읽기 전용입니다(보내기, 삭제, 읽음 표시, 생성 없음). HTTPS만 쓰고 리다이렉트는 따라가지 않습니다.
-- 웹 화면은 `127.0.0.1`에서만 열립니다. Host 헤더 검사(DNS 리바인딩 방지), API 토큰 헤더, 쿠키는 페이지 열기에만 사용, CSP nonce, `innerHTML` 미사용(문서 내용은 항상 텍스트로 삽입)을 적용합니다. 설정 API는 허용 목록 필드만 바꿉니다.
-
-### 동작 방식
-
-1. 변경 이벤트를 30초(기본) 모아 한 번에 처리합니다. 계속 저장되는 경우를 위해 최대 대기 시간이 있습니다.
-2. 변경된 파일만 다시 읽고, 읽은 결과는 파일 해시와 함께 상태 DB에 저장합니다.
-3. 전체 입력에서 결정, 관계, 산출물을 다시 구성하되, 같은 입력의 LLM 응답(온도 0)은 디스크 캐시에서 가져옵니다. 바뀌지 않은 문서는 새 LLM 호출이 없습니다.
-4. topic별 지문(결정, 관계, 후보 산출물)이 바뀐 topic만 다시 점검합니다. 관련 없는 문서를 추가하면 점검할 topic이 0개입니다.
-5. 새로 INCONSISTENT가 된 항목만 알림을 보냅니다. 한 번 점검에 최대 3건이며, 첫 점검은 요약 한 건으로 알립니다. 무시, 오탐 표시, 나중에 알림은 상태 DB에 남아 다시 점검해도 유지됩니다.
-6. 확인 질문은 백그라운드에서 막지 않고, 웹 화면의 "확인 질문" 탭에 보관합니다. 답하면 그 topic만 다시 점검합니다.
-7. 파일이 다른 프로그램에 잠겨 있으면 15초 뒤 최대 4번 다시 시도합니다. LLM 호출 한도(점검 1회 400회)를 넘으면 중단하고 5분 뒤 이어서 합니다.
-
-### 데스크톱 앱 화면
-
-- 브라우저 탭이 아니라 독립 창으로 열립니다(pywebview, Windows의 WebView2). 최소 크기 1100x720이고 창 크기와 위치를 기억하며, 화면보다 크면 화면에 맞춥니다. WebView2 런타임이 없거나 창을 만들 수 없으면 기본 브라우저로 엽니다.
-- 창의 닫기 버튼은 종료가 아니라 트레이로 숨기기입니다. 처음 한 번 "계속 백그라운드에서 감시합니다" 알림을 띄웁니다. 완전 종료는 트레이 메뉴의 "종료"입니다.
-- 이미 실행 중이면 새로 띄우지 않고 기존 창을 앞으로 가져옵니다(명명된 mutex와 로컬 API).
-- 전역 단축키(기본 `ctrl+alt+d`)는 480x640 고정 크기, 항상 위의 빠른 점검 창을 엽니다.
-- 화면 구성: 왼쪽 사이드바(접기 가능), 상단 헤더(점검 상태 배지, 외부 전송 여부 배지, 검색, 알림, 프로필), 홈, 점검 결과(필터, 정렬, 오른쪽 상세 패널), 확인 질문, 폴더, 연결 계정, 메모와 가져오기, 오늘 요약, 활동 기록, 설정, 내 정보. 라이트와 다크 테마(OS 설정 따라가기와 수동 전환)를 지원합니다.
-- 상단 상태 배지는 `overall()` 상태를 그대로 보여 줍니다. 실제 모델이 끝까지 점검했을 때만 "검사 완료"이고, 데모 판정기는 "데모 판정기 - 실제 검사 아님"입니다. 외부 전송 배지는 모든 화면에 항상 보입니다.
-- 처음 실행하면 3단계 마법사(폴더 선택, 판정 방식, 완료)가 나오며, 폴더를 고르면 바로 점검이 시작됩니다.
-- 화면 파일은 `src/decision_agent/desktop/static/`에 있고 외부 CDN을 쓰지 않습니다. 폰트는 시스템 폰트(Pretendard가 설치되어 있으면 사용, 없으면 맑은 고딕, Segoe UI)입니다.
-
-### 폴더 선택
-
-- "폴더 추가"를 누르면 Windows 폴더 선택 창이 뜹니다. 가장 위의 폴더 하나를 고르면 그 안의 모든 하위 폴더가 포함됩니다. 창에 폴더를 끌어다 놓아도 됩니다(독립 창 모드에서만. 브라우저 모드는 위치를 알 수 없어 안내만 표시).
-- 추가하기 전 미리보기로 읽을 수 있는 파일 수, 형식별 개수, 읽지 않는 형식, 자동 제외 폴더, 5000개 초과 경고, 등록할 수 없는 이유를 보여 줍니다. 미리보기는 파일 이름과 크기만 확인하며 내용을 읽거나 쓰지 않습니다.
-- 등록한 폴더 안의 폴더는 "이미 포함되어 있습니다"로 막습니다. 등록한 폴더의 상위 폴더를 고르면 합치기를 제안하고, 합치면 기존 하위 폴더 제외 설정을 유지합니다.
-- "하위 폴더 선택" 트리에서 체크를 해제한 하위 폴더는 읽지 않습니다. 설정의 `excluded_subfolders`에 감시 폴더 기준 상대 경로로 저장되고 `FolderPolicy`가 적용합니다.
-- 폴더를 목록에서 제거하면 그 폴더의 상태 DB(읽은 내용의 사본과 점검 결과)만 지우고 원본 파일은 건드리지 않습니다.
-
-### 내 정보와 데이터
-
-서버나 회원 가입이 없습니다. 표시 이름, 프로필 색상, 테마는 이 컴퓨터의 `settings.json`에만 저장됩니다. API 키와 연결 비밀 값은 화면에서 쓰기 전용이고 "저장됨" 여부만 보입니다. "진단 정보 복사"는 버전, 판정 방식, 폴더 상태만 담고 비밀 값과 문서 내용은 넣지 않습니다. "모든 앱 데이터 삭제"는 두 단계 확인(두 번째는 "모두 삭제" 입력) 뒤 자격 증명 저장소의 키와 비밀 값, 상태 DB, 설정, 메모, 요약을 지웁니다.
-
-### Windows exe와 설치 파일 만들기
-
-PyInstaller는 크로스 컴파일을 못 하므로 Windows에서 만들어야 합니다. 설치 파일은 Inno Setup 6이 필요합니다(`winget install JRSoftware.InnoSetup`).
-
-```powershell
-powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1
-# 결과: dist\DecisionAgent\DecisionAgent.exe, dist\DecisionAgent-windows.zip, dist\DecisionAgent-Setup.exe
-```
-
-- `DecisionAgent.exe`: onedir, 콘솔 창 없음, 앱 아이콘과 파일 버전 정보 포함. 아이콘 원본은 `static/icon.svg`이고 `python packaging/make_icon.py`로 `app.ico`를 다시 만듭니다.
-- 빌드 뒤 `packaging/smoke_test.ps1`이 임시 데이터 폴더로 `--version`, 데모 사본에 대한 `scan`(폴더가 바뀌지 않았는지 해시 비교), `serve`와 `/api/ping`, 토큰 없는 API 거부, 묶음에 사용자 데이터나 데모 파일이 없는지를 확인합니다.
-- 설치 마법사: 설치 경로 선택(기본은 사용자별 설치라 관리자 권한 불필요), 시작 메뉴 바로가기, 바탕화면 바로가기(선택), "Windows 시작 시 자동 실행", 제거 프로그램 등록. WebView2 런타임이 없으면 Microsoft 부트스트래퍼를 내려받아 설치할지 묻습니다. 제거할 때 앱 데이터(저장된 키 포함)도 지울지 묻고, 감시 폴더의 파일은 지우지 않습니다.
-- 설치 파일과 exe에는 API 키, 데모 데이터, 사용자 정보를 넣지 않습니다.
-- 코드 서명 인증서가 없어 서명하지 않았습니다. 그래서 설치 파일을 처음 실행하면 Windows SmartScreen이 "Windows의 PC 보호" 경고를 띄울 수 있습니다. "추가 정보"를 누른 뒤 "실행"을 눌러야 하며, 배포하려면 코드 서명 인증서로 서명하는 것이 좋습니다.
-
-GitHub에 올리면 `.github/workflows/build-windows.yml`이 windows-latest에서 린트, 테스트, exe 빌드, 스모크 테스트, 설치 파일 빌드, 조용한 설치와 제거 왕복 시험, 결과 업로드를 합니다(수동 실행 또는 `v*` 태그).
-
-화면 점검: `pip install -e .[uicheck]`, `python -m playwright install chromium` 뒤 `python tools/ui_check.py`를 실행하면 모든 화면을 라이트와 다크, 폭 1100과 1600에서 열어 콘솔 오류와 가로 넘침을 확인하고 스크린샷을 남깁니다.
-
-### 이 단계의 한계
-
-- 0.2.0은 Windows 11에서 테스트 전체, exe 빌드와 스모크 테스트, 설치 파일의 조용한 설치와 제거, 독립 창(WebView2) 표시, 창 닫기 시 트레이로 숨기기, 두 번째 실행 시 기존 창 활성화, 빠른 점검 창 열기를 확인했습니다. 폴더 선택 대화 상자, 끌어다 놓기, 트레이 메뉴 클릭, 토스트 알림, 전역 단축키, WebView2가 없는 PC에서의 설치 흐름, 대화형 설치 마법사 화면은 사람이 직접 눌러 보지 않았습니다. GitHub Actions 워크플로는 작성만 했고 실행해 보지 않았습니다.
-- exe 묶음은 약 300MB, 설치 파일은 약 90MB입니다(scikit-learn, scipy 포함).
-- 연결(Google, Microsoft, Notion, Jira, Slack, IMAP)과 Ollama는 실제 서비스에 붙여 보지 못했습니다. 가짜 HTTP와 가짜 IMAP으로 요청 형태, 응답 처리, 오류 처리, 비밀 값 보관만 시험했습니다. 서비스 쪽 설정(OAuth 동의 화면, 권한, 앱 승인 정책)에 따라 연결이 막힐 수 있고, 특히 회사 계정은 관리자 승인이 필요할 수 있습니다. Jira 주소 형식과 Microsoft 로그인 리다이렉트는 실제 환경에서 확인이 필요합니다.
-- Gmail과 Outlook의 읽기 권한은 서비스가 메일 전체 범위로만 제공합니다. 이 프로그램은 지정한 라벨이나 폴더만 조회하지만, 권한 자체는 그보다 넓습니다.
-- 메일, 캘린더 등에서 가져온 텍스트 사본은 앱 상태 DB에 저장됩니다. 외부 LLM을 켜면 그 내용도 문서와 같이 전송됩니다.
-- 규칙 기반 Mock 판정기는 데모 어휘만 알아서 실제 문서에서는 거의 아무것도 찾지 못합니다. 실제 문서에는 실제 LLM이 필요하며, 그 결과의 품질은 측정하지 않았습니다. 이 때문에 데모 판정기 결과는 "검사 완료"로 표시하지 않습니다.
-- 회의록 구조를 추정하는 규칙은 흔한 형태를 기준으로 만들었습니다. 벗어난 문서는 분류가 틀릴 수 있어 `kind_overrides`가 필요합니다.
-- 이진 hwp와 OCR은 지원하지 않습니다.
-- 담당자 알림은 화면과 토스트에 담당자를 보여 주는 데까지입니다. 메일이나 메신저로 보내지 않습니다.
+| 개발 기간 | 커밋 기록 기준 2026-10-24 ~ 2026-11-04 (첫 커밋은 0.2.0 기준선이므로 이전 작업 기간은 커밋에 나타나지 않습니다) |
+| 작성자 | 이은정 (저장소의 모든 커밋 작성자) |
+| 성격 | 2026년 학술제 출품 연구 프로토타입 |
+| 라이선스 | 지정되지 않음 |
 
 ## 한계
 
